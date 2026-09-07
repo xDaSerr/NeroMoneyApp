@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&amp;family=Outfit:wght@400;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "tertiary-fixed-dim": "#4edea3", "secondary-fixed": "#efdbff", "surface-dim": "#10131a", "on-tertiary-fixed-variant": "#005236", "on-error-container": "#ffdad6", "on-surface": "#e1e2ec", "tertiary": "#d8ffe7", "on-secondary-fixed-variant": "#6700b5", "outline": "#849495", "on-tertiary": "#003824", "surface-bright": "#363941", "on-primary-fixed": "#002022", "background": "#10131a", "on-secondary": "#480081", "on-background": "#e1e2ec", "inverse-primary": "#006970", "inverse-on-surface": "#2d3038", "outline-variant": "#3b494b", "surface-container-lowest": "#0b0e15", "primary": "#dbfcff", "secondary-fixed-dim": "#dcb8ff", "secondary-container": "#7701d0", "surface-container": "#1d1f27", "surface-container-low": "#191b23", "on-secondary-container": "#dcb7ff", "on-surface-variant": "#b9cacb", "on-tertiary-fixed": "#002113", "surface-container-high": "#272a32", "surface-container-highest": "#32353d", "error": "#ffb4ab", "tertiary-fixed": "#6ffbbe", "on-primary-container": "#006970", "surface": "#10131a", "inverse-surface": "#e1e2ec", "surface-variant": "#32353d", "tertiary-container": "#65f2b5", "primary-fixed-dim": "#00dbe9", "on-error": "#690005", "on-primary-fixed-variant": "#004f54", "on-secondary-fixed": "#2c0051", "secondary": "#dcb8ff", "surface-tint": "#00dbe9", "primary-container": "#00f0ff", "error-container": "#93000a", "on-primary": "#00363a", "primary-fixed": "#7df4ff", "on-tertiary-container": "#006d4a" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-sm": "0.75rem", "gutter-mobile": "0.75rem", "space-xl": "1.5rem", "space-lg": "1.25rem", "space-2xs": "0.25rem", "margin-mobile": "1.25rem", "space-3xl": "2.5rem", "space-md": "1rem", "space-xs": "0.5rem", "space-2xl": "2rem" }, "fontFamily": { "body-sm": ["Outfit"], "body-md": ["Outfit"], "headline-lg": ["Outfit"], "label-sm": ["Outfit"], "numeric-hero": ["Outfit"], "display": ["Outfit"], "headline-sm": ["Outfit"], "body-lg": ["Outfit"], "label-code": ["JetBrains Mono"], "headline-md": ["Outfit"] }, "fontSize": { "body-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "400" }], "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }], "headline-lg": ["32px", { "lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "600" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }], "numeric-hero": ["36px", { "lineHeight": "40px", "letterSpacing": "-0.03em", "fontWeight": "700" }], "display": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.03em", "fontWeight": "700" }], "headline-sm": ["20px", { "lineHeight": "26px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "400" }], "label-code": ["11px", { "lineHeight": "14px", "letterSpacing": "0.06em", "fontWeight": "500" }], "headline-md": ["24px", { "lineHeight": "30px", "letterSpacing": "-0.015em", "fontWeight": "600" }] } } } }</script></head><body class="bg-surface text-on-surface font-body-md text-body-md min-h-screen relative overflow-x-hidden flex flex-col selection:bg-primary-container selection:text-on-primary-container"><div class="fixed inset-0 pointer-events-none z-0 overflow-hidden"><div class="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-secondary-container/20 blur-[100px]"></div><div class="absolute top-1/3 -right-32 w-96 h-96 rounded-full bg-primary-container/15 blur-[120px]"></div><div class="absolute -bottom-24 left-1/4 w-80 h-80 rounded-full bg-secondary/10 blur-[90px]"></div></div><div class="fixed top-0 inset-x-0 z-50 pt-safe bg-surface/40 backdrop-blur-xl"><div class="h-11 px-margin-mobile flex items-center justify-between text-on-surface-variant"><span class="font-label-code text-label-code tracking-wider text-on-surface font-medium">09:41</span><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[16px]">signal_cellular_alt</span><span class="material-symbols-outlined text-[16px]">wifi</span><span class="material-symbols-outlined text-[18px]">battery_charging_full</span></div></div></div><main class="flex-1 flex flex-col relative w-full z-10 pt-11 pb-safe px-margin-mobile bg-surface"><div class="flex flex-col w-full pb-space-2xl">
+<!-- 1. Header y Progreso de Onboarding -->
+<header class="flex flex-col gap-space-sm pt-space-xs mb-space-md">
+<div class="flex items-center justify-between">
+<button aria-label="Volver atrás" class="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">arrow_back</span>
+</button>
+<span class="font-label-code text-label-code text-primary tracking-widest uppercase">NeroMoney OS</span>
+<div class="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">help_outline</span>
+</div>
+</div>
+<!-- Stepper de 3 Pasos -->
+<div class="bg-surface-container-low rounded-xl p-space-sm flex flex-col gap-space-2xs">
+<div class="flex items-center justify-between font-label-sm text-label-sm">
+<span class="text-primary font-medium tracking-wide flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">bolt</span>
+          Paso 2 de 3: Tu Copiloto
+        </span>
+<span class="font-label-code text-label-code text-on-surface-variant">66% COMPLETADO</span>
+</div>
+<div class="grid grid-cols-3 gap-space-xs items-center mt-1">
+<!-- Paso 1 Completo -->
+<div class="h-1.5 rounded-full bg-primary flex items-center justify-end pr-0.5">
+<div class="w-1 h-1 rounded-full bg-surface"></div>
+</div>
+<!-- Paso 2 Activo -->
+<div class="h-1.5 rounded-full bg-gradient-to-r from-primary-container via-secondary to-primary relative overflow-hidden">
+<div class="absolute inset-0 bg-surface/20 animate-pulse"></div>
+</div>
+<!-- Paso 3 Pendiente -->
+<div class="h-1.5 rounded-full bg-surface-container-highest"></div>
+</div>
+</div>
+</header>
+<!-- 2. Núcleo Neuronal IA Protagonista -->
+<section class="relative flex flex-col items-center justify-center py-space-sm my-space-xs">
+<!-- Efectos de ondas concéntricas -->
+<div class="relative w-44 h-44 flex items-center justify-center">
+<div class="absolute inset-0 rounded-full bg-secondary-container/20 blur-xl animate-pulse"></div>
+<div class="absolute -inset-3 rounded-full border-0 bg-primary-container/10 blur-md"></div>
+<!-- Anillo exterior giratorio simulado -->
+<div class="absolute inset-1 rounded-full bg-surface-container-lowest/80 flex items-center justify-center shadow-2xl">
+<!-- Orbe central vibrante -->
+<div class="relative w-32 h-32 rounded-full bg-gradient-to-tr from-secondary-container via-primary-container/40 to-surface-dim p-1 flex items-center justify-center shadow-lg">
+<div class="w-full h-full rounded-full bg-surface-dim/95 flex flex-col items-center justify-center relative overflow-hidden backdrop-blur-md">
+<!-- Patrón de red neuronal SVG -->
+<svg class="absolute inset-0 w-full h-full opacity-30 text-primary-fixed-dim" fill="none" viewbox="0 0 100 100">
+<circle cx="50" cy="50" r="40" stroke="currentColor" stroke-dasharray="3 3" stroke-width="0.75"></circle>
+<circle cx="50" cy="50" r="26" stroke="currentColor" stroke-width="0.75"></circle>
+<path d="M50 10 L50 90 M10 50 L90 50" stroke="currentColor" stroke-opacity="0.4" stroke-width="0.5"></path>
+<circle cx="50" cy="24" fill="currentColor" r="2.5"></circle>
+<circle cx="76" cy="50" fill="currentColor" r="2.5"></circle>
+<circle cx="50" cy="76" fill="currentColor" r="2.5"></circle>
+<circle cx="24" cy="50" fill="currentColor" r="2.5"></circle>
+</svg>
+<!-- Icono y chispa de IA -->
+<span class="material-symbols-outlined text-primary-container text-[42px] relative z-10 animate-bounce" style="animation-duration: 2.5s;">
+              psychology
+            </span>
+<span class="font-label-code text-[10px] text-primary tracking-widest uppercase mt-1 z-10" id="aiCoreState">ONLINE</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Badge Flotante del Núcleo -->
+<div class="mt-space-sm inline-flex items-center gap-2 px-space-sm py-1 rounded-full bg-surface-container-high shadow-md">
+<span class="w-2 h-2 rounded-full bg-primary-container animate-ping"></span>
+<span class="font-label-code text-label-code text-primary tracking-wider uppercase">SINTETIZADOR NEURONAL V2.4 ACTIVO</span>
+</div>
+</section>
+<!-- 3. Título y Mensaje Explicativo -->
+<section class="text-center flex flex-col items-center gap-space-2xs px-space-xs mt-space-xs mb-space-lg">
+<h1 class="font-headline-md text-headline-md text-on-surface font-semibold tracking-tight">
+      Personaliza tu Asistente IA
+    </h1>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-xs">
+      Tu copiloto conversacional analizará tus hábitos, categorizará gastos y te alertará ante desvíos de presupuesto.
+    </p>
+</section>
+<!-- 4. Campo de Entrada Central Destacado + Chips -->
+<section class="flex flex-col gap-space-sm bg-surface-container-low p-space-md rounded-xl shadow-lg mb-space-md">
+<div class="flex items-center justify-between">
+<label class="font-label-code text-label-code text-primary uppercase tracking-widest flex items-center gap-1" for="assistantNameInput">
+<span class="material-symbols-outlined text-[13px]">tune</span>
+        NOMBRE DEL ASISTENTE
+      </label>
+<span class="font-label-code text-label-code text-on-surface-variant">ALIAS COGNITIVO</span>
+</div>
+<!-- Contenedor del Input con Resplandor -->
+<div class="relative w-full">
+<div class="absolute -inset-0.5 rounded-xl bg-gradient-to-r from-primary-container/40 to-secondary-container/50 blur opacity-60 pointer-events-none"></div>
+<div class="relative bg-surface-container-lowest rounded-xl flex items-center px-space-md py-space-sm">
+<span class="material-symbols-outlined text-primary-container mr-space-sm text-[22px]">smart_toy</span>
+<input class="w-full bg-transparent font-headline-sm text-headline-sm text-on-surface font-semibold focus:outline-none placeholder:text-outline-variant caret-primary-container" id="assistantNameInput" maxlength="16" placeholder="Escribe un nombre..." type="text" value="Lucy"/>
+<button class="text-on-surface-variant hover:text-on-surface p-1" id="clearInputBtn" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</div>
+<!-- Chips Rápidos de Sugerencia -->
+<div class="flex flex-col gap-1 mt-space-2xs">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Sugerencias rápidas:</span>
+<div class="flex items-center gap-2 overflow-x-auto py-1 no-scrollbar" id="presetChipsContainer">
+<button class="preset-chip px-3 py-1.5 rounded-full font-label-code text-label-code bg-primary-container text-on-primary-container font-semibold transition-all" data-name="Lucy" type="button">
+          Lucy
+        </button>
+<button class="preset-chip px-3 py-1.5 rounded-full font-label-code text-label-code bg-surface-container-high text-on-surface-variant transition-all hover:text-on-surface" data-name="Nero" type="button">
+          Nero
+        </button>
+<button class="preset-chip px-3 py-1.5 rounded-full font-label-code text-label-code bg-surface-container-high text-on-surface-variant transition-all hover:text-on-surface" data-name="Nova" type="button">
+          Nova
+        </button>
+<button class="preset-chip px-3 py-1.5 rounded-full font-label-code text-label-code bg-surface-container-high text-on-surface-variant transition-all hover:text-on-surface" data-name="Atlas" type="button">
+          Atlas
+        </button>
+<button class="preset-chip px-3 py-1.5 rounded-full font-label-code text-label-code bg-surface-container-high text-on-surface-variant transition-all hover:text-on-surface" data-name="Aria" type="button">
+          Aria
+        </button>
+</div>
+</div>
+</section>
+<!-- 5. Selector de Personalidad / Tono -->
+<section class="flex flex-col gap-space-sm bg-surface-container-low p-space-md rounded-xl shadow-lg mb-space-lg">
+<div class="flex items-center justify-between">
+<span class="font-label-code text-label-code text-secondary tracking-widest uppercase flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">neurology</span>
+        TONO DE ASISTENCIA
+      </span>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-secondary-container/40 text-secondary" id="toneBadge">
+        Científico
+      </span>
+</div>
+<!-- Opciones de Tono en Stack -->
+<div class="flex flex-col gap-space-xs" id="toneOptionsContainer">
+<!-- Opción 1: Analítica (Default Seleccionada) -->
+<label class="tone-card cursor-pointer relative flex items-start gap-space-sm p-space-sm rounded-xl bg-surface-container-high transition-all">
+<input checked="" class="hidden" name="aiTone" type="radio" value="analitica"/>
+<div class="tone-radio-dot w-5 h-5 rounded-full bg-primary-container flex items-center justify-center mt-0.5 shrink-0">
+<div class="w-2 h-2 rounded-full bg-on-primary-container"></div>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="font-body-md text-body-md font-semibold text-on-surface">Analítica y Precisa</span>
+<span class="font-label-code text-[10px] text-primary-container px-1.5 py-0.5 rounded bg-surface-container-lowest">RECOMENDADO</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 mt-0.5">
+            Enfoque matemático, cálculo predictivo de desvíos y balances al céntimo.
+          </p>
+</div>
+</label>
+<!-- Opción 2: Amigable -->
+<label class="tone-card cursor-pointer relative flex items-start gap-space-sm p-space-sm rounded-xl bg-surface-container-lowest transition-all">
+<input class="hidden" name="aiTone" type="radio" value="amigable"/>
+<div class="tone-radio-dot w-5 h-5 rounded-full bg-surface-container-highest flex items-center justify-center mt-0.5 shrink-0">
+<div class="w-2 h-2 rounded-full bg-transparent"></div>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="font-body-md text-body-md font-medium text-on-surface">Amigable y Motivadora</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 mt-0.5">
+            Refuerzo positivo, tono relajado para evitar la ansiedad por el dinero.
+          </p>
+</div>
+</label>
+<!-- Opción 3: Mentor Estricto -->
+<label class="tone-card cursor-pointer relative flex items-start gap-space-sm p-space-sm rounded-xl bg-surface-container-lowest transition-all">
+<input class="hidden" name="aiTone" type="radio" value="mentor"/>
+<div class="tone-radio-dot w-5 h-5 rounded-full bg-surface-container-highest flex items-center justify-center mt-0.5 shrink-0">
+<div class="w-2 h-2 rounded-full bg-transparent"></div>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="font-body-md text-body-md font-medium text-on-surface">Modo Estricto / Mentor</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 mt-0.5">
+            Cero gastos hormiga, advertencias directas y metas de ahorro inquebrantables.
+          </p>
+</div>
+</label>
+</div>
+</section>
+<!-- 6. Acciones y Micro-Copy -->
+<section class="flex flex-col gap-space-sm mt-auto">
+<!-- Botón CTA Cyber-Action -->
+<button class="w-full h-12 rounded-full bg-gradient-to-r from-primary-container via-primary-fixed-dim to-secondary font-headline-sm text-headline-sm text-on-primary-fixed font-semibold flex items-center justify-center gap-2 shadow-lg hover:brightness-110 active:scale-[0.98] transition-all" id="submitOnboardingStepBtn" type="button">
+<span>Continuar</span>
+<span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</button>
+<!-- Micro-mensaje con aviso de reconfiguración -->
+<div class="flex items-center justify-center gap-2 px-space-sm text-center">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant shrink-0">sync</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+        Puedes cambiar el nombre y la personalidad de tu copiloto en cualquier momento desde <span class="text-on-surface font-medium">Ajustes &gt; Asistente</span>.
+      </p>
+</div>
+</section>
+</div>
+<!-- Lógica Interactiva Vanilla JS -->
+<script>
+  (function() {
+    const inputEl = document.getElementById('assistantNameInput');
+    const clearBtn = document.getElementById('clearInputBtn');
+    const chipButtons = document.querySelectorAll('.preset-chip');
+    const toneCards = document.querySelectorAll('.tone-card');
+    const toneBadge = document.getElementById('toneBadge');
+    const continueBtn = document.getElementById('submitOnboardingStepBtn');
+
+    // 1. Selector de Chips de Nombre
+    chipButtons.forEach(chip => {
+      chip.addEventListener('click', () => {
+        const selectedName = chip.getAttribute('data-name');
+        inputEl.value = selectedName;
+        
+        // Estilos de chip activo / inactivo
+        chipButtons.forEach(c => {
+          c.classList.remove('bg-primary-container', 'text-on-primary-container', 'font-semibold');
+          c.classList.add('bg-surface-container-high', 'text-on-surface-variant');
+        });
+
+        chip.classList.remove('bg-surface-container-high', 'text-on-surface-variant');
+        chip.classList.add('bg-primary-container', 'text-on-primary-container', 'font-semibold');
+      });
+    });
+
+    // 2. Limpiar Input
+    clearBtn.addEventListener('click', () => {
+      inputEl.value = '';
+      inputEl.focus();
+    });
+
+    // 3. Selección de Tono
+    const toneBadgesMap = {
+      analitica: 'Científico',
+      amigable: 'Empático',
+      mentor: 'Militar/Foco'
+    };
+
+    toneCards.forEach(card => {
+      card.addEventListener('click', () => {
+        const radio = card.querySelector('input[type="radio"]');
+        if (radio) {
+          radio.checked = true;
+          
+          // Actualizar estilos de las tarjetas
+          toneCards.forEach(c => {
+            c.classList.remove('bg-surface-container-high');
+            c.classList.add('bg-surface-container-lowest');
+            
+            const dot = c.querySelector('.tone-radio-dot');
+            const inner = dot.querySelector('div');
+            dot.classList.remove('bg-primary-container');
+            dot.classList.add('bg-surface-container-highest');
+            inner.classList.remove('bg-on-primary-container');
+            inner.classList.add('bg-transparent');
+          });
+
+          card.classList.remove('bg-surface-container-lowest');
+          card.classList.add('bg-surface-container-high');
+
+          const activeDot = card.querySelector('.tone-radio-dot');
+          const activeInner = activeDot.querySelector('div');
+          activeDot.classList.remove('bg-surface-container-highest');
+          activeDot.classList.add('bg-primary-container');
+          activeInner.classList.remove('bg-transparent');
+          activeInner.classList.add('bg-on-primary-container');
+
+          // Actualizar etiqueta
+          if (toneBadge && toneBadgesMap[radio.value]) {
+            toneBadge.textContent = toneBadgesMap[radio.value];
+          }
+        }
+      });
+    });
+
+    // 4. Feedback en Continuar
+    continueBtn.addEventListener('click', () => {
+      const finalName = inputEl.value.trim() || 'Lucy';
+      continueBtn.innerHTML = `<span>Configurando a ${finalName}...</span><span class="material-symbols-outlined text-[20px] animate-spin">refresh</span>`;
+      setTimeout(() => {
+        continueBtn.innerHTML = `<span>¡Listo! Paso 3 &rarr;</span><span class="material-symbols-outlined text-[20px]">check</span>`;
+      }, 700);
+    });
+  })();
+</script></main></body></html>

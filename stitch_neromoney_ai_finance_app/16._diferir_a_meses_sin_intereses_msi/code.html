@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&amp;family=Outfit:wght@400;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "tertiary-fixed-dim": "#4edea3", "secondary-fixed": "#efdbff", "surface-dim": "#10131a", "on-tertiary-fixed-variant": "#005236", "on-error-container": "#ffdad6", "on-surface": "#e1e2ec", "tertiary": "#d8ffe7", "on-secondary-fixed-variant": "#6700b5", "outline": "#849495", "on-tertiary": "#003824", "surface-bright": "#363941", "on-primary-fixed": "#002022", "background": "#10131a", "on-secondary": "#480081", "on-background": "#e1e2ec", "inverse-primary": "#006970", "inverse-on-surface": "#2d3038", "outline-variant": "#3b494b", "surface-container-lowest": "#0b0e15", "primary": "#dbfcff", "secondary-fixed-dim": "#dcb8ff", "secondary-container": "#7701d0", "surface-container": "#1d1f27", "surface-container-low": "#191b23", "on-secondary-container": "#dcb7ff", "on-surface-variant": "#b9cacb", "on-tertiary-fixed": "#002113", "surface-container-high": "#272a32", "surface-container-highest": "#32353d", "error": "#ffb4ab", "tertiary-fixed": "#6ffbbe", "on-primary-container": "#006970", "surface": "#10131a", "inverse-surface": "#e1e2ec", "surface-variant": "#32353d", "tertiary-container": "#65f2b5", "primary-fixed-dim": "#00dbe9", "on-error": "#690005", "on-primary-fixed-variant": "#004f54", "on-secondary-fixed": "#2c0051", "secondary": "#dcb8ff", "surface-tint": "#00dbe9", "primary-container": "#00f0ff", "error-container": "#93000a", "on-primary": "#00363a", "primary-fixed": "#7df4ff", "on-tertiary-container": "#006d4a" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-sm": "0.75rem", "gutter-mobile": "0.75rem", "space-xl": "1.5rem", "space-lg": "1.25rem", "space-2xs": "0.25rem", "margin-mobile": "1.25rem", "space-3xl": "2.5rem", "space-md": "1rem", "space-xs": "0.5rem", "space-2xl": "2rem" }, "fontFamily": { "body-sm": ["Outfit"], "body-md": ["Outfit"], "headline-lg": ["Outfit"], "label-sm": ["Outfit"], "numeric-hero": ["Outfit"], "display": ["Outfit"], "headline-sm": ["Outfit"], "body-lg": ["Outfit"], "label-code": ["JetBrains Mono"], "headline-md": ["Outfit"] }, "fontSize": { "body-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "400" }], "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }], "headline-lg": ["32px", { "lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "600" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }], "numeric-hero": ["36px", { "lineHeight": "40px", "letterSpacing": "-0.03em", "fontWeight": "700" }], "display": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.03em", "fontWeight": "700" }], "headline-sm": ["20px", { "lineHeight": "26px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "400" }], "label-code": ["11px", { "lineHeight": "14px", "letterSpacing": "0.06em", "fontWeight": "500" }], "headline-md": ["24px", { "lineHeight": "30px", "letterSpacing": "-0.015em", "fontWeight": "600" }] } } } }</script></head><body class="bg-surface text-on-surface font-body-md text-body-md min-h-screen relative overflow-x-hidden flex flex-col selection:bg-primary-container selection:text-on-primary-container"><div class="fixed inset-0 pointer-events-none z-0 overflow-hidden"><div class="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-secondary-container/20 blur-[100px]"></div><div class="absolute top-1/4 -right-32 w-96 h-96 rounded-full bg-primary-container/15 blur-[120px]"></div><div class="absolute -bottom-24 left-1/4 w-80 h-80 rounded-full bg-secondary/10 blur-[90px]"></div></div><header class="fixed top-0 inset-x-0 z-50 pt-safe bg-surface/40 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-11 px-margin-mobile flex items-center justify-between text-on-surface-variant"><span class="font-label-code text-label-code tracking-wider text-on-surface font-medium">09:41</span><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[16px]">signal_cellular_alt</span><span class="material-symbols-outlined text-[16px]">wifi</span><span class="material-symbols-outlined text-[18px]">battery_charging_full</span></div></div><div class="h-14 px-margin-mobile flex items-center justify-between"><button aria-label="Go back" class="w-11 h-11 -ml-space-xs rounded-full flex items-center justify-center text-on-surface hover:bg-surface-container-high transition-colors" onclick="history.back()"><span class="material-symbols-outlined text-[20px]">arrow_back_ios_new</span></button><h1 class="font-headline-sm text-headline-sm text-on-surface tracking-tight truncate px-space-xs text-center flex-1">Account Access</h1><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></header><main class="flex-1 flex flex-col relative w-full z-10 pt-25 pb-safe px-margin-mobile bg-surface"><div class="flex flex-col w-full pb-10">
+<!-- Sub-Header Info Card: Card Context & Help -->
+<div class="relative w-full rounded-2xl bg-surface-container/70 p-space-md mb-space-lg shadow-xl overflow-hidden">
+<div class="absolute -right-8 -top-8 w-28 h-28 rounded-full bg-secondary-container/30 blur-2xl pointer-events-none"></div>
+<div class="relative z-10 flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-xl bg-secondary-container flex items-center justify-center text-on-secondary-container shadow-md">
+<span class="material-symbols-outlined text-[22px]">credit_card</span>
+</div>
+<div>
+<div class="flex items-center gap-space-2xs">
+<span class="font-headline-sm text-headline-sm text-on-surface">Diferir a Meses (MSI)</span>
+<span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim inline-block animate-pulse"></span>
+</div>
+<p class="font-label-code text-label-code text-on-surface-variant">Nu Mastercard •••• 4821</p>
+</div>
+</div>
+<button aria-label="Información y ayuda" class="w-9 h-9 rounded-full bg-surface-container-highest flex items-center justify-center text-primary-fixed-dim hover:bg-surface-bright transition-colors active:scale-95" type="button">
+<span class="material-symbols-outlined text-[20px]">help</span>
+</button>
+</div>
+</div>
+<!-- Stepper & Available Capacity Banner -->
+<div class="relative w-full rounded-2xl bg-surface-container-low/90 p-space-md mb-space-xl overflow-hidden shadow-lg">
+<div class="flex items-center justify-between mb-space-sm">
+<div class="flex items-center gap-space-2xs">
+<span class="material-symbols-outlined text-[16px] text-primary-container">tune</span>
+<span class="font-label-sm text-label-sm text-primary">PASO 1 DE 2: SELECCIONAR Y SIMULAR</span>
+</div>
+<span class="font-label-code text-label-code text-tertiary-fixed-dim bg-on-tertiary/60 px-2 py-0.5 rounded-full">MSI Activo</span>
+</div>
+<!-- Stepper progress bar -->
+<div class="w-full h-1.5 bg-surface-container-highest rounded-full overflow-hidden mb-space-md">
+<div class="w-1/2 h-full bg-primary-container rounded-full shadow-[0_0_12px_rgba(0,240,255,0.8)]"></div>
+</div>
+<div class="flex items-center justify-between pt-space-xs bg-surface-container/40 -mx-space-md -mb-space-md px-space-md py-space-sm rounded-b-2xl">
+<div class="flex items-center gap-space-2xs">
+<span class="material-symbols-outlined text-[18px] text-tertiary-fixed-dim">account_balance_wallet</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Capacidad disponible:</span>
+</div>
+<span class="font-headline-sm text-headline-sm text-tertiary font-medium tracking-tight">$18,500.00 MXN</span>
+</div>
+</div>
+<!-- Section 1: Eligible Purchases Selection -->
+<div class="flex flex-col w-full mb-space-xl">
+<div class="flex items-center justify-between mb-space-sm">
+<h2 class="font-headline-sm text-headline-sm text-on-surface tracking-tight">1. Compras Elegibles</h2>
+<span class="font-label-code text-label-code text-on-surface-variant">Mayores a $500 MXN</span>
+</div>
+<div class="flex flex-col gap-space-sm" id="purchases-container">
+<!-- Purchase 1 (Selected) -->
+<div class="purchase-card relative w-full rounded-2xl p-space-md bg-surface-container-high cursor-pointer transition-all shadow-[0_0_24px_-4px_rgba(0,240,255,0.3)] bg-gradient-to-r from-surface-container-high via-surface-container-highest/80 to-surface-container-high" onclick="selectPurchase(this, 6499.00, 'Liverpool Insurgentes')">
+<div class="flex items-start justify-between">
+<div class="flex items-start gap-space-sm min-w-0">
+<div class="w-11 h-11 rounded-xl bg-primary-container/20 flex items-center justify-center text-primary-container mt-0.5 shrink-0">
+<span class="material-symbols-outlined text-[24px]">shopping_bag</span>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-space-xs">
+<p class="font-headline-sm text-headline-sm text-on-surface truncate">Liverpool Insurgentes</p>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Tienda departamental • 14 Octubre</p>
+<div class="mt-space-xs inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-tertiary-container/20 text-tertiary font-label-code text-label-code">
+<span class="material-symbols-outlined text-[13px] text-tertiary-fixed-dim">verified</span>
+                Elegible 0% Interés
+              </div>
+</div>
+</div>
+<div class="flex flex-col items-end shrink-0 pl-space-xs">
+<span class="font-headline-sm text-headline-sm text-on-surface">$6,499.00</span>
+<span class="font-label-code text-label-code text-on-surface-variant mb-space-xs">MXN</span>
+<div class="purchase-radio w-6 h-6 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shadow-[0_0_10px_rgba(0,240,255,0.5)]">
+<span class="material-symbols-outlined text-[16px] font-bold">check</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Purchase 2 (Unselected) -->
+<div class="purchase-card relative w-full rounded-2xl p-space-md bg-surface-container-low/70 hover:bg-surface-container cursor-pointer transition-all" onclick="selectPurchase(this, 3200.00, 'Apple Store Antara')">
+<div class="flex items-start justify-between">
+<div class="flex items-start gap-space-sm min-w-0">
+<div class="w-11 h-11 rounded-xl bg-surface-container-highest flex items-center justify-center text-on-surface-variant mt-0.5 shrink-0">
+<span class="material-symbols-outlined text-[24px]">devices</span>
+</div>
+<div class="min-w-0">
+<p class="font-headline-sm text-headline-sm text-on-surface truncate">Apple Store Antara</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Tecnología • 10 Octubre</p>
+<div class="mt-space-xs inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-label-code text-label-code">
+                Elegible 0% Interés
+              </div>
+</div>
+</div>
+<div class="flex flex-col items-end shrink-0 pl-space-xs">
+<span class="font-headline-sm text-headline-sm text-on-surface">$3,200.00</span>
+<span class="font-label-code text-label-code text-on-surface-variant mb-space-xs">MXN</span>
+<div class="purchase-radio w-6 h-6 rounded-full bg-surface-container-highest text-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px] opacity-0">check</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Purchase 3 (Unselected) -->
+<div class="purchase-card relative w-full rounded-2xl p-space-md bg-surface-container-low/70 hover:bg-surface-container cursor-pointer transition-all" onclick="selectPurchase(this, 1850.00, 'Best Buy Online')">
+<div class="flex items-start justify-between">
+<div class="flex items-start gap-space-sm min-w-0">
+<div class="w-11 h-11 rounded-xl bg-surface-container-highest flex items-center justify-center text-on-surface-variant mt-0.5 shrink-0">
+<span class="material-symbols-outlined text-[24px]">sports_esports</span>
+</div>
+<div class="min-w-0">
+<p class="font-headline-sm text-headline-sm text-on-surface truncate">Best Buy Online</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Electrónica • 08 Octubre</p>
+<div class="mt-space-xs inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-label-code text-label-code">
+                Elegible 0% Interés
+              </div>
+</div>
+</div>
+<div class="flex flex-col items-end shrink-0 pl-space-xs">
+<span class="font-headline-sm text-headline-sm text-on-surface">$1,850.00</span>
+<span class="font-label-code text-label-code text-on-surface-variant mb-space-xs">MXN</span>
+<div class="purchase-radio w-6 h-6 rounded-full bg-surface-container-highest text-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px] opacity-0">check</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 2: Installment Simulator (Grid of Months) -->
+<div class="flex flex-col w-full mb-space-xl">
+<div class="flex items-center justify-between mb-space-sm">
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface tracking-tight">2. Selecciona el Plazo</h2>
+</div>
+<div class="flex items-center gap-1 bg-secondary-container/30 text-secondary-fixed px-2.5 py-1 rounded-full">
+<span class="material-symbols-outlined text-[14px]">bolt</span>
+<span class="font-label-sm text-label-sm">0% Tasa Promocional</span>
+</div>
+</div>
+<!-- 2-column grid of options -->
+<div class="grid grid-cols-2 gap-space-sm" id="terms-grid">
+<!-- 3 Months -->
+<div class="term-card relative rounded-2xl p-space-md bg-surface-container-low hover:bg-surface-container cursor-pointer transition-all flex flex-col justify-between min-h-[105px]" onclick="selectTerm(this, 3, 2166.33)">
+<span class="font-label-code text-label-code text-on-surface-variant">3 MESES</span>
+<div>
+<span class="font-numeric-hero text-[22px] leading-6 text-on-surface block" id="val-3m">$2,166.33</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">/ mes</span>
+</div>
+</div>
+<!-- 6 Months (Active Recommended) -->
+<div class="term-card relative rounded-2xl p-space-md bg-surface-container-high shadow-[0_0_26px_rgba(0,240,255,0.35)] cursor-pointer transition-all flex flex-col justify-between min-h-[105px] overflow-hidden bg-gradient-to-b from-surface-container-high to-surface-container-highest" onclick="selectTerm(this, 6, 1083.16)">
+<div class="absolute -top-1 -right-1 bg-gradient-to-r from-secondary-container to-primary-container px-2 py-0.5 rounded-bl-xl shadow-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px] text-primary">auto_awesome</span>
+<span class="font-label-sm text-[10px] text-white tracking-wide">LUCY AI</span>
+</div>
+<span class="font-label-code text-label-code text-primary-container">6 MESES</span>
+<div>
+<span class="font-numeric-hero text-[22px] leading-6 text-primary block" id="val-6m">$1,083.16</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">/ mes</span>
+</div>
+</div>
+<!-- 9 Months -->
+<div class="term-card relative rounded-2xl p-space-md bg-surface-container-low hover:bg-surface-container cursor-pointer transition-all flex flex-col justify-between min-h-[105px]" onclick="selectTerm(this, 9, 722.11)">
+<span class="font-label-code text-label-code text-on-surface-variant">9 MESES</span>
+<div>
+<span class="font-numeric-hero text-[22px] leading-6 text-on-surface block" id="val-9m">$722.11</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">/ mes</span>
+</div>
+</div>
+<!-- 12 Months -->
+<div class="term-card relative rounded-2xl p-space-md bg-surface-container-low hover:bg-surface-container cursor-pointer transition-all flex flex-col justify-between min-h-[105px]" onclick="selectTerm(this, 12, 541.58)">
+<span class="font-label-code text-label-code text-on-surface-variant">12 MESES</span>
+<div>
+<span class="font-numeric-hero text-[22px] leading-6 text-on-surface block" id="val-12m">$541.58</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">/ mes</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 3: Lucy AI Predictive Liquidity Copilot -->
+<div class="relative w-full rounded-2xl bg-surface-container/85 p-space-lg mb-space-xl overflow-hidden shadow-2xl backdrop-blur-xl">
+<!-- Ambient cyber orbs inside card -->
+<div class="absolute -right-10 -bottom-10 w-36 h-36 rounded-full bg-secondary-container/40 blur-3xl pointer-events-none"></div>
+<div class="absolute top-0 right-1/3 w-28 h-28 rounded-full bg-primary-container/20 blur-2xl pointer-events-none"></div>
+<div class="relative z-10 flex flex-col gap-space-sm">
+<!-- Lucy Avatar & Header -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="relative w-9 h-9 rounded-full bg-gradient-to-tr from-secondary-container via-primary-container to-tertiary-fixed flex items-center justify-center p-[2px] shadow-[0_0_16px_rgba(119,1,208,0.6)]">
+<div class="w-full h-full rounded-full bg-surface-container-lowest flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px] text-primary">psychology</span>
+</div>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-tertiary-fixed-dim ring-2 ring-surface-container"></span>
+</div>
+<div>
+<span class="font-headline-sm text-[16px] leading-5 text-on-surface font-semibold flex items-center gap-1">
+              Lucy Predictor de Liquidez
+              <span class="material-symbols-outlined text-[14px] text-primary-container">insights</span>
+</span>
+<span class="font-label-code text-[11px] text-on-surface-variant">Análisis algorítmico en tiempo real</span>
+</div>
+</div>
+<span class="font-label-sm text-[10px] uppercase bg-tertiary-container/20 text-tertiary-fixed px-2 py-0.5 rounded-full font-bold">IA Saludable</span>
+</div>
+<!-- Diagnostic Copy -->
+<p class="font-body-md text-body-md text-on-surface leading-relaxed" id="lucy-analysis-text">
+        Elegir <strong class="text-primary-container font-semibold">6 meses ($1,083.16/mes)</strong> reduce tu carga de pago inmediata en un <strong class="text-tertiary-fixed font-semibold">83%</strong> sin alterar tu presupuesto mensual de ahorro ($9,050 MXN). Si eliges 12 meses, pagarás una comisión por apertura no diferible de $180 MXN.
+      </p>
+<!-- Financial Health Impact Badge -->
+<div class="flex items-center justify-between pt-space-xs bg-surface-container-lowest/60 rounded-xl px-space-md py-space-xs">
+<div class="flex items-center gap-space-2xs">
+<span class="material-symbols-outlined text-[18px] text-tertiary-fixed-dim">speed</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Score Crediticio Estimado</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="font-label-code text-label-code text-tertiary font-bold">Impacto: Neutro</span>
+<span class="font-label-code text-[10px] text-on-surface-variant bg-surface-container-highest px-1.5 py-0.5 rounded">+0 pts</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 4: Breakdown and Plan Summary -->
+<div class="relative w-full rounded-2xl bg-surface-container-low/80 p-space-lg mb-space-xl shadow-lg">
+<div class="flex items-center justify-between pb-space-sm mb-space-sm bg-surface-container-high/30 -mx-space-lg -mt-space-lg px-space-lg pt-space-md rounded-t-2xl">
+<span class="font-headline-sm text-headline-sm text-on-surface">Resumen del Plan</span>
+<span class="font-label-code text-label-code text-tertiary bg-surface-container-highest px-2 py-0.5 rounded-full">CAT 0.0% Sin IVA</span>
+</div>
+<div class="flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<span class="font-body-md text-body-md text-on-surface-variant">Monto total a diferir:</span>
+<span class="font-label-code text-label-code text-on-surface font-semibold" id="sum-total">$6,499.00 MXN</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="font-body-md text-body-md text-on-surface-variant">Plazo elegido:</span>
+<span class="font-body-md text-body-md text-primary font-medium" id="sum-term">6 Meses Sin Intereses</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="font-body-md text-body-md text-on-surface-variant">Mensualidad estimada:</span>
+<span class="font-headline-sm text-headline-sm text-tertiary font-bold" id="sum-monthly">$1,083.16 MXN</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="font-body-md text-body-md text-on-surface-variant">Primer cobro en:</span>
+<span class="font-body-md text-body-md text-on-surface">Próximo corte (24 de Octubre)</span>
+</div>
+<div class="flex items-center justify-between pt-space-sm bg-surface-container-highest/20 -mx-space-lg -mb-space-lg px-space-lg py-space-md rounded-b-2xl">
+<span class="font-headline-sm text-headline-sm text-on-surface">Total final a pagar:</span>
+<div class="text-right">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold" id="sum-final-total">$6,499.00 MXN</span>
+<span class="block font-label-code text-[10px] text-on-surface-variant">Sin cargos ocultos</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Primary Cyber Action CTA & Microcopy -->
+<div class="w-full flex flex-col gap-space-sm">
+<button class="relative w-full py-4 px-space-lg rounded-full bg-gradient-to-r from-primary-container via-secondary-fixed-dim to-primary text-on-primary-fixed font-headline-sm text-[16px] font-bold flex items-center justify-center gap-space-xs shadow-[0_0_30px_rgba(0,240,255,0.45)] active:scale-[0.98] transition-all hover:brightness-110" id="confirm-cta-btn" onclick="triggerConfirm()" type="button">
+<span class="material-symbols-outlined text-[20px]">lock_reset</span>
+<span id="cta-text">Continuar con plan de 6 meses</span>
+<span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</button>
+<div class="flex items-center justify-center gap-space-2xs text-center">
+<span class="material-symbols-outlined text-[14px] text-tertiary-fixed-dim">verified_user</span>
+<p class="font-label-code text-[11px] text-on-surface-variant">
+        Cifrado seguro 256-bit • Confirmación biométrica en el siguiente paso
+      </p>
+</div>
+</div>
+</div>
+<script>
+  let currentAmount = 6499.00;
+  let currentTerm = 6;
+
+  const lucyInsights = {
+    3: "Elegir **3 meses** minimiza tu compromiso temporal liquidando la deuda antes de fin de año, pero requiere una cuota mensual mayor que absorbe el 24% de tu ingreso libre.",
+    6: "Elegir **6 meses ($1,083.16/mes)** reduce tu carga de pago inmediata en un **83%** sin alterar tu presupuesto mensual de ahorro ($9,050 MXN). Si eliges 12 meses, pagarás una comisión por apertura no diferible de $180 MXN.",
+    9: "Elegir **9 meses** distribuye el gasto holgadamente durante 3 trimestres, manteniendo tu balance semanal perfectamente estable con impacto mínimo.",
+    12: "Elegir **12 meses** ofrece la mensualidad más baja ($541.58/mes), ideal si anticipas otros compromisos en el primer semestre del año próximo."
+  };
+
+  function updateCalculations() {
+    const months = [3, 6, 9, 12];
+    months.forEach(m => {
+      const el = document.getElementById('val-' + m + 'm');
+      if (el) {
+        const perMonth = (currentAmount / m).toFixed(2);
+        el.innerText = '$' + Number(perMonth).toLocaleString('es-MX', { minimumFractionDigits: 2 });
+      }
+    });
+
+    const monthlyAmount = (currentAmount / currentTerm).toFixed(2);
+    const formattedMonthly = '$' + Number(monthlyAmount).toLocaleString('es-MX', { minimumFractionDigits: 2 });
+    const formattedTotal = '$' + Number(currentAmount).toLocaleString('es-MX', { minimumFractionDigits: 2 }) + ' MXN';
+
+    document.getElementById('sum-total').innerText = formattedTotal;
+    document.getElementById('sum-final-total').innerText = formattedTotal;
+    document.getElementById('sum-term').innerText = currentTerm + ' Meses Sin Intereses';
+    document.getElementById('sum-monthly').innerText = formattedMonthly + ' / mes';
+    document.getElementById('cta-text').innerText = 'Continuar con plan de ' + currentTerm + ' meses';
+
+    const textEl = document.getElementById('lucy-analysis-text');
+    if (textEl && lucyInsights[currentTerm]) {
+      const insight = lucyInsights[currentTerm]
+        .replace(/\*\*(.*?)\*\*/g, '<strong class="text-primary-container font-semibold">$1</strong>');
+      textEl.innerHTML = insight;
+    }
+  }
+
+  function selectPurchase(element, amount, name) {
+    currentAmount = amount;
+    const allCards = document.querySelectorAll('.purchase-card');
+    allCards.forEach(card => {
+      card.classList.remove('bg-surface-container-high', 'shadow-[0_0_24px_-4px_rgba(0,240,255,0.3)]', 'bg-gradient-to-r', 'from-surface-container-high', 'via-surface-container-highest/80', 'to-surface-container-high');
+      card.classList.add('bg-surface-container-low/70');
+      const radio = card.querySelector('.purchase-radio');
+      if (radio) {
+        radio.classList.remove('bg-primary-container', 'text-on-primary-container', 'shadow-[0_0_10px_rgba(0,240,255,0.5)]');
+        radio.classList.add('bg-surface-container-highest', 'text-surface-container-highest');
+        const icon = radio.querySelector('span');
+        if (icon) icon.classList.add('opacity-0');
+      }
+    });
+
+    element.classList.remove('bg-surface-container-low/70');
+    element.classList.add('bg-surface-container-high', 'shadow-[0_0_24px_-4px_rgba(0,240,255,0.3)]', 'bg-gradient-to-r', 'from-surface-container-high', 'via-surface-container-highest/80', 'to-surface-container-high');
+    const activeRadio = element.querySelector('.purchase-radio');
+    if (activeRadio) {
+      activeRadio.classList.remove('bg-surface-container-highest', 'text-surface-container-highest');
+      activeRadio.classList.add('bg-primary-container', 'text-on-primary-container', 'shadow-[0_0_10px_rgba(0,240,255,0.5)]');
+      const activeIcon = activeRadio.querySelector('span');
+      if (activeIcon) activeIcon.classList.remove('opacity-0');
+    }
+
+    updateCalculations();
+  }
+
+  function selectTerm(element, term, monthlyVal) {
+    currentTerm = term;
+    const allTerms = document.querySelectorAll('.term-card');
+    allTerms.forEach(card => {
+      card.classList.remove('bg-surface-container-high', 'shadow-[0_0_26px_rgba(0,240,255,0.35)]', 'bg-gradient-to-b', 'from-surface-container-high', 'to-surface-container-highest');
+      card.classList.add('bg-surface-container-low');
+      const numSpan = card.querySelector('span.font-numeric-hero');
+      if (numSpan) {
+        numSpan.classList.remove('text-primary');
+        numSpan.classList.add('text-on-surface');
+      }
+      const labelSpan = card.querySelector('span.font-label-code');
+      if (labelSpan) {
+        labelSpan.classList.remove('text-primary-container');
+        labelSpan.classList.add('text-on-surface-variant');
+      }
+    });
+
+    element.classList.remove('bg-surface-container-low');
+    element.classList.add('bg-surface-container-high', 'shadow-[0_0_26px_rgba(0,240,255,0.35)]', 'bg-gradient-to-b', 'from-surface-container-high', 'to-surface-container-highest');
+    const activeNum = element.querySelector('span.font-numeric-hero');
+    if (activeNum) {
+      activeNum.classList.remove('text-on-surface');
+      activeNum.classList.add('text-primary');
+    }
+    const activeLabel = element.querySelector('span.font-label-code');
+    if (activeLabel) {
+      activeLabel.classList.remove('text-on-surface-variant');
+      activeLabel.classList.add('text-primary-container');
+    }
+
+    updateCalculations();
+  }
+
+  function triggerConfirm() {
+    const btn = document.getElementById('confirm-cta-btn');
+    btn.classList.add('scale-95');
+    setTimeout(() => {
+      btn.classList.remove('scale-95');
+      btn.innerHTML = '<span class="material-symbols-outlined text-[20px] animate-spin">sync</span><span>Procesando solicitud biométrica...</span>';
+    }, 150);
+  }
+</script></main></body></html>

@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&amp;family=Outfit:wght@400;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "tertiary-fixed-dim": "#4edea3", "secondary-fixed": "#efdbff", "surface-dim": "#10131a", "on-tertiary-fixed-variant": "#005236", "on-error-container": "#ffdad6", "on-surface": "#e1e2ec", "tertiary": "#d8ffe7", "on-secondary-fixed-variant": "#6700b5", "outline": "#849495", "on-tertiary": "#003824", "surface-bright": "#363941", "on-primary-fixed": "#002022", "background": "#10131a", "on-secondary": "#480081", "on-background": "#e1e2ec", "inverse-primary": "#006970", "inverse-on-surface": "#2d3038", "outline-variant": "#3b494b", "surface-container-lowest": "#0b0e15", "primary": "#dbfcff", "secondary-fixed-dim": "#dcb8ff", "secondary-container": "#7701d0", "surface-container": "#1d1f27", "surface-container-low": "#191b23", "on-secondary-container": "#dcb7ff", "on-surface-variant": "#b9cacb", "on-tertiary-fixed": "#002113", "surface-container-high": "#272a32", "surface-container-highest": "#32353d", "error": "#ffb4ab", "tertiary-fixed": "#6ffbbe", "on-primary-container": "#006970", "surface": "#10131a", "inverse-surface": "#e1e2ec", "surface-variant": "#32353d", "tertiary-container": "#65f2b5", "primary-fixed-dim": "#00dbe9", "on-error": "#690005", "on-primary-fixed-variant": "#004f54", "on-secondary-fixed": "#2c0051", "secondary": "#dcb8ff", "surface-tint": "#00dbe9", "primary-container": "#00f0ff", "error-container": "#93000a", "on-primary": "#00363a", "primary-fixed": "#7df4ff", "on-tertiary-container": "#006d4a" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-sm": "0.75rem", "gutter-mobile": "0.75rem", "space-xl": "1.5rem", "space-lg": "1.25rem", "space-2xs": "0.25rem", "margin-mobile": "1.25rem", "space-3xl": "2.5rem", "space-md": "1rem", "space-xs": "0.5rem", "space-2xl": "2rem" }, "fontFamily": { "body-sm": ["Outfit"], "body-md": ["Outfit"], "headline-lg": ["Outfit"], "label-sm": ["Outfit"], "numeric-hero": ["Outfit"], "display": ["Outfit"], "headline-sm": ["Outfit"], "body-lg": ["Outfit"], "label-code": ["JetBrains Mono"], "headline-md": ["Outfit"] }, "fontSize": { "body-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "400" }], "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }], "headline-lg": ["32px", { "lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "600" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }], "numeric-hero": ["36px", { "lineHeight": "40px", "letterSpacing": "-0.03em", "fontWeight": "700" }], "display": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.03em", "fontWeight": "700" }], "headline-sm": ["20px", { "lineHeight": "26px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "400" }], "label-code": ["11px", { "lineHeight": "14px", "letterSpacing": "0.06em", "fontWeight": "500" }], "headline-md": ["24px", { "lineHeight": "30px", "letterSpacing": "-0.015em", "fontWeight": "600" }] } } } }</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface text-on-surface font-body-md text-body-md min-h-screen relative overflow-x-hidden flex flex-col selection:bg-primary-container selection:text-on-primary-container"><div class="fixed inset-0 pointer-events-none z-0 overflow-hidden"><div class="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-secondary-container/20 blur-[100px]"></div><div class="absolute top-1/4 -right-32 w-96 h-96 rounded-full bg-primary-container/15 blur-[120px]"></div><div class="absolute -bottom-24 left-1/4 w-80 h-80 rounded-full bg-secondary/10 blur-[90px]"></div></div><header class="fixed top-0 inset-x-0 z-50 pt-safe bg-surface/40 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-11 px-margin-mobile flex items-center justify-between text-on-surface-variant"><span class="font-label-code text-label-code tracking-wider text-on-surface font-medium">09:41</span><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[16px]">signal_cellular_alt</span><span class="material-symbols-outlined text-[16px]">wifi</span><span class="material-symbols-outlined text-[18px]">battery_charging_full</span></div></div><div class="h-14 px-margin-mobile flex items-center justify-between"><button aria-label="Go back" class="w-11 h-11 -ml-space-xs rounded-full flex items-center justify-center text-on-surface hover:bg-surface-container-high transition-colors" onclick="history.back()"><span class="material-symbols-outlined text-[20px]">arrow_back_ios_new</span></button><h1 class="font-headline-sm text-headline-sm text-on-surface tracking-tight truncate px-space-xs text-center flex-1">Account Access</h1><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></header><main class="flex-1 flex flex-col relative w-full z-10 pt-25 pb-safe px-margin-mobile bg-surface"><div class="flex flex-col w-full pb-10 space-y-space-lg select-none">
+<!-- Status & Step Progress Header -->
+<div class="flex flex-col gap-space-xs bg-surface-container/60 p-space-md rounded-xl backdrop-blur-md shadow-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="inline-flex w-2 h-2 rounded-full bg-tertiary-container shadow-[0_0_8px_#65f2b5]"></span>
+<span class="font-label-code text-label-code text-tertiary-container uppercase tracking-widest">Cifrado SHA-256 • Autorizado</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Paso 2 de 2</span>
+</div>
+<!-- Progress Track (100% Active) -->
+<div class="w-full bg-surface-container-highest rounded-full h-1.5 overflow-hidden">
+<div class="bg-gradient-to-r from-primary-fixed-dim to-primary-container h-full w-full rounded-full shadow-[0_0_12px_#00f0ff]"></div>
+</div>
+<div class="flex justify-between items-center text-on-surface-variant pt-0.5">
+<span class="font-label-sm text-label-sm text-primary">Confirmación y Activación Completa</span>
+<span class="font-label-code text-label-code text-primary">100%</span>
+</div>
+</div>
+<!-- Hero: Biometric Success Affirmation -->
+<div class="relative flex flex-col items-center text-center p-space-xl bg-surface-container-low/70 rounded-xl backdrop-blur-xl overflow-hidden shadow-xl">
+<!-- Ambient Holographic Glow Aura -->
+<div class="absolute -top-12 -right-12 w-48 h-48 bg-primary-container/10 rounded-full blur-2xl pointer-events-none"></div>
+<div class="absolute -bottom-10 -left-10 w-44 h-44 bg-secondary-container/20 rounded-full blur-2xl pointer-events-none"></div>
+<!-- Biometric Face ID Verification Icon -->
+<div class="relative flex items-center justify-center w-20 h-20 mb-space-md">
+<div class="absolute inset-0 rounded-full bg-primary-container/20 animate-ping opacity-40"></div>
+<div class="relative w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center shadow-[0_0_24px_rgba(0,240,255,0.4)]">
+<span class="material-symbols-outlined text-primary-container text-[32px]">verified_user</span>
+</div>
+<div class="absolute -bottom-1 -right-1 bg-tertiary-container text-on-tertiary-container w-6 h-6 rounded-full flex items-center justify-center shadow-md">
+<span class="material-symbols-outlined text-[14px]">check</span>
+</div>
+</div>
+<!-- Biometric micro-pill -->
+<div class="inline-flex items-center gap-space-2xs px-space-sm py-0.5 bg-surface-container-highest/80 rounded-full text-primary-fixed-dim mb-space-xs shadow-sm">
+<span class="material-symbols-outlined text-[14px]">face</span>
+<span class="font-label-code text-label-code">Biometría autorizada • Face ID</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface tracking-tight mt-space-xs">
+      ¡Plan de MSI Activado!
+    </h2>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-[280px] mt-space-2xs">
+      Tu compra ha sido diferida exitosamente a 6 meses sin intereses en tu tarjeta <span class="text-on-surface font-medium">Nu Crédito</span>.
+    </p>
+<!-- Folio Voucher Box -->
+<div class="w-full mt-space-lg pt-space-md flex flex-col gap-space-2xs bg-surface-container-lowest/60 p-space-sm rounded-lg">
+<div class="flex items-center justify-between">
+<div class="flex flex-col text-left">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Folio de Autorización</span>
+<span class="font-label-code text-label-code text-primary font-medium tracking-wide" id="folioText">FOL-MSI-89241-NU</span>
+</div>
+<button class="flex items-center gap-1 px-space-sm py-1 bg-surface-container-high hover:bg-surface-bright active:scale-95 transition-all text-on-surface rounded-md font-label-sm text-label-sm" id="copyBtn" onclick="copyFolio()">
+<span class="material-symbols-outlined text-[14px]" id="copyIcon">content_copy</span>
+<span id="copyLabel">Copiar</span>
+</button>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant mt-1 text-left">
+<span class="material-symbols-outlined text-[12px]">schedule</span>
+<span class="font-label-code text-label-code">Hoy, 15 de Octubre 2023 • 10:42 AM</span>
+</div>
+</div>
+</div>
+<!-- Ticket / Transaction Voucher Card -->
+<div class="flex flex-col bg-surface-container-low/90 rounded-xl overflow-hidden shadow-lg backdrop-blur-md">
+<!-- Merchant Header Banner with Visual Imagery -->
+<div class="relative w-full h-24 bg-surface-container-high overflow-hidden flex items-end p-space-md">
+<div class="absolute inset-0 bg-cover bg-center opacity-30" data-alt="High-end modern department store interior architecture with elegant neon ambient lighting and sleek luxury displays at night in Mexico City" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDEMoa_41y-aDTm7wvMgsh6YPbhVDbYyT0cQZGisR3pxv_OTYl8NCsQRlpFyMAiGLrAkIzhzswNAIpk810s87hzMHNMokJHwILpoMX0J8rMFIPwtnq27TV0ANPClAG1SBj2RQzT8CGk3GtRjyJdlZ-_TxTEkcUKoLL2yTjvkppAuBDk9LdrM_3RO5ks-7K_OMNwif3XNuPx8LaCR6oQOLoqK0Fvwak8eZAxlDsL3OqwRqclJ0xvCzQO')"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-low via-surface-container-low/70 to-transparent"></div>
+<div class="relative z-10 flex items-center gap-space-sm w-full">
+<div class="w-10 h-10 rounded-xl bg-surface-container-highest flex items-center justify-center shadow-md">
+<span class="material-symbols-outlined text-primary-fixed-dim text-[20px]">storefront</span>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-headline-sm text-headline-sm text-on-surface truncate">Liverpool Insurgentes</h3>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Retail / Tienda Departamental</span>
+</div>
+</div>
+</div>
+<!-- Receipt Details Table -->
+<div class="p-space-md flex flex-col gap-space-sm">
+<div class="flex justify-between items-center py-1">
+<span class="font-body-md text-body-md text-on-surface-variant">Monto Original de Compra</span>
+<span class="font-headline-sm text-headline-sm text-on-surface tabular-nums">$6,499.00 <span class="font-label-code text-label-code text-on-surface-variant">MXN</span></span>
+</div>
+<div class="flex justify-between items-center py-1">
+<span class="font-body-md text-body-md text-on-surface-variant">Tarjeta de Cargo</span>
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 rounded-full bg-secondary-container"></span>
+<span class="font-body-md text-body-md text-on-surface">Nu Mastercard (•••• 4821)</span>
+</div>
+</div>
+<div class="flex justify-between items-center py-1">
+<span class="font-body-md text-body-md text-on-surface-variant">Esquema Diferido</span>
+<span class="font-body-md text-body-md text-primary font-medium">6 Mensualidades Sin Intereses</span>
+</div>
+<!-- Financial CAT & Rate Badge -->
+<div class="flex items-center gap-space-xs bg-surface-container-lowest/80 p-space-sm rounded-lg mt-space-2xs">
+<span class="material-symbols-outlined text-tertiary-container text-[18px]">percent</span>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-tertiary-container font-semibold">Tasa 0.0% Interés Anual Fija</span>
+<span class="font-label-code text-label-code text-on-surface-variant">CAT Promedio 0.0% Sin IVA para fines informativos</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Amortization & Payment Schedule Preview (6 MSI Timeline) -->
+<div class="flex flex-col bg-surface-container-low/80 rounded-xl p-space-md backdrop-blur-md shadow-md gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-primary uppercase tracking-wider">Cronograma de Pagos</span>
+<h4 class="font-headline-sm text-headline-sm text-on-surface">6 Cuotas de $1,083.16 MXN</h4>
+</div>
+<div class="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-primary-fixed-dim">
+<span class="material-symbols-outlined text-[20px]">calendar_month</span>
+</div>
+</div>
+<!-- Step Visual Timeline -->
+<div class="flex flex-col gap-space-xs">
+<!-- Cuota 1 (Imminent) -->
+<div class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container-high/90 shadow-sm">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-7 h-7 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-label-code text-label-code font-bold">1</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-body-md text-body-md text-on-surface font-medium">Cuota 1 de 6</span>
+<span class="px-1.5 py-0.5 rounded bg-primary-container/20 text-primary font-label-code text-label-code">Próximo cargo</span>
+</div>
+<span class="font-label-code text-label-code text-on-surface-variant">24 Octubre 2023 (Corte Actual)</span>
+</div>
+</div>
+<span class="font-headline-sm text-headline-sm text-primary tabular-nums font-semibold">$1,083.16</span>
+</div>
+<!-- Cuota 2 -->
+<div class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container/60">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-7 h-7 rounded-full bg-surface-container-highest text-on-surface-variant flex items-center justify-center font-label-code text-label-code">2</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md text-body-md text-on-surface">Cuota 2 de 6</span>
+<span class="font-label-code text-label-code text-on-surface-variant">24 Noviembre 2023</span>
+</div>
+</div>
+<span class="font-body-lg text-body-lg text-on-surface tabular-nums">$1,083.16</span>
+</div>
+<!-- Cuota 3 -->
+<div class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container/60">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-7 h-7 rounded-full bg-surface-container-highest text-on-surface-variant flex items-center justify-center font-label-code text-label-code">3</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md text-body-md text-on-surface">Cuota 3 de 6</span>
+<span class="font-label-code text-label-code text-on-surface-variant">24 Diciembre 2023</span>
+</div>
+</div>
+<span class="font-body-lg text-body-lg text-on-surface tabular-nums">$1,083.16</span>
+</div>
+<!-- Expandable Cuotas 4-6 Container -->
+<div class="hidden flex-col gap-space-xs" id="expandedCuotas">
+<div class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container/60">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-7 h-7 rounded-full bg-surface-container-highest text-on-surface-variant flex items-center justify-center font-label-code text-label-code">4</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md text-body-md text-on-surface">Cuota 4 de 6</span>
+<span class="font-label-code text-label-code text-on-surface-variant">24 Enero 2024</span>
+</div>
+</div>
+<span class="font-body-lg text-body-lg text-on-surface tabular-nums">$1,083.16</span>
+</div>
+<div class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container/60">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-7 h-7 rounded-full bg-surface-container-highest text-on-surface-variant flex items-center justify-center font-label-code text-label-code">5</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md text-body-md text-on-surface">Cuota 5 de 6</span>
+<span class="font-label-code text-label-code text-on-surface-variant">24 Febrero 2024</span>
+</div>
+</div>
+<span class="font-body-lg text-body-lg text-on-surface tabular-nums">$1,083.16</span>
+</div>
+<div class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container/60">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-7 h-7 rounded-full bg-surface-container-highest text-on-surface-variant flex items-center justify-center font-label-code text-label-code">6</div>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md text-body-md text-on-surface">Cuota 6 de 6 (Final)</span>
+<span class="font-label-code text-label-code text-on-surface-variant">24 Marzo 2024</span>
+</div>
+</div>
+<span class="font-body-lg text-body-lg text-on-surface tabular-nums">$1,083.20</span>
+</div>
+</div>
+<!-- Toggle Button -->
+<button class="flex items-center justify-center gap-1 w-full py-2 mt-1 rounded-lg bg-surface-container-highest/60 hover:bg-surface-container-highest text-primary font-label-sm text-label-sm transition-colors" id="toggleBtn" onclick="toggleCuotas()">
+<span id="toggleText">Ver cuotas 4 a 6</span>
+<span class="material-symbols-outlined text-[16px]" id="toggleIcon">expand_more</span>
+</button>
+</div>
+<!-- Final Total Check Line -->
+<div class="flex justify-between items-center pt-space-xs">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Total final a pagar diferido:</span>
+<span class="font-body-md text-body-md text-tertiary-container font-semibold tabular-nums">$6,499.00 MXN</span>
+</div>
+</div>
+<!-- Lucy IA Copilot - Post-Activation Optimization Insight -->
+<div class="relative flex flex-col p-space-md rounded-xl bg-gradient-to-br from-surface-container via-surface-container-high/90 to-surface-container-low shadow-xl overflow-hidden">
+<!-- Neon Violet Orb Background Accent -->
+<div class="absolute -right-8 -top-8 w-36 h-36 bg-secondary-container/30 rounded-full blur-2xl pointer-events-none"></div>
+<div class="relative z-10 flex items-start gap-space-sm">
+<!-- Animated Lucy AI Orb Icon -->
+<div class="relative w-10 h-10 rounded-xl bg-secondary-container/40 flex items-center justify-center shadow-[0_0_20px_rgba(138,43,226,0.4)] shrink-0">
+<span class="material-symbols-outlined text-secondary text-[22px]">auto_awesome</span>
+<span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary-container animate-pulse"></span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-secondary font-semibold">Lucy Guardián de Flujo</span>
+<span class="px-2 py-0.5 rounded-full bg-tertiary-container/20 text-tertiary-container font-label-code text-label-code">Score: Protegido</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface mt-space-2xs leading-relaxed">
+          He reprogramado automáticamente tus alertas de pago para el <strong class="text-primary-fixed">22 de cada mes</strong> (2 días antes del corte). Tu liquidez inmediata para Octubre aumentó en <strong class="text-tertiary-container">+$5,415.84 MXN</strong>.
+        </p>
+<!-- Toggleable Reminders Active Pill -->
+<div class="mt-space-sm flex items-center justify-between bg-surface-container-lowest/80 px-space-sm py-2 rounded-lg">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[16px]">notifications_active</span>
+<span class="font-label-sm text-label-sm text-on-surface">Recordatorio activo en calendario</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" id="reminderToggle" type="checkbox"/>
+<div class="w-8 h-4 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-primary after:rounded-full after:h-3 after:w-3.5 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+</div>
+</div>
+</div>
+<!-- Dual Call to Action Buttons -->
+<div class="flex flex-col gap-space-xs pt-space-xs">
+<!-- Primary Glowing Download PDF Action -->
+<button class="relative flex items-center justify-center gap-space-xs w-full py-3.5 px-space-md rounded-full bg-gradient-to-r from-primary-fixed-dim to-primary-container text-on-primary font-headline-sm text-body-lg font-semibold shadow-[0_0_24px_rgba(0,240,255,0.35)] active:scale-[0.98] transition-all" onclick="downloadPDF()">
+<span class="material-symbols-outlined text-[20px]">download</span>
+<span>Descargar Comprobante PDF</span>
+</button>
+<!-- Secondary Navigation Action -->
+<button class="flex items-center justify-center gap-space-xs w-full py-3 px-space-md rounded-full bg-surface-container-high hover:bg-surface-bright text-on-surface font-body-md text-body-md transition-all active:scale-[0.98]" onclick="window.history.back()">
+<span class="material-symbols-outlined text-[18px]">account_balance_wallet</span>
+<span>Volver a Detalle de Tarjeta Nu</span>
+</button>
+</div>
+<!-- Compliance & Trust Disclaimer Footer -->
+<div class="text-center px-space-md pt-space-xs">
+<p class="font-label-code text-label-code text-on-surface-variant leading-tight">
+      Garantía Nu México Financiera S.A. de C.V. y NeroMoney OS v2.4.<br/>Operación respaldada conforme al contrato de crédito revolvente.
+    </p>
+</div>
+</div>
+<script>
+  function toggleCuotas() {
+    const el = document.getElementById('expandedCuotas');
+    const txt = document.getElementById('toggleText');
+    const icon = document.getElementById('toggleIcon');
+    if (el.classList.contains('hidden')) {
+      el.classList.remove('hidden');
+      el.classList.add('flex');
+      txt.innerText = 'Ocultar cuotas restantes';
+      icon.innerText = 'expand_less';
+    } else {
+      el.classList.add('hidden');
+      el.classList.remove('flex');
+      txt.innerText = 'Ver cuotas 4 a 6';
+      icon.innerText = 'expand_more';
+    }
+  }
+
+  function copyFolio() {
+    const folio = document.getElementById('folioText').innerText;
+    navigator.clipboard?.writeText(folio);
+    const label = document.getElementById('copyLabel');
+    const icon = document.getElementById('copyIcon');
+    label.innerText = '¡Copiado!';
+    icon.innerText = 'done';
+    setTimeout(() => {
+      label.innerText = 'Copiar';
+      icon.innerText = 'content_copy';
+    }, 2000);
+  }
+
+  function downloadPDF() {
+    const btn = event.currentTarget;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="material-symbols-outlined text-[20px] animate-spin">progress_activity</span><span>Generando Comprobante...</span>';
+    btn.disabled = true;
+    setTimeout(() => {
+      btn.innerHTML = '<span class="material-symbols-outlined text-[20px]">check_circle</span><span>¡Comprobante Guardado!</span>';
+      setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }, 2500);
+    }, 1500);
+  }
+</script></main></body></html>

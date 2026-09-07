@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" fill="none">
+  <defs>
+    <linearGradient id="cyberGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00F0FF" />
+      <stop offset="50%" stop-color="#7928CA" />
+      <stop offset="100%" stop-color="#FF0080" />
+    </linearGradient>
+    <linearGradient id="glowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00F0FF" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#8A2BE2" stop-opacity="0.2"/>
+    </linearGradient>
+    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  <rect width="120" height="120" rx="30" fill="#0B0E17"/>
+  <rect x="1" y="1" width="118" height="118" rx="29" stroke="url(#glowGrad)" stroke-width="1.5" stroke-opacity="0.4"/>
+  <!-- Stylized geometric N with AI pulse node -->
+  <path d="M35 84V36L62 68V36" stroke="url(#cyberGrad)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" filter="url(#neonGlow)"/>
+  <path d="M62 84V52L85 84V36" stroke="url(#cyberGrad)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" filter="url(#neonGlow)"/>
+  <circle cx="85" cy="36" r="5" fill="#00F0FF" filter="url(#neonGlow)"/>
+</svg>

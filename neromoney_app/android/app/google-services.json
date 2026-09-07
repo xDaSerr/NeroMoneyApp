@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "909698455391",
+    "project_id": "neromoneyapp",
+    "storage_bucket": "neromoneyapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:909698455391:android:b88cfda0d4fdb12c1d08ea",
+        "android_client_info": {
+          "package_name": "com.neromoney.neromoney_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "909698455391-hm5jl5nv0uuihef59478t37b0qnvm72t.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.neromoney.neromoney_app",
+            "certificate_hash": "057dcc6395031d4373aed115cc9c25363860018d"
+          }
+        },
+        {
+          "client_id": "909698455391-pmv1pmbufo6lcq8eloq651fbnm7i2gln.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDFCUUOPV4Vwtt9e7TQX2GuD2_E7DVgMkM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "909698455391-pmv1pmbufo6lcq8eloq651fbnm7i2gln.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "909698455391-995vvenmqej79bfp3bsif9cq0oth54rl.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.neromoney.neromoneyApp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

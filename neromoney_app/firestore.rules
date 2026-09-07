@@ -1,0 +1,17 @@
+rules_version = '2';
+
+// Regla base de NeroMoney: cada usuario solo puede leer/escribir sus propios
+// datos (cuentas, transacciones, config del asistente, etc.), nunca los de
+// otro usuario. Todo vive bajo /usuarios/{uid}/... ligado a su Firebase Auth UID.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /usuarios/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Cualquier otra ruta queda cerrada por defecto (deny-by-default).
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

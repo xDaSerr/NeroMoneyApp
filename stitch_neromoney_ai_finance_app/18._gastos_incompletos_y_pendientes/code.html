@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&amp;family=Outfit:wght@400;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "tertiary-fixed-dim": "#4edea3", "secondary-fixed": "#efdbff", "surface-dim": "#10131a", "on-tertiary-fixed-variant": "#005236", "on-error-container": "#ffdad6", "on-surface": "#e1e2ec", "tertiary": "#d8ffe7", "on-secondary-fixed-variant": "#6700b5", "outline": "#849495", "on-tertiary": "#003824", "surface-bright": "#363941", "on-primary-fixed": "#002022", "background": "#10131a", "on-secondary": "#480081", "on-background": "#e1e2ec", "inverse-primary": "#006970", "inverse-on-surface": "#2d3038", "outline-variant": "#3b494b", "surface-container-lowest": "#0b0e15", "primary": "#dbfcff", "secondary-fixed-dim": "#dcb8ff", "secondary-container": "#7701d0", "surface-container": "#1d1f27", "surface-container-low": "#191b23", "on-secondary-container": "#dcb7ff", "on-surface-variant": "#b9cacb", "on-tertiary-fixed": "#002113", "surface-container-high": "#272a32", "surface-container-highest": "#32353d", "error": "#ffb4ab", "tertiary-fixed": "#6ffbbe", "on-primary-container": "#006970", "surface": "#10131a", "inverse-surface": "#e1e2ec", "surface-variant": "#32353d", "tertiary-container": "#65f2b5", "primary-fixed-dim": "#00dbe9", "on-error": "#690005", "on-primary-fixed-variant": "#004f54", "on-secondary-fixed": "#2c0051", "secondary": "#dcb8ff", "surface-tint": "#00dbe9", "primary-container": "#00f0ff", "error-container": "#93000a", "on-primary": "#00363a", "primary-fixed": "#7df4ff", "on-tertiary-container": "#006d4a" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-sm": "0.75rem", "gutter-mobile": "0.75rem", "space-xl": "1.5rem", "space-lg": "1.25rem", "space-2xs": "0.25rem", "margin-mobile": "1.25rem", "space-3xl": "2.5rem", "space-md": "1rem", "space-xs": "0.5rem", "space-2xl": "2rem" }, "fontFamily": { "body-sm": ["Outfit"], "body-md": ["Outfit"], "headline-lg": ["Outfit"], "label-sm": ["Outfit"], "numeric-hero": ["Outfit"], "display": ["Outfit"], "headline-sm": ["Outfit"], "body-lg": ["Outfit"], "label-code": ["JetBrains Mono"], "headline-md": ["Outfit"] }, "fontSize": { "body-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "400" }], "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }], "headline-lg": ["32px", { "lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "600" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }], "numeric-hero": ["36px", { "lineHeight": "40px", "letterSpacing": "-0.03em", "fontWeight": "700" }], "display": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.03em", "fontWeight": "700" }], "headline-sm": ["20px", { "lineHeight": "26px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "400" }], "label-code": ["11px", { "lineHeight": "14px", "letterSpacing": "0.06em", "fontWeight": "500" }], "headline-md": ["24px", { "lineHeight": "30px", "letterSpacing": "-0.015em", "fontWeight": "600" }] } } } }</script></head><body class="bg-surface text-on-surface font-body-md text-body-md min-h-screen relative overflow-x-hidden flex flex-col selection:bg-primary-container selection:text-on-primary-container"><div class="fixed inset-0 pointer-events-none z-0 overflow-hidden"><div class="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-secondary-container/20 blur-[100px]"></div><div class="absolute top-1/4 -right-32 w-96 h-96 rounded-full bg-primary-container/15 blur-[120px]"></div><div class="absolute -bottom-24 left-1/4 w-80 h-80 rounded-full bg-secondary/10 blur-[90px]"></div></div><header class="fixed top-0 inset-x-0 z-50 pt-safe bg-surface/40 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-11 px-margin-mobile flex items-center justify-between text-on-surface-variant"><span class="font-label-code text-label-code tracking-wider text-on-surface font-medium">09:41</span><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[16px]">signal_cellular_alt</span><span class="material-symbols-outlined text-[16px]">wifi</span><span class="material-symbols-outlined text-[18px]">battery_charging_full</span></div></div><div class="h-14 px-margin-mobile flex items-center justify-between"><button aria-label="Go back" class="w-11 h-11 -ml-space-xs rounded-full flex items-center justify-center text-on-surface hover:bg-surface-container-high transition-colors" onclick="history.back()"><span class="material-symbols-outlined text-[20px]">arrow_back_ios_new</span></button><h1 class="font-headline-sm text-headline-sm text-on-surface tracking-tight truncate px-space-xs text-center flex-1">Account Access</h1><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></header><main class="flex-1 flex flex-col relative w-full z-10 pt-25 pb-safe px-margin-mobile bg-surface"><div class="flex flex-col w-full pb-32">
+<!-- Dynamic Ambient Glow Backdrops -->
+<div class="relative w-full">
+<!-- Header Contextual Subtitle & Counter Strip -->
+<div class="flex items-center justify-between py-space-xs mb-space-md">
+<div class="flex flex-col">
+<span class="font-label-code text-label-code text-primary tracking-widest uppercase flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container animate-ping"></span>
+          Lucy Inbox System
+        </span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold tracking-tight">Transacciones sin asignar</h2>
+</div>
+<div class="flex items-center gap-1.5 px-space-sm py-1 rounded-full bg-surface-container-high border-0 shadow-sm shadow-black/40">
+<span class="w-2 h-2 rounded-full bg-[#FFB800] animate-pulse"></span>
+<span class="font-label-code text-label-code text-on-surface font-semibold" id="pending-counter">3 por resolver</span>
+</div>
+</div>
+<!-- Lucy IA Predictive Resolver Hero Card -->
+<div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-surface-container-high/90 via-surface-container/70 to-surface-container-lowest/90 backdrop-blur-2xl p-space-md mb-space-lg shadow-xl shadow-secondary-container/10">
+<!-- Decorative Cyber Ray Glow -->
+<div class="absolute -top-12 -right-12 w-36 h-36 rounded-full bg-secondary-container/25 blur-2xl pointer-events-none"></div>
+<div class="absolute -bottom-10 -left-10 w-28 h-28 rounded-full bg-primary-container/20 blur-xl pointer-events-none"></div>
+<div class="relative flex items-start gap-space-sm">
+<!-- Lucy Glowing Hologram Node -->
+<div class="relative flex-shrink-0">
+<div class="w-11 h-11 rounded-full bg-gradient-to-tr from-secondary-container via-[#7928CA] to-primary-container p-[1.5px] shadow-[0_0_20px_rgba(121,40,202,0.45)]">
+<div class="w-full h-full rounded-full bg-surface-container-lowest flex items-center justify-center">
+<span class="material-symbols-outlined text-primary-fixed text-[22px] animate-pulse" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</div>
+</div>
+<span class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-tertiary-container rounded-full flex items-center justify-center text-on-tertiary-container text-[8px] font-bold">✓</span>
+</div>
+<!-- Assistant Copy -->
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-1.5 mb-1">
+<span class="font-headline-sm text-[15px] font-semibold text-primary-fixed">Copiloto Lucy IA</span>
+<span class="px-1.5 py-0.2 rounded bg-secondary-container/30 text-secondary text-[10px] font-label-code uppercase tracking-wider">Predictivo</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed mb-space-sm">
+            Detecté 3 gastos registrados por voz y ticket escaneado con datos faltantes. Resuélvelos en 1 tap con mis modelos de inferencia.
+          </p>
+<!-- Auto Resolver Primary Action -->
+<button class="w-full py-2.5 px-space-md rounded-full bg-gradient-to-r from-primary-container/20 via-secondary/20 to-primary/10 hover:from-primary-container/30 hover:to-secondary/30 transition-all active:scale-[0.98] flex items-center justify-center gap-2 group shadow-sm" id="btn-resolve-all" onclick="resolveAllCards()">
+<span class="material-symbols-outlined text-primary text-[18px] group-hover:rotate-12 transition-transform">bolt</span>
+<span class="font-headline-sm text-body-md text-primary font-semibold tracking-wide">Resolver todo automáticamente</span>
+<span class="font-label-code text-[11px] px-1.5 py-0.5 rounded bg-primary/15 text-primary">98% conf.</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Section: Actionable Pending List -->
+<div class="space-y-space-md mb-space-xl">
+<!-- Item 1: Falta Cuenta (Starbucks) -->
+<div class="relative rounded-xl bg-surface-container-low/85 backdrop-blur-xl p-space-md transition-all duration-300 shadow-md shadow-black/20" id="card-item-1">
+<!-- Status Indicator Strip -->
+<div class="flex items-start justify-between gap-2 mb-space-xs">
+<div class="flex items-center gap-2 min-w-0">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center flex-shrink-0 text-primary-fixed">
+<span class="material-symbols-outlined text-[18px]">mic</span>
+</div>
+<div class="truncate">
+<h3 class="font-headline-sm text-body-lg text-on-surface font-semibold truncate">Café Starbucks Insurgentes</h3>
+<p class="font-label-code text-label-code text-on-surface-variant/80">Por voz • Hoy 09:15 AM</p>
+</div>
+</div>
+<div class="text-right flex-shrink-0">
+<span class="font-numeric-hero text-headline-sm font-bold text-on-surface tracking-tight">-$220.00</span>
+<span class="block font-label-code text-[10px] text-on-surface-variant">MXN</span>
+</div>
+</div>
+<!-- Warning Pill -->
+<div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#FFB800]/10 mb-space-sm">
+<span class="material-symbols-outlined text-[#FFB800] text-[14px]">error</span>
+<span class="font-label-code text-[11px] text-[#FFB800] font-medium">Falta seleccionar cuenta de origen</span>
+</div>
+<!-- Lucy Suggestion Hint Box -->
+<div class="rounded-lg bg-surface-container/60 p-2.5 mb-space-sm flex items-start gap-2">
+<span class="material-symbols-outlined text-primary-container text-[16px] mt-0.5">psychology</span>
+<p class="font-body-sm text-[12px] text-on-surface-variant flex-1 leading-snug">
+<strong class="text-primary-fixed font-semibold">Lucy sugiere:</strong> BBVA Nómina (92% certeza basada en tus consumos habituales matutinos).
+          </p>
+</div>
+<!-- Chip Selectors -->
+<div class="flex flex-wrap items-center gap-2 mb-space-xs">
+<button class="choice-chip active-chip px-3 py-1.5 rounded-full bg-primary-container/20 text-primary font-body-sm text-[12px] font-medium flex items-center gap-1.5 transition-all active:scale-95 shadow-[0_0_10px_rgba(0,240,255,0.2)]" onclick="selectChip(this, 'card-item-1')">
+<span class="material-symbols-outlined text-[14px] text-primary">credit_card</span>
+            BBVA Nómina (•••• 9014)
+          </button>
+<button class="choice-chip px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant font-body-sm text-[12px] flex items-center gap-1.5 transition-all active:scale-95 hover:text-on-surface" onclick="selectChip(this, 'card-item-1')">
+<span class="material-symbols-outlined text-[14px]">payments</span>
+            Efectivo
+          </button>
+<button class="choice-chip px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant font-body-sm text-[12px] flex items-center gap-1.5 transition-all active:scale-95 hover:text-on-surface" onclick="selectChip(this, 'card-item-1')">
+<span class="material-symbols-outlined text-[14px]">credit_card</span>
+            Nu Crédito
+          </button>
+</div>
+<!-- Quick Confirmation Footer -->
+<div class="flex items-center justify-between pt-space-xs mt-space-xs">
+<span class="status-label font-label-code text-[11px] text-tertiary-fixed-dim flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> Listo para confirmar
+          </span>
+<button class="confirm-btn px-4 py-1.5 rounded-full bg-primary-container text-on-primary-container font-headline-sm text-body-sm font-semibold hover:opacity-90 active:scale-95 transition-all shadow-[0_0_14px_rgba(0,240,255,0.35)] flex items-center gap-1" onclick="confirmItem('card-item-1')">
+<span>Confirmar cuenta</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Item 2: Falta Categoría (Gasolina) -->
+<div class="relative rounded-xl bg-surface-container-low/85 backdrop-blur-xl p-space-md transition-all duration-300 shadow-md shadow-black/20" id="card-item-2">
+<div class="flex items-start justify-between gap-2 mb-space-xs">
+<div class="flex items-center gap-2 min-w-0">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center flex-shrink-0 text-secondary">
+<span class="material-symbols-outlined text-[18px]">document_scanner</span>
+</div>
+<div class="truncate">
+<h3 class="font-headline-sm text-body-lg text-on-surface font-semibold truncate">Gasolina Shell Periférico</h3>
+<p class="font-label-code text-label-code text-on-surface-variant/80">Ticket escaneado • Ayer 07:40 PM</p>
+</div>
+</div>
+<div class="text-right flex-shrink-0">
+<span class="font-numeric-hero text-headline-sm font-bold text-on-surface tracking-tight">-$1,450.00</span>
+<span class="block font-label-code text-[10px] text-on-surface-variant">MXN</span>
+</div>
+</div>
+<div class="flex flex-wrap items-center gap-2 mb-space-sm">
+<div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#FFB800]/10">
+<span class="material-symbols-outlined text-[#FFB800] text-[14px]">label_off</span>
+<span class="font-label-code text-[11px] text-[#FFB800] font-medium">Falta confirmar categoría</span>
+</div>
+<span class="font-body-sm text-[11px] text-on-surface-variant/90 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-secondary">credit_card</span> Nu Crédito (•••• 4821)
+          </span>
+</div>
+<!-- Lucy Suggestion Hint Box -->
+<div class="rounded-lg bg-surface-container/60 p-2.5 mb-space-sm flex items-start gap-2">
+<span class="material-symbols-outlined text-secondary text-[16px] mt-0.5">arrow_back_ios_new</span>
+<p class="font-body-sm text-[12px] text-on-surface-variant flex-1 leading-snug">
+<strong class="text-secondary font-semibold">Lucy sugiere:</strong> Categorizar en <span class="text-on-surface font-medium">Transporte / Combustible</span> para tu presupuesto mensual vehicular.
+          </p>
+</div>
+<!-- Interactive Category Chips -->
+<div class="flex flex-wrap items-center gap-2 mb-space-xs">
+<button class="choice-chip active-chip px-3 py-1.5 rounded-full bg-secondary-container/40 text-secondary-fixed font-body-sm text-[12px] font-medium flex items-center gap-1.5 transition-all active:scale-95 shadow-[0_0_12px_rgba(119,1,208,0.3)]" onclick="selectChip(this, 'card-item-2')">
+<span>🚗</span>
+            Transporte
+          </button>
+<button class="choice-chip px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant font-body-sm text-[12px] flex items-center gap-1.5 transition-all active:scale-95 hover:text-on-surface" onclick="selectChip(this, 'card-item-2')">
+<span>🏢</span>
+            Negocios / Deducible
+          </button>
+<button class="choice-chip px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant font-body-sm text-[12px] flex items-center gap-1.5 transition-all active:scale-95 hover:text-on-surface" onclick="selectChip(this, 'card-item-2')">
+<span>🔧</span>
+            Mantenimiento
+          </button>
+</div>
+<div class="flex items-center justify-between pt-space-xs mt-space-xs">
+<span class="status-label font-label-code text-[11px] text-secondary flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">auto_fix_high</span> Inferencia aplicada
+          </span>
+<button class="confirm-btn px-4 py-1.5 rounded-full bg-secondary-container text-on-secondary-container font-headline-sm text-body-sm font-semibold hover:opacity-95 active:scale-95 transition-all shadow-[0_0_14px_rgba(119,1,208,0.3)] flex items-center gap-1" onclick="confirmItem('card-item-2')">
+<span>Aprobar categoría</span>
+<span class="material-symbols-outlined text-[16px]">check</span>
+</button>
+</div>
+</div>
+<!-- Item 3: Captura Rápida Sin Detalle (Oxxo) -->
+<div class="relative rounded-xl bg-surface-container-low/85 backdrop-blur-xl p-space-md transition-all duration-300 shadow-md shadow-black/20" id="card-item-3">
+<div class="flex items-start justify-between gap-2 mb-space-xs">
+<div class="flex items-center gap-2 min-w-0">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center flex-shrink-0 text-[#FFB800]">
+<span class="material-symbols-outlined text-[18px]">receipt_long</span>
+</div>
+<div class="truncate">
+<h3 class="font-headline-sm text-body-lg text-on-surface font-semibold truncate">OXXO Roma Norte</h3>
+<p class="font-label-code text-label-code text-on-surface-variant/80">Widget Rápido • Ayer 03:12 PM</p>
+</div>
+</div>
+<div class="text-right flex-shrink-0">
+<span class="font-numeric-hero text-headline-sm font-bold text-on-surface tracking-tight">-$85.00</span>
+<span class="block font-label-code text-[10px] text-on-surface-variant">MXN</span>
+</div>
+</div>
+<div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#FFB800]/10 mb-space-sm">
+<span class="material-symbols-outlined text-[#FFB800] text-[14px]">help_outline</span>
+<span class="font-label-code text-[11px] text-[#FFB800] font-medium">Falta concepto y cuenta</span>
+</div>
+<!-- Lucy Prompt -->
+<div class="rounded-lg bg-surface-container/60 p-2.5 mb-space-sm flex items-start gap-2">
+<span class="material-symbols-outlined text-primary text-[16px] mt-0.5">tips_and_updates</span>
+<p class="font-body-sm text-[12px] text-on-surface-variant flex-1 leading-snug">
+            Por el importe bajo, coincide con una compra menor en efectivo o tarjeta física de conveniencia.
+          </p>
+</div>
+<!-- Compound Quick Action Chips -->
+<div class="flex flex-wrap items-center gap-2 mb-space-xs">
+<button class="choice-chip active-chip px-3 py-1.5 rounded-full bg-primary-container/20 text-primary font-body-sm text-[12px] font-medium flex items-center gap-1.5 transition-all active:scale-95 shadow-[0_0_10px_rgba(0,240,255,0.2)]" onclick="selectChip(this, 'card-item-3')">
+<span class="material-symbols-outlined text-[14px]">local_cafe</span>
+            Efectivo • Snacks
+          </button>
+<button class="choice-chip px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant font-body-sm text-[12px] flex items-center gap-1.5 transition-all active:scale-95 hover:text-on-surface" onclick="selectChip(this, 'card-item-3')">
+<span class="material-symbols-outlined text-[14px]">shopping_bag</span>
+            Nu • Despensa
+          </button>
+<button class="px-2.5 py-1.5 rounded-full bg-surface-container-highest text-on-surface font-body-sm text-[11px] flex items-center gap-1 transition-all hover:bg-surface-bright active:scale-95" onclick="showCustomModal()">
+<span class="material-symbols-outlined text-[14px]">tune</span>
+            Personalizar
+          </button>
+</div>
+<div class="flex items-center justify-between pt-space-xs mt-space-xs">
+<span class="status-label font-label-code text-[11px] text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">schedule</span> Esperando aprobación
+          </span>
+<button class="confirm-btn px-4 py-1.5 rounded-full bg-primary-container text-on-primary-container font-headline-sm text-body-sm font-semibold hover:opacity-90 active:scale-95 transition-all shadow-[0_0_14px_rgba(0,240,255,0.35)] flex items-center gap-1" onclick="confirmItem('card-item-3')">
+<span>Aceptar sugerencia</span>
+<span class="material-symbols-outlined text-[16px]">done_all</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Section: Borradores Guardados & Sync Status -->
+<div class="mb-space-xl">
+<div class="flex items-center justify-between mb-space-xs">
+<h3 class="font-headline-sm text-[15px] font-semibold text-on-surface">Borradores y Sincronización</h3>
+<span class="font-label-code text-[11px] text-primary flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">sync</span> Al día
+        </span>
+</div>
+<div class="rounded-xl bg-surface-container-low/60 backdrop-blur-md p-space-md space-y-space-sm shadow-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[20px]">send_money</span>
+</div>
+<div>
+<p class="font-headline-sm text-body-md text-on-surface font-medium">Borrador SPEI: Renta Departamento</p>
+<p class="font-label-code text-label-code text-on-surface-variant">Guardado como plantilla recurrente • $14,000 MXN</p>
+</div>
+</div>
+<button class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+<div class="pt-space-xs flex items-center gap-2 text-on-surface-variant/80 font-body-sm text-[12px] bg-surface-container-lowest/50 p-2.5 rounded-lg">
+<span class="material-symbols-outlined text-tertiary-fixed-dim text-[16px] flex-shrink-0">cloud_done</span>
+<span>Todas las transacciones resueltas se sincronizan al instante con tu Dashboard, Gráficas y Copiloto Lucy.</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Floating Sticky Confirmation Dock -->
+<div class="fixed bottom-20 inset-x-0 px-margin-mobile z-40 pointer-events-none flex justify-center">
+<div class="w-full max-w-[420px] pointer-events-auto rounded-full bg-[#0E131F]/95 backdrop-blur-2xl p-2 pl-4 flex items-center justify-between shadow-[0_8px_32px_rgba(0,0,0,0.6)] shadow-primary/10">
+<div class="flex flex-col min-w-0 pr-2">
+<span class="font-headline-sm text-body-sm font-semibold text-on-surface truncate" id="dock-summary">
+          1 de 3 aprobados
+        </span>
+<span class="font-label-code text-[11px] text-primary truncate" id="dock-impact">
+          Impacto: -$220.00 MXN
+        </span>
+</div>
+<button class="px-5 py-2.5 rounded-full bg-gradient-to-r from-primary-container via-primary-fixed to-primary text-on-primary-container font-headline-sm text-body-sm font-bold tracking-tight hover:shadow-[0_0_20px_rgba(0,240,255,0.45)] active:scale-95 transition-all flex items-center gap-1.5 flex-shrink-0" id="btn-save-all" onclick="saveToMovements()">
+<span>Guardar en Movimientos</span>
+<span class="material-symbols-outlined text-[18px]">task_alt</span>
+</button>
+</div>
+</div>
+<!-- Persistent Bottom Navigation Bar -->
+<nav aria-label="Navegación principal" class="fixed bottom-0 inset-x-0 z-50 bg-[#0A0D14]/90 backdrop-blur-2xl shadow-[0_-4px_24px_rgba(0,0,0,0.7)]">
+<div class="h-16 px-margin-mobile max-w-md mx-auto flex items-center justify-between relative">
+<!-- Nav Item: Inicio -->
+<button class="flex flex-col items-center justify-center flex-1 py-1 text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[22px]">dashboard</span>
+<span class="font-label-sm text-[10px] tracking-wider mt-0.5">Inicio</span>
+</button>
+<!-- Nav Item: Movimientos (Active Current Hub) -->
+<button class="flex flex-col items-center justify-center flex-1 py-1 text-primary-container relative">
+<span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">receipt_long</span>
+<span class="font-label-sm text-[10px] tracking-wider font-semibold mt-0.5">Movimientos</span>
+<span class="absolute top-1 right-5 w-1.5 h-1.5 rounded-full bg-primary-container shadow-[0_0_6px_#00F0FF]"></span>
+</button>
+<!-- Central Lucy Copilot FAB Dock -->
+<div class="flex-1 flex justify-center -mt-6">
+<button class="w-13 h-13 w-12 h-12 rounded-full bg-gradient-to-tr from-[#7928CA] via-secondary-container to-primary-container p-[2px] shadow-[0_0_24px_rgba(0,240,255,0.35)] active:scale-90 transition-transform" onclick="triggerLucyAssistant()">
+<div class="w-full h-full rounded-full bg-surface-container-lowest flex items-center justify-center">
+<span class="material-symbols-outlined text-primary-fixed text-[24px]">auto_awesome</span>
+</div>
+</button>
+</div>
+<!-- Nav Item: Cuentas -->
+<button class="flex flex-col items-center justify-center flex-1 py-1 text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[22px]">account_balance</span>
+<span class="font-label-sm text-[10px] tracking-wider mt-0.5">Cuentas</span>
+</button>
+<!-- Nav Item: Perfil -->
+<button class="flex flex-col items-center justify-center flex-1 py-1 text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[22px]">tune</span>
+<span class="font-label-sm text-[10px] tracking-wider mt-0.5">Ajustes</span>
+</button>
+</div>
+</nav>
+<!-- Interactive Feedback Toast (Hidden by default) -->
+<div class="fixed top-20 inset-x-0 mx-auto w-[90%] max-w-sm z-50 transform -translate-y-8 opacity-0 pointer-events-none transition-all duration-300 rounded-xl bg-surface-container-high/95 backdrop-blur-xl p-3 shadow-2xl flex items-center gap-3" id="toast-notif">
+<div class="w-8 h-8 rounded-full bg-tertiary-container text-on-tertiary-container flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-[18px]">check</span>
+</div>
+<div class="flex-1 text-left min-w-0">
+<p class="font-headline-sm text-body-sm font-semibold text-on-surface" id="toast-title">Transacciones actualizadas</p>
+<p class="font-body-sm text-[11px] text-on-surface-variant truncate" id="toast-desc">Sincronizadas con Movimientos y Saldos.</p>
+</div>
+</div>
+</div>
+<script>
+  let resolvedCount = 0;
+  const totalItems = 3;
+  const amounts = [220, 1450, 85];
+  let approvedStates = {
+    'card-item-1': false,
+    'card-item-2': false,
+    'card-item-3': false
+  };
+
+  function selectChip(buttonEl, cardId) {
+    const parent = buttonEl.parentElement;
+    parent.querySelectorAll('.choice-chip').forEach(chip => {
+      chip.classList.remove('active-chip', 'bg-primary-container/20', 'bg-secondary-container/40', 'text-primary', 'text-secondary-fixed', 'shadow-[0_0_10px_rgba(0,240,255,0.2)]', 'shadow-[0_0_12px_rgba(119,1,208,0.3)]');
+      chip.classList.add('bg-surface-container-high', 'text-on-surface-variant');
+    });
+
+    buttonEl.classList.remove('bg-surface-container-high', 'text-on-surface-variant');
+    buttonEl.classList.add('active-chip', 'bg-primary-container/20', 'text-primary', 'shadow-[0_0_10px_rgba(0,240,255,0.2)]');
+
+    triggerHapticPulse(buttonEl);
+  }
+
+  function confirmItem(cardId) {
+    const card = document.getElementById(cardId);
+    if (!card || approvedStates[cardId]) return;
+
+    approvedStates[cardId] = true;
+    resolvedCount = Object.values(approvedStates).filter(Boolean).length;
+
+    // Visual transformation to resolved state
+    card.classList.remove('bg-surface-container-low/85');
+    card.classList.add('bg-surface-container-lowest/60', 'opacity-70');
+
+    const confirmBtn = card.querySelector('.confirm-btn');
+    if (confirmBtn) {
+      confirmBtn.innerHTML = '<span class="material-symbols-outlined text-[16px]">check_circle</span> <span>Aprobado</span>';
+      confirmBtn.classList.remove('bg-primary-container', 'text-on-primary-container', 'bg-secondary-container', 'text-on-secondary-container');
+      confirmBtn.classList.add('bg-tertiary-fixed-dim/20', 'text-tertiary-fixed-dim', 'cursor-default');
+      confirmBtn.disabled = true;
+    }
+
+    const statusLabel = card.querySelector('.status-label');
+    if (statusLabel) {
+      statusLabel.innerHTML = '<span class="material-symbols-outlined text-[14px] text-tertiary-fixed">done_all</span> Resuelto con Lucy';
+      statusLabel.className = 'status-label font-label-code text-[11px] text-tertiary-fixed flex items-center gap-1';
+    }
+
+    updateMetrics();
+    showToast("Gasto Confirmado", "Cuenta y categoría asignadas correctamente.");
+  }
+
+  function resolveAllCards() {
+    ['card-item-1', 'card-item-2', 'card-item-3'].forEach(id => {
+      confirmItem(id);
+    });
+    const resolveAllBtn = document.getElementById('btn-resolve-all');
+    if (resolveAllBtn) {
+      resolveAllBtn.innerHTML = '<span class="material-symbols-outlined text-tertiary-fixed text-[18px]">verified</span> <span class="font-headline-sm text-body-md text-tertiary-fixed font-semibold">Todo resuelto con 98% confianza</span>';
+      resolveAllBtn.classList.add('opacity-80', 'pointer-events-none');
+    }
+  }
+
+  function updateMetrics() {
+    const pendingRemaining = totalItems - resolvedCount;
+    const pendingCounter = document.getElementById('pending-counter');
+    if (pendingCounter) {
+      pendingCounter.innerText = `${pendingRemaining} por resolver`;
+      if (pendingRemaining === 0) {
+        pendingCounter.parentElement.classList.remove('shadow-sm');
+        pendingCounter.parentElement.innerHTML = '<span class="w-2 h-2 rounded-full bg-tertiary-fixed"></span><span class="font-label-code text-label-code text-tertiary-fixed font-semibold">Al día (0)</span>';
+      }
+    }
+
+    const dockSummary = document.getElementById('dock-summary');
+    const dockImpact = document.getElementById('dock-impact');
+    let totalImpact = 0;
+    if (approvedStates['card-item-1']) totalImpact += amounts[0];
+    if (approvedStates['card-item-2']) totalImpact += amounts[1];
+    if (approvedStates['card-item-3']) totalImpact += amounts[2];
+
+    if (dockSummary) {
+      dockSummary.innerText = `${resolvedCount} de ${totalItems} gastos listos`;
+    }
+    if (dockImpact) {
+      dockImpact.innerText = `Impacto total: -$${totalImpact.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN`;
+    }
+  }
+
+  function saveToMovements() {
+    showToast("¡Guardado!", "Movimientos actualizados y clasificados.");
+    setTimeout(() => {
+      const summary = document.getElementById('dock-summary');
+      if (summary) summary.innerText = "¡Todo sincronizado!";
+    }, 400);
+  }
+
+  function showToast(title, msg) {
+    const toast = document.getElementById('toast-notif');
+    const toastTitle = document.getElementById('toast-title');
+    const toastDesc = document.getElementById('toast-desc');
+    if (!toast) return;
+
+    if (title) toastTitle.innerText = title;
+    if (msg) toastDesc.innerText = msg;
+
+    toast.classList.remove('-translate-y-8', 'opacity-0', 'pointer-events-none');
+    toast.classList.add('translate-y-0', 'opacity-100');
+
+    setTimeout(() => {
+      toast.classList.add('-translate-y-8', 'opacity-0', 'pointer-events-none');
+      toast.classList.remove('translate-y-0', 'opacity-100');
+    }, 2400);
+  }
+
+  function triggerLucyAssistant() {
+    showToast("Lucy Copiloto Activa", "Escuchando o analizando nuevas transacciones...");
+  }
+
+  function showCustomModal() {
+    showToast("Editor Rápido", "Abriendo campos avanzados de transacción.");
+  }
+
+  function triggerHapticPulse(el) {
+    el.style.transform = "scale(0.94)";
+    setTimeout(() => {
+      el.style.transform = "";
+    }, 120);
+  }
+</script></main></body></html>
