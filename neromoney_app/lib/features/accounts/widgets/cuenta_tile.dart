@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../data/cuenta.dart';
@@ -17,9 +18,14 @@ import 'chip_emv.dart';
 /// CLAUDE.md) — la deuda solo aparece como referencia calculada, con su
 /// barra de uso del límite.
 class CuentaTile extends StatelessWidget {
-  const CuentaTile({super.key, required this.cuenta});
+  const CuentaTile({
+    super.key,
+    required this.cuenta,
+    this.ocultarImportes = false,
+  });
 
   final Cuenta cuenta;
+  final bool ocultarImportes;
 
   @override
   Widget build(BuildContext context) {
@@ -33,8 +39,9 @@ class CuentaTile extends StatelessWidget {
     final digitos = cuenta.ultimos4Digitos;
     final limite = cuenta.limiteCredito;
     final deuda = cuenta.deudaActual;
-    final progreso =
-        (limite != null && limite > 0 && deuda != null) ? (deuda / limite).clamp(0.0, 1.0) : null;
+    final progreso = (limite != null && limite > 0 && deuda != null)
+        ? (deuda / limite).clamp(0.0, 1.0)
+        : null;
     final diasCorte = cuenta.diasParaCorte;
 
     return AspectRatio(
@@ -49,13 +56,22 @@ class CuentaTile extends StatelessWidget {
             // cada cuenta se ve distinta sin necesitar una paleta fija por
             // banco (no conocemos el banco real de cada una).
             colors: [
-              Color.alphaBlend(acento.withValues(alpha: 0.55), AppColors.canvas),
-              Color.alphaBlend(acento.withValues(alpha: 0.22), AppColors.canvas),
+              Color.alphaBlend(
+                acento.withValues(alpha: 0.55),
+                AppColors.canvas,
+              ),
+              Color.alphaBlend(
+                acento.withValues(alpha: 0.22),
+                AppColors.canvas,
+              ),
               AppColors.canvas,
             ],
             stops: const [0.0, 0.55, 1.0],
           ),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.14), width: 1.2),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.14),
+            width: 1.2,
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.55),
@@ -63,7 +79,11 @@ class CuentaTile extends StatelessWidget {
               offset: const Offset(0, 10),
               spreadRadius: -2,
             ),
-            BoxShadow(color: acento.withValues(alpha: 0.18), blurRadius: 28, offset: const Offset(0, 4)),
+            BoxShadow(
+              color: acento.withValues(alpha: 0.18),
+              blurRadius: 28,
+              offset: const Offset(0, 4),
+            ),
           ],
         ),
         child: ClipRRect(
@@ -80,13 +100,19 @@ class CuentaTile extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
-                      colors: [Colors.white.withValues(alpha: 0.09), Colors.transparent],
+                      colors: [
+                        Colors.white.withValues(alpha: 0.09),
+                        Colors.transparent,
+                      ],
                     ),
                   ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 16,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -102,8 +128,10 @@ class CuentaTile extends StatelessWidget {
                             children: [
                               Text(
                                 cuenta.nombre,
-                                style: AppTextStyles.bodyLg
-                                    .copyWith(color: Colors.white, fontWeight: FontWeight.w700),
+                                style: AppTextStyles.bodyLg.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -112,15 +140,22 @@ class CuentaTile extends StatelessWidget {
                                 children: [
                                   Text(
                                     cuenta.tipo.etiqueta.toUpperCase(),
-                                    style: AppTextStyles.labelCode
-                                        .copyWith(color: Colors.white.withValues(alpha: 0.7)),
+                                    style: AppTextStyles.labelCode.copyWith(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.7,
+                                      ),
+                                    ),
                                   ),
-                                  if (digitos != null && digitos.isNotEmpty) ...[
+                                  if (digitos != null &&
+                                      digitos.isNotEmpty) ...[
                                     const SizedBox(width: 8),
                                     Text(
                                       '•••• $digitos',
-                                      style: AppTextStyles.labelCode
-                                          .copyWith(color: Colors.white.withValues(alpha: 0.65)),
+                                      style: AppTextStyles.labelCode.copyWith(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.65,
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ],
@@ -142,7 +177,10 @@ class CuentaTile extends StatelessWidget {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: Colors.white.withValues(alpha: 0.05),
-                                border: Border.all(color: acento.withValues(alpha: 0.4), width: 1.2),
+                                border: Border.all(
+                                  color: acento.withValues(alpha: 0.4),
+                                  width: 1.2,
+                                ),
                               ),
                               child: Icon(
                                 esCredito || cuenta.tipo == TipoCuenta.debito
@@ -163,13 +201,22 @@ class CuentaTile extends StatelessWidget {
                       children: [
                         Text(
                           'DISPONIBLE',
-                          style: AppTextStyles.labelCode.copyWith(color: acento),
+                          style: AppTextStyles.labelCode.copyWith(
+                            color: acento,
+                          ),
                         ),
                         Flexible(
                           child: Text(
-                            '\$${cuenta.saldoActual.toStringAsFixed(2)}',
-                            style: AppTextStyles.headlineMd
-                                .copyWith(color: Colors.white, fontWeight: FontWeight.w800),
+                            ocultarImportes
+                                ? '••••'
+                                : '\$${cuenta.saldoActual.toStringAsFixed(2)}',
+                            semanticsLabel: ocultarImportes
+                                ? 'Disponible oculto'
+                                : null,
+                            style: AppTextStyles.headlineMd.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -187,11 +234,14 @@ class CuentaTile extends StatelessWidget {
                               height: 5,
                               child: Stack(
                                 children: [
-                                  Container(color: Colors.white.withValues(alpha: 0.12)),
-                                  FractionallySizedBox(
-                                    widthFactor: progreso,
-                                    child: Container(color: acento),
+                                  Container(
+                                    color: Colors.white.withValues(alpha: 0.12),
                                   ),
+                                  if (!ocultarImportes)
+                                    FractionallySizedBox(
+                                      widthFactor: progreso,
+                                      child: Container(color: acento),
+                                    ),
                                 ],
                               ),
                             ),
@@ -201,15 +251,22 @@ class CuentaTile extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Debes \$${(deuda ?? 0).toStringAsFixed(0)} de \$${(limite ?? 0).toStringAsFixed(0)}',
-                                style: AppTextStyles.bodySm
-                                    .copyWith(color: Colors.white.withValues(alpha: 0.75)),
+                                ocultarImportes
+                                    ? 'Debes •••• de ••••'
+                                    : 'Debes \$${(deuda ?? 0).toStringAsFixed(0)} de \$${(limite ?? 0).toStringAsFixed(0)}',
+                                semanticsLabel: ocultarImportes
+                                    ? 'Deuda y límite ocultos'
+                                    : null,
+                                style: AppTextStyles.bodySm.copyWith(
+                                  color: Colors.white.withValues(alpha: 0.75),
+                                ),
                               ),
                               if (diasCorte != null)
                                 Text(
                                   'Corte en ${diasCorte}d',
-                                  style: AppTextStyles.bodySm
-                                      .copyWith(color: Colors.white.withValues(alpha: 0.9)),
+                                  style: AppTextStyles.bodySm.copyWith(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                  ),
                                 ),
                             ],
                           ),
@@ -225,4 +282,3 @@ class CuentaTile extends StatelessWidget {
     );
   }
 }
-

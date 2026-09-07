@@ -23,6 +23,47 @@ class _CapitalizarPalabrasFormatter extends TextInputFormatter {
   }
 }
 
+/// Abre el formulario de "Nueva cuenta" en un diálogo centrado — antes vivía
+/// como una tarjeta fija al final de la lista de Cuentas, así que agregar
+/// una nueva obligaba a deslizar más allá de todas las que ya tenías. Mismo
+/// patrón que `mostrarEditorDeCuenta` (diálogo centrado, 4 esquinas
+/// redondeadas): aquí además el diálogo se cierra solo al agregar la cuenta.
+Future<void> mostrarFormularioNuevaCuenta({
+  required BuildContext context,
+  required ValueChanged<Cuenta> onAgregar,
+}) {
+  return showDialog(
+    context: context,
+    builder: (dialogContext) => Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: AppColors.surface1,
+          borderRadius: BorderRadius.circular(24), // las 4 esquinas
+          border: Border.all(color: AppColors.glassStrokeStandard),
+        ),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(dialogContext).height * 0.8,
+          ),
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: CuentaFormCard(
+                onAgregar: (cuenta) {
+                  onAgregar(cuenta);
+                  Navigator.of(dialogContext).pop();
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 /// Formulario para dar de alta una cuenta/bolsillo de dinero. Se usa tanto
 /// en el onboarding (opcional) como en la pantalla de Cuentas — un solo
 /// lugar donde mantener esta lógica.
@@ -103,8 +144,8 @@ class _CuentaFormCardState extends State<CuentaFormCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Nueva cuenta', style: AppTextStyles.labelSm),
-        const SizedBox(height: 12),
+        Text('Nueva cuenta', style: AppTextStyles.headlineSm),
+        const SizedBox(height: 16),
         // --- Campo de nombre de la cuenta (ej. "Efectivo", "TC de Nu") ---
         // Se autocompleta al elegir un tipo abajo (ver _seleccionarTipo), pero
         // siempre es editable a mano.

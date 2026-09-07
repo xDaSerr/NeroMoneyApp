@@ -6,49 +6,24 @@ import 'package:go_router/go_router.dart';
 import '../../core/router/app_shell.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/theme/paleta_categorias.dart';
+import '../../core/utils/fecha_es.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/gradient_button.dart';
 import '../accounts/data/cuenta.dart';
 import '../accounts/providers/cuentas_providers.dart';
 import '../accounts/widgets/cuenta_tile.dart';
 import '../onboarding/providers/perfil_providers.dart';
+import '../profile/data/saludo_usuario.dart';
 import '../transactions/data/resumen_gastos.dart';
 import '../transactions/data/transaccion.dart';
 import '../transactions/providers/transacciones_providers.dart';
 import '../transactions/widgets/movimiento_tile.dart';
+import 'providers/privacidad_inicio_provider.dart';
 
-/// "Gastos de Septiembre", con mayúscula inicial — `_meses` los guarda en
-/// minúsculas porque así se usan en otros textos ("en octubre..."), así
-/// que la mayúscula se aplica aquí, solo para el título de la tarjeta.
-String _nombreMes(int mes) {
-  final nombre = _meses[mes - 1];
-  return 'Gastos de ${nombre[0].toUpperCase()}${nombre.substring(1)}';
-}
-
-const _meses = [
-  'enero',
-  'febrero',
-  'marzo',
-  'abril',
-  'mayo',
-  'junio',
-  'julio',
-  'agosto',
-  'septiembre',
-  'octubre',
-  'noviembre',
-  'diciembre',
-];
-
-// Las categorías de gasto son libres (el usuario escribe lo que quiera), no
-// tienen un color fijo asignado — por eso el resumen de gastos les da color
-// en el orden en que aparecen, ciclando esta paleta.
-const _paletaCategorias = [
-  AppColors.secondaryViolet,
-  AppColors.primaryCyan,
-  AppColors.outflowCrimson,
-  AppColors.inflowEmerald,
-];
+// "Gastos de Septiembre" — mesCapitalizado (core/utils/fecha_es.dart) es
+// compartido con Reportes, para no tener dos listas de nombres de mes.
+String _nombreMes(int mes) => 'Gastos de ${mesCapitalizado(mes)}';
 
 /// Dashboard principal. Sigue la estructura de la pantalla de Inicio del
 /// Stitch (saludo, patrimonio, accesos rápidos, cuentas, gastos del mes,
@@ -64,9 +39,12 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cuentasAsync = ref.watch(cuentasProvider);
     final transaccionesAsync = ref.watch(transaccionesProvider);
-    final nombreAsistente =
-        ref.watch(perfilProvider).value?.nombreAsistente ?? 'tu asistente';
-    final saludo = _datosDeSaludo(FirebaseAuth.instance.currentUser);
+    final privacidad = ref.watch(privacidadInicioProvider);
+    // No mostrar cifras durante la lectura de la preferencia guardada.
+    final ocultarImportes = privacidad.value ?? true;
+    final perfil = ref.watch(perfilProvider).value;
+    final nombreAsistente = perfil?.nombreAsistente ?? 'tu asistente';
+    final saludo = datosDeSaludo(FirebaseAuth.instance.currentUser, perfil?.apodo);
 
     return Scaffold(
       body: SafeArea(
@@ -77,7 +55,12 @@ class HomeScreen extends ConsumerWidget {
           // El extra abajo (espacioParaBarraFlotante) es para que la
           // píldora flotante de navegación (ver AppShell, extendBody:true)
           // nunca tape el último movimiento de la lista.
-          padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + espacioParaBarraFlotante(context)),
+          padding: EdgeInsets.fromLTRB(
+            20,
+            20,
+            20,
+            20 + espacioParaBarraFlotante(context),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -110,7 +93,9 @@ class HomeScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 20),
-              // --- Saludo con el nombre real de la sesión (Google) o el correo ---
+              // --- Saludo: usa el apodo elegido en Perfil → Editar perfil;
+              // si no lo puso, cae al nombre de Google o al correo (ver
+              // datosDeSaludo, features/profile/data/saludo_usuario.dart) ---
               Text(
                 'Hola, ${saludo.nombre} 👋',
                 style: AppTextStyles.headlineLg,
@@ -159,13 +144,58 @@ class HomeScreen extends ConsumerWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    'PATRIMONIO TOTAL',
-                                    style: AppTextStyles.labelCode,
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          'PATRIMONIO TOTAL',
+                                          style: AppTextStyles.labelCode,
+                                        ),
+                                      ),
+                                      // --- Ojo: oculta patrimonio e importes del carrusel ---
+                                      IconButton(
+                                        tooltip: ocultarImportes
+                                            ? 'Mostrar patrimonio y saldos'
+                                            : 'Ocultar patrimonio y saldos',
+                                        color: AppColors.primaryCyan,
+                                        icon: Icon(
+                                          ocultarImportes
+                                              ? Icons.visibility_off_outlined
+                                              : Icons.visibility_outlined,
+                                        ),
+                                        onPressed: privacidad.isLoading
+                                            ? null
+                                            : () async {
+                                                try {
+                                                  await ref
+                                                      .read(
+                                                        privacidadInicioProvider
+                                                            .notifier,
+                                                      )
+                                                      .alternar();
+                                                } catch (_) {
+                                                  if (!context.mounted) return;
+                                                  ScaffoldMessenger.of(context)
+                                                      .showSnackBar(
+                                                        const SnackBar(
+                                                          content: Text(
+                                                            'No se pudo guardar la preferencia para la próxima vez.',
+                                                          ),
+                                                        ),
+                                                      );
+                                                }
+                                              },
+                                      ),
+                                    ],
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    '\$${total.toStringAsFixed(2)}',
+                                    ocultarImportes
+                                        ? '••••'
+                                        : '\$${total.toStringAsFixed(2)}',
+                                    semanticsLabel: ocultarImportes
+                                        ? 'Patrimonio oculto'
+                                        : null,
                                     style: AppTextStyles.numericHero,
                                   ),
                                   const SizedBox(height: 20),
@@ -196,17 +226,7 @@ class HomeScreen extends ConsumerWidget {
                                         child: _AccionRapida(
                                           icon: Icons.swap_horiz_rounded,
                                           label: 'Transferir',
-                                          // Transferencias entre cuentas todavía no existen —
-                                          // decimos la verdad en vez de fingir que el botón hace algo.
-                                          onTap: () =>
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(
-                                                    const SnackBar(
-                                                      content: Text(
-                                                        'Transferencias entre cuentas: próximamente.',
-                                                      ),
-                                                    ),
-                                                  ),
+                                          onTap: () => context.push('/transfer'),
                                         ),
                                       ),
                                       Expanded(
@@ -309,7 +329,10 @@ class HomeScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 12),
                       // --- Cuentas deslizantes: carrusel horizontal, igual que en el Stitch ---
-                      _CuentasCarrusel(cuentas: cuentas),
+                      _CuentasCarrusel(
+                        cuentas: cuentas,
+                        ocultarImportes: ocultarImportes,
+                      ),
                       const SizedBox(height: 24),
 
                       // --- Gastos del mes por categoría (se omite si no hay ninguno) ---
@@ -353,24 +376,6 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-/// Nombre a mostrar en el saludo + inicial para el avatar. Prioriza el
-/// nombre real (lo trae Google Sign-In); si el usuario entró con
-/// email/contraseña no hay nombre guardado todavía (ver roadmap → Perfil
-/// completo), así que usamos lo que hay antes de la "@" del correo.
-({String nombre, String inicial}) _datosDeSaludo(User? usuario) {
-  final displayName = usuario?.displayName?.trim();
-  if (displayName != null && displayName.isNotEmpty) {
-    final primerNombre = displayName.split(' ').first;
-    return (
-      nombre: primerNombre,
-      inicial: primerNombre.substring(0, 1).toUpperCase(),
-    );
-  }
-  final email = usuario?.email ?? '';
-  final prefijo = email.contains('@') ? email.split('@').first : email;
-  if (prefijo.isEmpty) return (nombre: 'ahí', inicial: '?');
-  return (nombre: prefijo, inicial: prefijo.substring(0, 1).toUpperCase());
-}
 
 class _AvisoSinCuentas extends StatelessWidget {
   const _AvisoSinCuentas({required this.nombreAsistente});
@@ -459,8 +464,12 @@ class _AccionRapida extends StatelessWidget {
 /// tarjeta tiene un ancho fijo para que se vea la siguiente "asomando" al
 /// borde, invitando a deslizar.
 class _CuentasCarrusel extends StatelessWidget {
-  const _CuentasCarrusel({required this.cuentas});
+  const _CuentasCarrusel({
+    required this.cuentas,
+    required this.ocultarImportes,
+  });
   final List<Cuenta> cuentas;
+  final bool ocultarImportes;
 
   static const _anchoTarjeta = 260.0;
   // CuentaTile ahora tiene proporción real de tarjeta (1.586) — el alto se
@@ -481,7 +490,10 @@ class _CuentasCarrusel extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
             onTap: () =>
                 context.push('/accounts/detalle', extra: cuentas[i].id),
-            child: CuentaTile(cuenta: cuentas[i]),
+            child: CuentaTile(
+              cuenta: cuentas[i],
+              ocultarImportes: ocultarImportes,
+            ),
           ),
         ),
       ),
@@ -553,12 +565,13 @@ class _GastosDelMes extends StatelessWidget {
                   children: [
                     for (var i = 0; i < visibles.length; i++)
                       Expanded(
-                        flex: (visibles[i].value * 1000 / total)
-                            .round()
-                            .clamp(1, 1000),
+                        flex: (visibles[i].value * 1000 / total).round().clamp(
+                          1,
+                          1000,
+                        ),
                         child: Container(
                           color:
-                              _paletaCategorias[i % _paletaCategorias.length],
+                              paletaCategorias[i % paletaCategorias.length],
                         ),
                       ),
                   ],
@@ -577,7 +590,7 @@ class _GastosDelMes extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _LeyendaCategoria(
-                        color: _paletaCategorias[i % _paletaCategorias.length],
+                        color: paletaCategorias[i % paletaCategorias.length],
                         entrada: visibles[i],
                         total: total,
                       ),
@@ -587,8 +600,8 @@ class _GastosDelMes extends StatelessWidget {
                       child: i + 1 < visibles.length
                           ? _LeyendaCategoria(
                               color:
-                                  _paletaCategorias[(i + 1) %
-                                      _paletaCategorias.length],
+                                  paletaCategorias[(i + 1) %
+                                      paletaCategorias.length],
                               entrada: visibles[i + 1],
                               total: total,
                             )
@@ -690,6 +703,7 @@ class _UltimosMovimientos extends StatelessWidget {
             child: MovimientoTile(
               transaccion: t,
               nombreCuenta: cuentasPorId[t.cuentaId]?.nombre ?? '—',
+              nombreContraparte: cuentasPorId[t.cuentaContraparteId]?.nombre,
             ),
           ),
       ],

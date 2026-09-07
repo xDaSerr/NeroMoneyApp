@@ -111,7 +111,8 @@ class AccountDetailScreen extends ConsumerWidget {
                         for (final t in lista)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 10),
-                            child: MovimientoTile(transaccion: t, nombreCuenta: cuenta!.nombre),
+                            child: MovimientoTile(transaccion: t, nombreCuenta: cuenta!.nombre,
+                              nombreContraparte: cuentas.where((c) => c.id == t.cuentaContraparteId).firstOrNull?.nombre),
                           ),
                       ],
                     );

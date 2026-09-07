@@ -46,6 +46,7 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
   // (mensajesAsync puede reconstruir el build() varias veces mientras está
   // vacío). Se reinicia al limpiar la conversación, ver _confirmarLimpiar.
   bool _saludoEnviado = false;
+  String? _ultimoMensajeId;
 
   @override
   void dispose() {
@@ -108,7 +109,7 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
 
   void _irAlFinal() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scrollCtrl.hasClients) return;
+      if (!mounted || !_scrollCtrl.hasClients) return;
       _scrollCtrl.animateTo(
         _scrollCtrl.position.maxScrollExtent,
         duration: const Duration(milliseconds: 250),
@@ -189,6 +190,7 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
             child: mensajesAsync.when(
               data: (mensajes) {
                 if (mensajes.isEmpty) {
+                  _ultimoMensajeId = null;
                   // --- Saludo fijo: se guarda una sola vez al abrir el chat vacío ---
                   if (!_saludoEnviado) {
                     _saludoEnviado = true;
@@ -203,7 +205,17 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
                     avatarBase64: avatarAsistente,
                   );
                 }
-                _irAlFinal();
+                final ultimoId = mensajes.last.id;
+                if (_ultimoMensajeId != ultimoId) {
+                  // Los eventos de voz no son mensajes nuevos. Conservar
+                  // la posición si el usuario está leyendo el historial.
+                  final seguirConversacion =
+                      _ultimoMensajeId == null ||
+                      (_scrollCtrl.hasClients &&
+                          _scrollCtrl.position.extentAfter < 120);
+                  _ultimoMensajeId = ultimoId;
+                  if (seguirConversacion) _irAlFinal();
+                }
                 return ListView.builder(
                   controller: _scrollCtrl,
                   padding: const EdgeInsets.all(16),

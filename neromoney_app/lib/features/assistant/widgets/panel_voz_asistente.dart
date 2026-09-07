@@ -23,8 +23,12 @@ class PanelVozAsistente extends ConsumerWidget {
     final respuesta = controlador.respuesta;
     final titulo = switch (controlador.estado) {
       EstadoDictado.preparando => 'Preparando micrófono…',
-      EstadoDictado.escuchando => 'Te escucho · suelta para enviar',
+      EstadoDictado.escuchando =>
+        controlador.requiereRevision
+            ? 'Te escucho · suelta para revisar'
+            : 'Te escucho · suelta para enviar',
       EstadoDictado.finalizando => 'Terminando dictado…',
+      EstadoDictado.revision => 'Revisa lo que escuché',
       EstadoDictado.enviando => 'Un momento…',
       EstadoDictado.sinVoz => 'No te escuché',
       EstadoDictado.error => 'No se pudo completar',
@@ -46,7 +50,14 @@ class PanelVozAsistente extends ConsumerWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxHeight: 240),
+        constraints: BoxConstraints(
+          maxHeight: controlador.revisando
+              ? (MediaQuery.sizeOf(context).height -
+                        MediaQuery.viewInsetsOf(context).bottom -
+                        160)
+                    .clamp(120.0, 320.0)
+              : 240,
+        ),
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(18, 8, 10, 16),
           child: Column(
@@ -80,15 +91,21 @@ class PanelVozAsistente extends ConsumerWidget {
                   ),
                 ],
               ),
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Text(
-                  texto,
-                  style: AppTextStyles.bodyMd.copyWith(
-                    color: AppColors.textSecondary,
+              if (controlador.revisando)
+                _RevisionDictado(
+                  key: ValueKey(controlador.idDictado),
+                  controlador: controlador,
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Text(
+                    texto,
+                    style: AppTextStyles.bodyMd.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ),
-              ),
               if (respuesta != null && respuesta.chipsCuentas.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 // --- Elegir cuenta aquí, sin cambiar al chat ---
@@ -113,4 +130,65 @@ class PanelVozAsistente extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _RevisionDictado extends StatefulWidget {
+  const _RevisionDictado({super.key, required this.controlador});
+  final ControladorAsistente controlador;
+  @override
+  State<_RevisionDictado> createState() => _RevisionDictadoState();
+}
+
+class _RevisionDictadoState extends State<_RevisionDictado> {
+  late final _texto = TextEditingController(
+    text: widget.controlador.transcripcion,
+  );
+  @override
+  void dispose() {
+    _texto.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        widget.controlador.motivoRevision ?? '',
+        style: AppTextStyles.bodySm,
+      ),
+      const SizedBox(height: 10),
+      // --- Corregir dictado: editar todavía no registra ningún movimiento ---
+      TextField(
+        controller: _texto,
+        minLines: 1,
+        maxLines: 3,
+        textCapitalization: TextCapitalization.sentences,
+        decoration: const InputDecoration(labelText: 'Lo que escuché'),
+        onChanged: (_) => setState(() {}),
+      ),
+      const SizedBox(height: 8),
+      Wrap(
+        spacing: 8,
+        children: [
+          // --- Descartar: permite volver a mantener pulsado el micrófono/avatar ---
+          TextButton(
+            onPressed: widget.controlador.cancelar,
+            child: const Text('Descartar'),
+          ),
+          // --- Enviar: usa el texto corregido y conserva la respuesta hablada ---
+          FilledButton.icon(
+            onPressed: _texto.text.trim().isEmpty
+                ? null
+                : () {
+                    FocusScope.of(context).unfocus();
+                    widget.controlador.confirmarDictado(_texto.text);
+                  },
+            icon: const Icon(Icons.send_rounded, size: 18),
+            label: const Text('Enviar'),
+          ),
+        ],
+      ),
+    ],
+  );
 }

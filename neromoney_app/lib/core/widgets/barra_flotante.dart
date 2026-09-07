@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
@@ -19,6 +20,7 @@ class BarraFlotante extends StatefulWidget {
     required this.ocupado,
     required this.enviando,
     required this.nivel,
+    this.nivelAudio,
     required this.onMantener,
     required this.onSoltar,
     required this.onCancelar,
@@ -33,6 +35,7 @@ class BarraFlotante extends StatefulWidget {
   final String nombreAsistente;
   final bool pulsado, ocupado, enviando;
   final double nivel;
+  final ValueListenable<double>? nivelAudio;
   final VoidCallback onMantener, onSoltar, onCancelar;
   final VoidCallback? onPrepararGesto;
 
@@ -117,6 +120,36 @@ class _BarraFlotanteState extends State<BarraFlotante>
   Widget build(BuildContext context) {
     final reducirMovimiento = MediaQuery.disableAnimationsOf(context);
     final colores = widget.coloresAnillo ?? AnilloAsistente.coloresPorDefecto;
+    // Estos hijos no dependen de la expansión: reutilizarlos durante los
+    // 280 ms de la animación conserva su layout y la pintura del avatar.
+    final destinos = Row(
+      children: [
+        _destino(0, Icons.home_rounded, 'Inicio'),
+        _destino(1, Icons.receipt_long_rounded, 'Movs'),
+        const Expanded(child: SizedBox()),
+        _destino(3, Icons.account_balance_rounded, 'Cuentas'),
+        _destino(4, Icons.person_rounded, 'Perfil'),
+      ],
+    );
+    final anillo = RepaintBoundary(
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          AnilloAsistente(
+            avatarBase64: widget.avatarBase64,
+            colores: colores,
+            size: 43,
+          ),
+          if (_dictadoHabilitado && widget.enviando)
+            Positioned.fill(
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: colores.last,
+              ),
+            ),
+        ],
+      ),
+    );
     return SafeArea(
       top: false,
       minimum: const EdgeInsets.only(bottom: 8),
@@ -135,13 +168,18 @@ class _BarraFlotanteState extends State<BarraFlotante>
               children: [
                 Positioned.fill(
                   child: IgnorePointer(
-                    child: CustomPaint(
-                      painter: _FondoBarra(
-                        expansion: expansion,
-                        nivel: reducirMovimiento || !_dictadoHabilitado
-                            ? 0
-                            : widget.nivel,
-                        colores: colores,
+                    child: RepaintBoundary(
+                      child: CustomPaint(
+                        painter: _FondoBarra(
+                          expansion: expansion,
+                          nivel: reducirMovimiento || !_dictadoHabilitado
+                              ? 0
+                              : widget.nivel,
+                          colores: colores,
+                          nivelAudio: reducirMovimiento || !_dictadoHabilitado
+                              ? null
+                              : widget.nivelAudio,
+                        ),
                       ),
                     ),
                   ),
@@ -152,15 +190,7 @@ class _BarraFlotanteState extends State<BarraFlotante>
                   right: 10,
                   bottom: 0,
                   height: 64,
-                  child: Row(
-                    children: [
-                      _destino(0, Icons.home_rounded, 'Inicio'),
-                      _destino(1, Icons.receipt_long_rounded, 'Movs'),
-                      const Expanded(child: SizedBox()),
-                      _destino(3, Icons.account_balance_rounded, 'Cuentas'),
-                      _destino(4, Icons.person_rounded, 'Perfil'),
-                    ],
-                  ),
+                  child: destinos,
                 ),
                 // --- Asistente: toque abre chat; mantener dicta; soltar envía ---
                 Positioned.fill(
@@ -210,23 +240,7 @@ class _BarraFlotanteState extends State<BarraFlotante>
                                 top: 48 - 34 * expansion,
                                 child: Transform.scale(
                                   scale: 1 + 0.12 * expansion,
-                                  child: Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      AnilloAsistente(
-                                        avatarBase64: widget.avatarBase64,
-                                        colores: colores,
-                                        size: 43,
-                                      ),
-                                      if (_dictadoHabilitado && widget.enviando)
-                                        Positioned.fill(
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: colores.last,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
+                                  child: anillo,
                                 ),
                               ),
                               Positioned(
@@ -293,12 +307,15 @@ class _FondoBarra extends CustomPainter {
     required this.expansion,
     required this.nivel,
     required this.colores,
-  });
+    this.nivelAudio,
+  }) : super(repaint: nivelAudio);
   final double expansion, nivel;
+  final ValueListenable<double>? nivelAudio;
   final List<Color> colores;
 
   @override
   void paint(Canvas canvas, Size size) {
+    final nivel = nivelAudio?.value ?? this.nivel;
     const radio = 32.0;
     const superior = 42.0;
     final centro = size.width / 2;
@@ -377,5 +394,6 @@ class _FondoBarra extends CustomPainter {
   bool shouldRepaint(_FondoBarra oldDelegate) =>
       expansion != oldDelegate.expansion ||
       nivel != oldDelegate.nivel ||
-      colores != oldDelegate.colores;
+      nivelAudio != oldDelegate.nivelAudio ||
+      !listEquals(colores, oldDelegate.colores);
 }

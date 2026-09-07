@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
-import '../widgets/placeholder_screen.dart';
+
 import '../../features/accounts/account_detail_screen.dart';
 import '../../features/accounts/accounts_screen.dart';
 import '../../features/assistant/assistant_chat_screen.dart';
@@ -11,11 +11,15 @@ import '../../features/auth/forgot_password_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/onboarding/data/perfil_repository.dart';
 import '../../features/onboarding/onboarding_flow_screen.dart';
+import '../../features/profile/editar_perfil_screen.dart';
 import '../../features/profile/personalizar_asistente_screen.dart';
 import '../../features/profile/profile_screen.dart';
+import '../../features/profile/recordatorios_screen.dart';
+import '../../features/reports/reports_screen.dart';
 import '../../features/transactions/add_transaction_screen.dart';
 import '../../features/transactions/data/transaccion.dart';
 import '../../features/transactions/movements_screen.dart';
+import '../../features/transactions/transfer_screen.dart';
 import 'app_shell.dart';
 import 'go_router_refresh_stream.dart';
 
@@ -35,7 +39,9 @@ final appRouter = GoRouter(
   // Reacciona a login/logout: cada vez que cambia la sesión, go_router
   // vuelve a evaluar `redirect` de inmediato, sin que ninguna pantalla
   // tenga que navegar manualmente.
-  refreshListenable: GoRouterRefreshStream(FirebaseAuth.instance.authStateChanges()),
+  refreshListenable: GoRouterRefreshStream(
+    FirebaseAuth.instance.authStateChanges(),
+  ),
   redirect: (context, state) async {
     final user = FirebaseAuth.instance.currentUser;
     final loc = state.matchedLocation;
@@ -48,7 +54,10 @@ final appRouter = GoRouter(
     }
 
     if (!_onboardingConfirmado) {
-      final perfil = await PerfilRepository(FirebaseFirestore.instance, user.uid).obtenerPerfil();
+      final perfil = await PerfilRepository(
+        FirebaseFirestore.instance,
+        user.uid,
+      ).obtenerPerfil();
       _onboardingConfirmado = perfil.onboardingCompletado;
     }
 
@@ -60,13 +69,23 @@ final appRouter = GoRouter(
     return null;
   },
   routes: [
+    GoRoute(
+      path: '/transfer',
+      builder: (context, state) => const TransferScreen(),
+    ),
     GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
-    GoRoute(path: '/register', builder: (context, state) => const RegisterScreen()),
+    GoRoute(
+      path: '/register',
+      builder: (context, state) => const RegisterScreen(),
+    ),
     GoRoute(
       path: '/forgot-password',
       builder: (context, state) => const ForgotPasswordScreen(),
     ),
-    GoRoute(path: _onboardingRoute, builder: (context, state) => const OnboardingFlowScreen()),
+    GoRoute(
+      path: _onboardingRoute,
+      builder: (context, state) => const OnboardingFlowScreen(),
+    ),
     GoRoute(
       path: '/add-transaction',
       // `extra` opcional: los accesos rápidos de Inicio mandan un
@@ -78,7 +97,7 @@ final appRouter = GoRouter(
     // ProfileScreen), por eso vive fuera del StatefulShellRoute.
     GoRoute(
       path: '/reports',
-      builder: (context, state) => const PlaceholderScreen(title: 'Reportes'),
+      builder: (context, state) => const ReportsScreen(),
     ),
     // Igual que Reportes: se llega desde el menú de Perfil, no desde una
     // pestaña — el usuario pidió explícitamente que esto NO sea parte del
@@ -87,38 +106,72 @@ final appRouter = GoRouter(
       path: '/personalizar-asistente',
       builder: (context, state) => const PersonalizarAsistenteScreen(),
     ),
+    // Igual que los dos anteriores: se llega desde el menú de Perfil, no
+    // desde una pestaña.
+    GoRoute(
+      path: '/editar-perfil',
+      builder: (context, state) => const EditarPerfilScreen(),
+    ),
+    GoRoute(
+      path: '/recordatorios',
+      builder: (context, state) => const RecordatoriosScreen(),
+    ),
 
     StatefulShellRoute.indexedStack(
-      builder: (context, state, navigationShell) => AppShell(navigationShell: navigationShell),
+      builder: (context, state, navigationShell) =>
+          AppShell(navigationShell: navigationShell),
       branches: [
-        StatefulShellBranch(routes: [
-          GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
-        ]),
-        StatefulShellBranch(routes: [
-          GoRoute(path: '/movements', builder: (context, state) => const MovementsScreen()),
-        ]),
-        StatefulShellBranch(routes: [
-          GoRoute(path: '/assistant', builder: (context, state) => const AssistantChatScreen()),
-        ]),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/home',
+              builder: (context, state) => const HomeScreen(),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/movements',
+              builder: (context, state) => const MovementsScreen(),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/assistant',
+              builder: (context, state) => const AssistantChatScreen(),
+            ),
+          ],
+        ),
         // "Cuentas" tomó el lugar que tenía "Reportes" en la barra inferior
         // (decisión del usuario). El detalle de una cuenta vive anidado
         // aquí (no como ruta aparte) para que "atrás" te regrese a la
         // lista de cuentas sin salirse de esta pestaña.
-        StatefulShellBranch(routes: [
-          GoRoute(
-            path: '/accounts',
-            builder: (context, state) => const AccountsScreen(),
-            routes: [
-              GoRoute(
-                path: 'detalle',
-                builder: (context, state) => AccountDetailScreen(cuentaId: state.extra as String),
-              ),
-            ],
-          ),
-        ]),
-        StatefulShellBranch(routes: [
-          GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
-        ]),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/accounts',
+              builder: (context, state) => const AccountsScreen(),
+              routes: [
+                GoRoute(
+                  path: 'detalle',
+                  builder: (context, state) =>
+                      AccountDetailScreen(cuentaId: state.extra as String),
+                ),
+              ],
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/profile',
+              builder: (context, state) => const ProfileScreen(),
+            ),
+          ],
+        ),
       ],
     ),
   ],

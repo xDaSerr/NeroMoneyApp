@@ -1,7 +1,10 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'firebase_options.dart';
@@ -9,6 +12,16 @@ import 'firebase_options.dart';
 void main() async {
   // Requerido antes de tocar cualquier plugin nativo (Firebase incluido).
   WidgetsFlutterBinding.ensureInitialized();
+  // Las variantes usadas vienen en assets; evita descargas y cambios de
+  // tipografía tardíos al estrenar la app o usarla sin conexión.
+  GoogleFonts.config.allowRuntimeFetching = false;
+  LicenseRegistry.addLicense(() async* {
+    for (final familia in ['Outfit', 'JetBrainsMono']) {
+      yield LicenseEntryWithLineBreaks([
+        familia,
+      ], await rootBundle.loadString('assets/fonts/$familia-OFL.txt'));
+    }
+  });
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Sin esto, Android pinta su propia franja opaca detrás del gesto de

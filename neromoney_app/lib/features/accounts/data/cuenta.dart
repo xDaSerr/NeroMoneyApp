@@ -22,6 +22,9 @@ class Cuenta {
   final String nombre;
   final TipoCuenta tipo;
 
+  bool get permiteTransferencias =>
+      tipo == TipoCuenta.debito || tipo == TipoCuenta.efectivo;
+
   // OJO: el significado de `saldoActual` depende del tipo de cuenta. En
   // cuentas normales (efectivo/débito/vale/otro) es el dinero que SÍ es
   // tuyo. En una tarjeta de crédito es lo que TE QUEDA DISPONIBLE de tu
@@ -143,8 +146,9 @@ class Cuenta {
       diaCorte: diaCorte ?? this.diaCorte,
       diaLimitePago: diaLimitePago ?? this.diaLimitePago,
       esPredeterminada: esPredeterminada ?? this.esPredeterminada,
-      ultimos4Digitos:
-          identical(ultimos4Digitos, _sinCambio) ? this.ultimos4Digitos : ultimos4Digitos as String?,
+      ultimos4Digitos: identical(ultimos4Digitos, _sinCambio)
+          ? this.ultimos4Digitos
+          : ultimos4Digitos as String?,
       colorPersonalizado: identical(colorPersonalizado, _sinCambio)
           ? this.colorPersonalizado
           : colorPersonalizado as int?,
@@ -158,10 +162,10 @@ const _sinCambio = Object();
 
 extension TipoCuentaLabel on TipoCuenta {
   String get etiqueta => switch (this) {
-        TipoCuenta.efectivo => 'Efectivo',
-        TipoCuenta.debito => 'Débito',
-        TipoCuenta.credito => 'Crédito',
-        TipoCuenta.vale => 'Vale',
-        TipoCuenta.otro => 'Otro',
-      };
+    TipoCuenta.efectivo => 'Efectivo',
+    TipoCuenta.debito => 'Débito',
+    TipoCuenta.credito => 'Crédito',
+    TipoCuenta.vale => 'Vale',
+    TipoCuenta.otro => 'Otro',
+  };
 }

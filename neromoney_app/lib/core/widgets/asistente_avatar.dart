@@ -27,6 +27,10 @@ class AsistenteAvatar extends StatefulWidget {
 
 class _AsistenteAvatarState extends State<AsistenteAvatar> {
   late ImageProvider _imagen;
+  // Una sola foto compartida por la barra, el encabezado y las burbujas.
+  // La caché tiene una entrada: cambiar de foto no acumula imágenes viejas.
+  static String? _fotoCompartida;
+  static MemoryImage? _imagenCompartida;
 
   @override
   void initState() {
@@ -45,9 +49,15 @@ class _AsistenteAvatarState extends State<AsistenteAvatar> {
     // MemoryImage identifica su caché por los bytes. Decodificar Base64
     // en cada frame creaba una imagen distinta y dejaba huecos mientras
     // cargaba, tanto al animar la barra como al recibir niveles de voz.
-    _imagen = foto != null && foto.isNotEmpty
-        ? MemoryImage(base64Decode(foto))
-        : const AssetImage('assets/icon/icon_full.png');
+    if (foto == null || foto.isEmpty) {
+      _imagen = const AssetImage('assets/icon/icon_full.png');
+      return;
+    }
+    if (_fotoCompartida != foto) {
+      _imagenCompartida = MemoryImage(base64Decode(foto));
+      _fotoCompartida = foto;
+    }
+    _imagen = _imagenCompartida!;
   }
 
   @override

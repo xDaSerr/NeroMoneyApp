@@ -16,6 +16,8 @@ class Transaccion {
     required this.fecha,
     this.descripcion = '',
     this.origen = OrigenTransaccion.manual,
+    this.transferenciaId,
+    this.cuentaContraparteId,
   });
 
   final String id;
@@ -26,8 +28,14 @@ class Transaccion {
   final String cuentaId;
   final DateTime fecha;
   final OrigenTransaccion origen;
+  // Dos apuntes enlazados: salida y entrada. No son consumo ni ingreso real.
+  final String? transferenciaId;
+  final String? cuentaContraparteId;
+  bool get esTransferencia => transferenciaId != null;
 
-  factory Transaccion.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+  factory Transaccion.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final data = doc.data()!;
     return Transaccion(
       id: doc.id,
@@ -37,7 +45,11 @@ class Transaccion {
       descripcion: data['descripcion'] as String? ?? '',
       cuentaId: data['cuentaId'] as String,
       fecha: (data['fecha'] as Timestamp).toDate(),
-      origen: OrigenTransaccion.values.byName(data['origen'] as String? ?? 'manual'),
+      origen: OrigenTransaccion.values.byName(
+        data['origen'] as String? ?? 'manual',
+      ),
+      transferenciaId: data['transferenciaId'] as String?,
+      cuentaContraparteId: data['cuentaContraparteId'] as String?,
     );
   }
 
@@ -50,6 +62,9 @@ class Transaccion {
       'cuentaId': cuentaId,
       'fecha': Timestamp.fromDate(fecha),
       'origen': origen.name,
+      if (transferenciaId != null) 'transferenciaId': transferenciaId,
+      if (cuentaContraparteId != null)
+        'cuentaContraparteId': cuentaContraparteId,
     };
   }
 

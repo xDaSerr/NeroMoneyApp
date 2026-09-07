@@ -9,6 +9,7 @@ import 'package:neromoney_app/features/accounts/providers/cuentas_providers.dart
 import 'package:neromoney_app/features/assistant/data/controlador_asistente.dart';
 import 'package:neromoney_app/features/assistant/data/mensaje_chat.dart';
 import 'package:neromoney_app/features/assistant/providers/controlador_asistente_provider.dart';
+import 'package:neromoney_app/features/auth/providers/auth_providers.dart';
 import 'package:neromoney_app/features/onboarding/providers/perfil_providers.dart';
 
 class MotorPrueba implements MotorDictado {
@@ -21,12 +22,12 @@ class MotorPrueba implements MotorDictado {
   Future<bool> preparar() async => permiso == null ? true : permiso!.future;
   @override
   Future<void> escuchar({
-    required void Function(String, bool) resultado,
+    required void Function(String, bool, [double?]) resultado,
     required void Function(double) nivel,
     required void Function(FalloDictado) error,
   }) async {
     escuchas++;
-    this.resultado = resultado;
+    this.resultado = (texto, finalizado) => resultado(texto, finalizado, 0.95);
     this.error = error;
   }
 
@@ -72,6 +73,7 @@ void main() {
       },
       callar: () async {},
       esperaFinal: esperaFinal,
+      revisarAntesDeEnviar: () => false,
     );
   }
 
@@ -102,6 +104,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          currentUidProvider.overrideWithValue('usuario-prueba'),
           controladorAsistenteProvider.overrideWithValue(controlador),
           perfilProvider.overrideWith((ref) => const Stream.empty()),
           cuentasProvider.overrideWith((ref) => Stream.value([])),

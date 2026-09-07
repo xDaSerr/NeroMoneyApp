@@ -9,6 +9,7 @@ import '../../features/assistant/widgets/panel_voz_asistente.dart';
 import '../../features/auth/providers/auth_providers.dart';
 import '../../features/onboarding/data/perfil_usuario.dart';
 import '../../features/onboarding/providers/perfil_providers.dart';
+import '../../features/reminders/providers/recordatorios_sync_provider.dart';
 
 /// Margen dentro del scroll para poder subir el último elemento por encima
 /// de la barra y su avatar. También separa los controles fijos del chat.
@@ -76,6 +77,11 @@ class _AppShellState extends ConsumerState<AppShell>
       return const SizedBox.shrink();
     }
 
+    // Mantiene los recordatorios de gastos sincronizados con el perfil
+    // mientras haya sesión (ver recordatorios_sync_provider.dart) — no
+    // dibuja nada, solo necesita estar vivo.
+    ref.watch(recordatoriosSyncProvider);
+
     final perfil = ref.watch(perfilProvider).value;
     final asistente = ref.watch(controladorAsistenteProvider);
     _asistente = asistente;
@@ -121,6 +127,7 @@ class _AppShellState extends ConsumerState<AppShell>
           ocupado: asistente.ocupado,
           enviando: asistente.enviando,
           nivel: asistente.nivel,
+          nivelAudio: asistente.nivelAudio,
           onPrepararGesto: asistente.descartarAviso,
           onMantener: () {
             FocusManager.instance.primaryFocus?.unfocus();

@@ -9,6 +9,7 @@ enum EstadoDictado {
   preparando,
   escuchando,
   finalizando,
+  revision,
   enviando,
   respuesta,
   sinVoz,
@@ -26,7 +27,7 @@ class FalloDictado {
 abstract class MotorDictado {
   Future<bool> preparar();
   Future<void> escuchar({
-    required void Function(String, bool) resultado,
+    required void Function(String, bool, [double?]) resultado,
     required void Function(double) nivel,
     required void Function(FalloDictado) error,
   });
@@ -43,6 +44,7 @@ class ControladorAsistente extends ChangeNotifier {
     required this.callar,
     this.esperaFinal = const Duration(milliseconds: 1400),
     this.duracionAvisoSinVoz = const Duration(seconds: 3),
+    this.revisarAntesDeEnviar,
   });
 
   final MotorDictado motor;
@@ -52,13 +54,25 @@ class ControladorAsistente extends ChangeNotifier {
   final Future<void> Function() callar;
   final Duration esperaFinal;
   final Duration duracionAvisoSinVoz;
+  final bool Function()? revisarAntesDeEnviar;
+  bool _revisar = true;
+  double? _confianzaFinal;
+  String? motivoRevision;
+  bool get revisando => estado == EstadoDictado.revision;
+  int get idDictado => _sesion;
+  bool get requiereRevision => _revisar;
   Timer? _temporizadorAviso;
 
   EstadoDictado estado = EstadoDictado.inactivo;
   String transcripcion = '';
   String? error;
   MensajeChat? respuesta;
-  double nivel = 0;
+  // El volumen solo repinta el halo. No reconstruir el shell, el historial
+  // ni el panel por cada muestra de audio del reconocedor.
+  final ValueNotifier<double> _nivelAudio = ValueNotifier(0);
+  ValueListenable<double> get nivelAudio => _nivelAudio;
+  double get nivel => _nivelAudio.value;
+  set nivel(double valor) => _nivelAudio.value = valor;
   bool pulsado = false;
   bool mostrarPanel = false;
   bool _respuestaPorVoz = false;
@@ -90,6 +104,9 @@ class ControladorAsistente extends ChangeNotifier {
     final arranqueActual = Completer<void>();
     _arranque = arranqueActual.future;
     final sesion = ++_sesion;
+    _revisar = revisarAntesDeEnviar?.call() ?? false;
+    _confianzaFinal = null;
+    motivoRevision = null;
     pulsado = true;
     mostrarPanel = true;
     transcripcion = '';
@@ -115,19 +132,21 @@ class ControladorAsistente extends ChangeNotifier {
       estado = EstadoDictado.escuchando;
       _avisar();
       await motor.escuchar(
-        resultado: (texto, finalizado) {
+        resultado: (texto, finalizado, [confianza]) {
           if (!_vigente(sesion) || !capturando) return;
+          if (_resultadoFinal!.isCompleted && !finalizado) return;
+          final cambioTexto = transcripcion != texto;
           transcripcion = texto;
-          if (finalizado && !_resultadoFinal!.isCompleted) {
-            _resultadoFinal!.complete();
+          if (finalizado) {
+            _confianzaFinal = confianza;
+            if (!_resultadoFinal!.isCompleted) _resultadoFinal!.complete();
           }
           // Aunque Android termine por silencio, solo enviamos al soltar.
-          _avisar();
+          if (cambioTexto) _avisar();
         },
         nivel: (valor) {
           if (!_vigente(sesion) || !pulsado) return;
-          nivel = valor.clamp(0.0, 1.0);
-          _avisar();
+          if (valor.isFinite) nivel = valor.clamp(0.0, 1.0);
         },
         error: (fallo) {
           if (_vigente(sesion) && capturando) {
@@ -166,6 +185,21 @@ class ControladorAsistente extends ChangeNotifier {
         _fallar('Mantén pulsado para intentarlo de nuevo.', sinVoz: true);
         return;
       }
+      final dudoso =
+          !_resultadoFinal!.isCompleted ||
+          _confianzaFinal == null ||
+          !_confianzaFinal!.isFinite ||
+          _confianzaFinal! < 0.65;
+      if (_revisar || dudoso) {
+        ++_sesion; // No aceptar más callbacks de esta captura.
+        estado = EstadoDictado.revision;
+        motivoRevision = dudoso
+            ? 'No escuché con suficiente claridad. Revisa el monto y la cuenta.'
+            : 'Revisa el monto y la cuenta antes de enviar.';
+        _limpieza = motor.cancelar().catchError((Object _) {});
+        _avisar();
+        return;
+      }
       await _procesar(() => enviar(texto, true), voz: true, panel: true);
     } catch (_) {
       if (_vigente(sesion)) {
@@ -181,6 +215,12 @@ class ControladorAsistente extends ChangeNotifier {
       voz: false,
       panel: false,
     );
+  }
+
+  Future<void> confirmarDictado(String texto) async {
+    if (!revisando || _cerrado || texto.trim().isEmpty) return;
+    transcripcion = texto.trim();
+    await _procesar(() => enviar(transcripcion, true), voz: true, panel: true);
   }
 
   Future<void> elegirCuenta(String id) async {
@@ -259,7 +299,7 @@ class ControladorAsistente extends ChangeNotifier {
   }
 
   void cancelar() {
-    if (enviando) return; // El registro ya enviado debe poder terminar.
+    if (_cerrado || enviando) return; // El registro enviado debe terminar.
     _temporizadorAviso?.cancel();
     ++_sesion;
     pulsado = false;
@@ -273,7 +313,7 @@ class ControladorAsistente extends ChangeNotifier {
 
   void ocultarPanel() {
     _temporizadorAviso?.cancel();
-    if (capturando) {
+    if (capturando || revisando) {
       cancelar();
     } else {
       mostrarPanel = false;
@@ -289,6 +329,7 @@ class ControladorAsistente extends ChangeNotifier {
     ++_sesion;
     unawaited(motor.cancelar().catchError((Object _) {}));
     unawaited(callar().catchError((Object _) {}));
+    _nivelAudio.dispose();
     super.dispose();
   }
 }

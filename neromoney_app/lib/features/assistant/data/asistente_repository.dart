@@ -139,17 +139,20 @@ class AsistenteRepository {
         .orderBy('fecha', descending: true)
         .limit(_limiteTransaccionesContexto)
         .get();
-    return snap.docs.map((doc) {
-      final t = Transaccion.fromFirestore(doc);
-      return {
-        'tipo': t.tipo.name,
-        'monto': t.monto,
-        'categoria': t.categoria,
-        'descripcion': t.descripcion,
-        'fecha': t.fecha.toIso8601String().substring(0, 10),
-        'cuenta': cuentasPorId[t.cuentaId] ?? 'desconocida',
-      };
-    }).toList();
+    return snap.docs
+        .map(Transaccion.fromFirestore)
+        .where((t) => !t.esTransferencia)
+        .map((t) {
+          return {
+            'tipo': t.tipo.name,
+            'monto': t.monto,
+            'categoria': t.categoria,
+            'descripcion': t.descripcion,
+            'fecha': t.fecha.toIso8601String().substring(0, 10),
+            'cuenta': cuentasPorId[t.cuentaId] ?? 'desconocida',
+          };
+        })
+        .toList();
   }
 
   /// Responde "¿cuánto llevo gastado hoy/ayer/hace N días/esta semana/este
@@ -161,7 +164,10 @@ class AsistenteRepository {
   /// periodo preguntaron (y, para un día puntual, cuántos días atrás), para
   /// evitar que "redondee" o cuente mal un reembolso, como ya pasó cuando
   /// se le pedía sumarlo él mismo.
-  Future<void> _responderConsultaGasto(String periodo, {int diasAtras = 0}) async {
+  Future<void> _responderConsultaGasto(
+    String periodo, {
+    int diasAtras = 0,
+  }) async {
     final hoy = DateTime.now();
     final hoySinHora = DateTime(hoy.year, hoy.month, hoy.day);
     final DateTime desde;
@@ -185,13 +191,17 @@ class AsistenteRepository {
       case 'semana':
         // weekday: lunes=1 ... domingo=7 — así se calcula el lunes de esta semana.
         desde = hoySinHora.subtract(Duration(days: hoy.weekday - 1));
-        hasta = hoySinHora.add(const Duration(days: 1)); // hasta el final de hoy
+        hasta = hoySinHora.add(
+          const Duration(days: 1),
+        ); // hasta el final de hoy
         etiqueta = 'esta semana';
         break;
       case 'mes':
       default:
         desde = DateTime(hoy.year, hoy.month, 1);
-        hasta = hoySinHora.add(const Duration(days: 1)); // hasta el final de hoy
+        hasta = hoySinHora.add(
+          const Duration(days: 1),
+        ); // hasta el final de hoy
         etiqueta = 'este mes';
     }
 

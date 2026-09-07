@@ -1,6 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Micrófono para dictarle a Lucy (speech_to_text). -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Recordatorios de gastos (flutter_local_notifications). POST_NOTIFICATIONS
+         se pide en tiempo de ejecución (Android 13+, ver RecordatoriosService.
+         pedirPermiso) solo cuando el usuario activa el interruptor — nunca antes.
+         RECEIVE_BOOT_COMPLETED deja que el plugin reprograme los avisos si el
+         teléfono se reinicia (si no, un reinicio los borraría sin avisar). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <application
         android:label="neromoney_app"
         android:name="${applicationName}"
@@ -32,6 +39,20 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Requeridos por flutter_local_notifications para programar
+             (ScheduledNotificationReceiver) y reprogramar tras un reinicio
+             (ScheduledNotificationBootReceiver) los recordatorios de gastos. -->
+        <receiver android:exported="false"
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
+        <receiver android:exported="false"
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+        </receiver>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
@@ -39,6 +60,9 @@
 
          In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
     <queries>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>

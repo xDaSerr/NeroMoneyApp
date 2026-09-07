@@ -22,17 +22,25 @@ class ResumenGastos {
     required DateTime hasta,
   }) {
     final enRango = transacciones.where(
-      (t) => !t.fecha.isBefore(desde) && t.fecha.isBefore(hasta),
+      (t) =>
+          !t.esTransferencia &&
+          !t.fecha.isBefore(desde) &&
+          t.fecha.isBefore(hasta),
     );
 
     final netoPorCategoria = <String, double>{};
     for (final t in enRango) {
       final signo = t.tipo == TipoTransaccion.gasto ? 1.0 : -1.0;
-      netoPorCategoria.update(t.categoria, (v) => v + signo * t.monto, ifAbsent: () => signo * t.monto);
+      netoPorCategoria.update(
+        t.categoria,
+        (v) => v + signo * t.monto,
+        ifAbsent: () => signo * t.monto,
+      );
     }
 
-    final entradas = netoPorCategoria.entries.where((e) => e.value > 0.01).toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+    final entradas =
+        netoPorCategoria.entries.where((e) => e.value > 0.01).toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
     final total = entradas.fold<double>(0, (acc, e) => acc + e.value);
 
     return ResumenGastos(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 
@@ -76,11 +77,14 @@ class _GradientButtonState extends State<GradientButton> {
               mainAxisSize: widget.expand ? MainAxisSize.max : MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  widget.label,
-                  style: AppTextStyles.bodyLg.copyWith(
-                    color: AppColors.canvas,
-                    fontWeight: FontWeight.w600,
+                Flexible(
+                  child: Text(
+                    widget.label,
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.bodyLg.copyWith(
+                      color: AppColors.canvas,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 if (widget.icon != null) ...[

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../core/router/app_shell.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -53,7 +54,12 @@ class MovementsScreen extends ConsumerWidget {
             // El extra abajo es para que la píldora flotante de navegación
             // (ver AppShell, extendBody:true) nunca tape el último
             // movimiento de la lista.
-            padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + espacioParaBarraFlotante(context)),
+            padding: EdgeInsets.fromLTRB(
+              20,
+              20,
+              20,
+              20 + espacioParaBarraFlotante(context),
+            ),
             itemCount: transacciones.length,
             separatorBuilder: (_, _) => const SizedBox(height: 10),
             itemBuilder: (context, i) {
@@ -72,7 +78,10 @@ class MovementsScreen extends ConsumerWidget {
                     color: AppColors.outflowCrimson.withValues(alpha: 0.85),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Icon(Icons.delete_outline_rounded, color: Colors.white),
+                  child: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: Colors.white,
+                  ),
                 ),
                 // El borrado real se hace AQUÍ (no en onDismissed): si se
                 // hace después de que la animación ya quitó el widget de la
@@ -83,18 +92,44 @@ class MovementsScreen extends ConsumerWidget {
                 confirmDismiss: (_) async {
                   final confirmado = await _confirmarEliminar(context, t);
                   if (!confirmado) return false;
-                  await ref.read(transaccionesRepositoryProvider).eliminarTransaccion(t);
-                  return true;
+                  try {
+                    await ref
+                        .read(transaccionesRepositoryProvider)
+                        .eliminarTransaccion(t);
+                    return true;
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            e is StateError ? e.message : 'No se pudo eliminar el movimiento. Revisa tu conexión.',
+                          ),
+                        ),
+                      );
+                    }
+                    return false;
+                  }
                 },
-                child: MovimientoTile(transaccion: t, nombreCuenta: nombreCuenta),
+                child: MovimientoTile(
+                  transaccion: t,
+                  nombreCuenta: nombreCuenta,
+                  nombreContraparte:
+                      cuentasPorId[t.cuentaContraparteId]?.nombre,
+                ),
               );
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primaryCyan)),
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: AppColors.primaryCyan),
+        ),
         error: (e, _) => Center(
-          child: Text('No se pudieron cargar tus movimientos: $e',
-              style: AppTextStyles.bodyMd.copyWith(color: AppColors.outflowCrimson)),
+          child: Text(
+            'No se pudieron cargar tus movimientos: $e',
+            style: AppTextStyles.bodyMd.copyWith(
+              color: AppColors.outflowCrimson,
+            ),
+          ),
         ),
       ),
     );
@@ -107,17 +142,27 @@ class MovementsScreen extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface1,
-        title: const Text('¿Eliminar este movimiento?'),
+        title: Text(
+          t.esTransferencia
+              ? '¿Deshacer esta transferencia?'
+              : '¿Eliminar este movimiento?',
+        ),
         content: Text(
           '${t.descripcion.isEmpty ? t.categoria : t.descripcion} — \$${t.monto.toStringAsFixed(2)}.\n'
-          'Esto también revierte su efecto en el saldo de la cuenta.',
+          '${t.esTransferencia ? 'Se eliminarán la salida y la entrada, y el dinero volverá a la cuenta de origen en tus registros.' : 'Esto también revierte su efecto en el saldo de la cuenta.'}',
           style: AppTextStyles.bodyMd,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Eliminar', style: TextStyle(color: AppColors.outflowCrimson)),
+            child: const Text(
+              'Eliminar',
+              style: TextStyle(color: AppColors.outflowCrimson),
+            ),
           ),
         ],
       ),

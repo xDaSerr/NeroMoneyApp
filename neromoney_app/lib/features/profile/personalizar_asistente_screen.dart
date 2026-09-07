@@ -1,7 +1,9 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/anillo_asistente.dart';
@@ -9,6 +11,7 @@ import '../../core/widgets/gradient_button.dart';
 import '../onboarding/data/paleta_anillos_asistente.dart';
 import '../onboarding/data/perfil_usuario.dart';
 import '../onboarding/providers/perfil_providers.dart';
+import 'widgets/configuracion_voz_asistente.dart';
 
 // Nombres sugeridos para quien no se le ocurre uno — mismo estilo que el
 // mockup de Stitch (Onboarding 2/3), pero aquí es solo un atajo: el campo
@@ -45,12 +48,21 @@ class _PersonalizarAsistenteScreenState
   String? _avatarOriginal;
   late List<Color> _colorAnillo;
   bool _guardando = false;
+  late String _vozNombre, _vozIdioma;
+  late double _vozTono;
+  late bool _revisarDictado;
 
   @override
   void initState() {
     super.initState();
     final perfil = ref.read(perfilProvider).value;
-    _nombreCtrl = TextEditingController(text: perfil?.nombreAsistente ?? 'Lucy');
+    _vozNombre = perfil?.vozNombre ?? '';
+    _vozIdioma = perfil?.vozIdioma ?? 'es-MX';
+    _vozTono = perfil?.vozTono ?? 1;
+    _revisarDictado = perfil?.revisarDictado ?? false;
+    _nombreCtrl = TextEditingController(
+      text: perfil?.nombreAsistente ?? 'Lucy',
+    );
     _avatarBase64 = perfil?.avatarAsistenteBase64;
     _avatarOriginal = _avatarBase64;
 
@@ -83,7 +95,11 @@ class _PersonalizarAsistenteScreenState
     if (bytes.length > _tamanoMaximoBytes) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Esa imagen sigue siendo muy pesada, intenta con otra.')),
+          const SnackBar(
+            content: Text(
+              'Esa imagen sigue siendo muy pesada, intenta con otra.',
+            ),
+          ),
         );
       }
       return;
@@ -96,17 +112,26 @@ class _PersonalizarAsistenteScreenState
 
   // --- Botón "Guardar cambios": persiste nombre, foto y color del anillo ---
   Future<void> _guardar() async {
+    if (_guardando) return;
     setState(() => _guardando = true);
     try {
-      final nombre = _nombreCtrl.text.trim().isEmpty ? 'Lucy' : _nombreCtrl.text.trim();
+      final nombre = _nombreCtrl.text.trim().isEmpty
+          ? 'Lucy'
+          : _nombreCtrl.text.trim();
       final repo = ref.read(perfilRepositoryProvider);
       final actual = ref.read(perfilProvider).value ?? PerfilUsuario.vacio;
 
-      await repo.guardarPerfil(actual.copyWith(
-        nombreAsistente: nombre,
-        colorAnilloInicio: _colorAnillo[0].toARGB32(),
-        colorAnilloFin: _colorAnillo[1].toARGB32(),
-      ));
+      await repo.guardarPerfil(
+        actual.copyWith(
+          nombreAsistente: nombre,
+          colorAnilloInicio: _colorAnillo[0].toARGB32(),
+          colorAnilloFin: _colorAnillo[1].toARGB32(),
+          vozNombre: _vozNombre,
+          vozIdioma: _vozIdioma,
+          vozTono: _vozTono,
+          revisarDictado: _revisarDictado,
+        ),
+      );
       if (_avatarBase64 != _avatarOriginal) {
         await repo.actualizarAvatarAsistente(_avatarBase64);
       }
@@ -114,9 +139,8 @@ class _PersonalizarAsistenteScreenState
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No se pudo guardar: $e')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('No se pudo guardar: $e')));
       }
     } finally {
       if (mounted) setState(() => _guardando = false);
@@ -141,7 +165,11 @@ class _PersonalizarAsistenteScreenState
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    AnilloAsistente(avatarBase64: _avatarBase64, colores: _colorAnillo, size: 128),
+                    AnilloAsistente(
+                      avatarBase64: _avatarBase64,
+                      colores: _colorAnillo,
+                      size: 128,
+                    ),
                     Positioned(
                       right: 0,
                       bottom: 0,
@@ -152,8 +180,11 @@ class _PersonalizarAsistenteScreenState
                           color: AppColors.primaryCyan,
                           border: Border.all(color: AppColors.canvas, width: 3),
                         ),
-                        child: const Icon(Icons.photo_camera_rounded,
-                            size: 16, color: AppColors.canvas),
+                        child: const Icon(
+                          Icons.photo_camera_rounded,
+                          size: 16,
+                          color: AppColors.canvas,
+                        ),
                       ),
                     ),
                   ],
@@ -172,11 +203,15 @@ class _PersonalizarAsistenteScreenState
               // --- Campo "Nombre del asistente" ---
               Align(
                 alignment: Alignment.centerLeft,
-                child: Text('NOMBRE DEL ASISTENTE', style: AppTextStyles.labelCode),
+                child: Text(
+                  'NOMBRE DEL ASISTENTE',
+                  style: AppTextStyles.labelCode,
+                ),
               ),
               const SizedBox(height: 8),
               TextField(
                 controller: _nombreCtrl,
+                onChanged: (_) => setState(() {}),
                 textCapitalization: TextCapitalization.words,
                 style: AppTextStyles.headlineSm,
                 decoration: const InputDecoration(hintText: 'Lucy'),
@@ -184,7 +219,10 @@ class _PersonalizarAsistenteScreenState
               const SizedBox(height: 16),
               Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Sugerencias rápidas:', style: AppTextStyles.bodySm),
+                child: Text(
+                  'Sugerencias rápidas:',
+                  style: AppTextStyles.bodySm,
+                ),
               ),
               const SizedBox(height: 8),
               Align(
@@ -199,7 +237,8 @@ class _PersonalizarAsistenteScreenState
                         backgroundColor: AppColors.surface3ActiveGlass,
                         labelStyle: AppTextStyles.bodySm,
                         side: BorderSide.none,
-                        onPressed: () => setState(() => _nombreCtrl.text = sugerencia),
+                        onPressed: () =>
+                            setState(() => _nombreCtrl.text = sugerencia),
                       ),
                   ],
                 ),
@@ -210,7 +249,10 @@ class _PersonalizarAsistenteScreenState
               // inferior (ver AnilloAsistente / paleta_anillos_asistente) ---
               Align(
                 alignment: Alignment.centerLeft,
-                child: Text('COLOR DEL CONTORNO', style: AppTextStyles.labelCode),
+                child: Text(
+                  'COLOR DEL CONTORNO',
+                  style: AppTextStyles.labelCode,
+                ),
               ),
               const SizedBox(height: 10),
               Align(
@@ -222,7 +264,8 @@ class _PersonalizarAsistenteScreenState
                     for (final par in paletaAnillosAsistente)
                       _MuestraDegradado(
                         colores: par,
-                        seleccionado: par[0].toARGB32() == _colorAnillo[0].toARGB32() &&
+                        seleccionado:
+                            par[0].toARGB32() == _colorAnillo[0].toARGB32() &&
                             par[1].toARGB32() == _colorAnillo[1].toARGB32(),
                         onTap: () => setState(() => _colorAnillo = par),
                       ),
@@ -230,13 +273,33 @@ class _PersonalizarAsistenteScreenState
                 ),
               ),
               const SizedBox(height: 32),
+              ConfiguracionVozAsistente(
+                nombre: _nombreCtrl.text,
+                vozNombre: _vozNombre,
+                vozIdioma: _vozIdioma,
+                tono: _vozTono,
+                revisar: _revisarDictado,
+                onVoz: (nombre, idioma) => setState(() {
+                  _vozNombre = nombre;
+                  _vozIdioma = idioma;
+                }),
+                onTono: (tono) => setState(() => _vozTono = tono),
+                onRevisar: (revisar) =>
+                    setState(() => _revisarDictado = revisar),
+              ),
+              const SizedBox(height: 24),
               // --- Botón "Guardar cambios" ---
               _guardando
                   ? const Padding(
                       padding: EdgeInsets.symmetric(vertical: 18),
-                      child: CircularProgressIndicator(color: AppColors.primaryCyan),
+                      child: CircularProgressIndicator(
+                        color: AppColors.primaryCyan,
+                      ),
                     )
-                  : GradientButton(label: 'Guardar cambios', onPressed: _guardar),
+                  : GradientButton(
+                      label: 'Guardar cambios',
+                      onPressed: _guardar,
+                    ),
               const SizedBox(height: 12),
             ],
           ),
@@ -273,9 +336,16 @@ class _MuestraDegradado extends StatelessWidget {
             end: Alignment.bottomRight,
             colors: colores,
           ),
-          border: seleccionado ? Border.all(color: AppColors.textPrimary, width: 2.5) : null,
+          border: seleccionado
+              ? Border.all(color: AppColors.textPrimary, width: 2.5)
+              : null,
           boxShadow: seleccionado
-              ? [BoxShadow(color: colores[1].withValues(alpha: 0.5), blurRadius: 10)]
+              ? [
+                  BoxShadow(
+                    color: colores[1].withValues(alpha: 0.5),
+                    blurRadius: 10,
+                  ),
+                ]
               : null,
         ),
         child: seleccionado
