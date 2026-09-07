@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/gradient_button.dart';
@@ -15,16 +16,26 @@ import '../data/paleta_cuentas.dart';
 /// usuario la paga o el banco le sube el límite: NeroMoney no lo detecta
 /// solo (no hace vinculación bancaria real, ver CLAUDE.md → "Filosofía
 /// sobre tarjetas de crédito"), así que dejamos que el usuario lo diga a mano.
+///
+/// Es un `Dialog` centrado (no un `showModalBottomSheet`) a propósito —
+/// pedido explícito del usuario: una hoja pegada al fondo terminaba
+/// quedando "muy arriba" o tapada por la píldora flotante de navegación
+/// según cuánto contenido tuviera (crédito trae más campos que
+/// efectivo/vale). Un diálogo centrado con `insetPadding` no depende de
+/// eso — `Dialog` ya suma `MediaQuery.viewInsets` (el teclado) solo, así
+/// que tampoco hace falta empujarlo a mano cuando el teclado aparece.
 Future<void> mostrarEditorDeCuenta({
   required BuildContext context,
   required Cuenta cuenta,
   required ValueChanged<Cuenta> onGuardar,
 }) {
-  return showModalBottomSheet(
+  return showDialog(
     context: context,
-    backgroundColor: Colors.transparent,
-    isScrollControlled: true,
-    builder: (context) => _EditarCuentaSheet(cuenta: cuenta, onGuardar: onGuardar),
+    builder: (context) => Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+      child: _EditarCuentaSheet(cuenta: cuenta, onGuardar: onGuardar),
+    ),
   );
 }
 
@@ -40,14 +51,21 @@ class _EditarCuentaSheet extends StatefulWidget {
 
 class _EditarCuentaSheetState extends State<_EditarCuentaSheet> {
   late final _nombreCtrl = TextEditingController(text: widget.cuenta.nombre);
-  late final _saldoCtrl =
-      TextEditingController(text: widget.cuenta.saldoActual.toStringAsFixed(2));
-  late final _limiteCtrl =
-      TextEditingController(text: widget.cuenta.limiteCredito?.toStringAsFixed(2) ?? '');
-  late final _corteCtrl = TextEditingController(text: widget.cuenta.diaCorte?.toString() ?? '');
-  late final _limitePagoCtrl =
-      TextEditingController(text: widget.cuenta.diaLimitePago?.toString() ?? '');
-  late final _digitosCtrl = TextEditingController(text: widget.cuenta.ultimos4Digitos ?? '');
+  late final _saldoCtrl = TextEditingController(
+    text: widget.cuenta.saldoActual.toStringAsFixed(2),
+  );
+  late final _limiteCtrl = TextEditingController(
+    text: widget.cuenta.limiteCredito?.toStringAsFixed(2) ?? '',
+  );
+  late final _corteCtrl = TextEditingController(
+    text: widget.cuenta.diaCorte?.toString() ?? '',
+  );
+  late final _limitePagoCtrl = TextEditingController(
+    text: widget.cuenta.diaLimitePago?.toString() ?? '',
+  );
+  late final _digitosCtrl = TextEditingController(
+    text: widget.cuenta.ultimos4Digitos ?? '',
+  );
   late int? _colorElegido = widget.cuenta.colorPersonalizado;
 
   @override
@@ -68,19 +86,22 @@ class _EditarCuentaSheetState extends State<_EditarCuentaSheet> {
     final saldo = double.tryParse(_saldoCtrl.text.replaceAll(',', '.'));
     final limite = double.tryParse(_limiteCtrl.text.replaceAll(',', '.'));
     if (nombre.isEmpty || saldo == null) return;
-    if (esCredito && limite == null) return; // límite sigue siendo obligatorio en crédito
+    if (esCredito && limite == null)
+      return; // límite sigue siendo obligatorio en crédito
 
     final digitos = _digitosCtrl.text.trim();
 
-    widget.onGuardar(widget.cuenta.copyWith(
-      nombre: nombre,
-      saldoActual: saldo,
-      limiteCredito: esCredito ? limite : null,
-      diaCorte: int.tryParse(_corteCtrl.text),
-      diaLimitePago: int.tryParse(_limitePagoCtrl.text),
-      ultimos4Digitos: digitos.isEmpty ? null : digitos,
-      colorPersonalizado: _colorElegido,
-    ));
+    widget.onGuardar(
+      widget.cuenta.copyWith(
+        nombre: nombre,
+        saldoActual: saldo,
+        limiteCredito: esCredito ? limite : null,
+        diaCorte: int.tryParse(_corteCtrl.text),
+        diaLimitePago: int.tryParse(_limitePagoCtrl.text),
+        ultimos4Digitos: digitos.isEmpty ? null : digitos,
+        colorPersonalizado: _colorElegido,
+      ),
+    );
     Navigator.of(context).pop();
   }
 
@@ -92,19 +113,18 @@ class _EditarCuentaSheetState extends State<_EditarCuentaSheet> {
     // banco. En efectivo/vale no aplica (no hay tarjeta que confundir).
     final esTarjeta = esCredito || widget.cuenta.tipo == TipoCuenta.debito;
 
-    return Padding(
-      // Empuja la hoja arriba del teclado cuando aparece.
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.surface1,
+        borderRadius: BorderRadius.circular(24), // las 4 esquinas
+        border: Border.all(color: AppColors.glassStrokeStandard),
       ),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: AppColors.surface1,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          border: Border.all(color: AppColors.glassStrokeStandard),
+      // Alto máximo: en cuentas de crédito hay bastantes campos y el
+      // diálogo centrado no debe empujar contra los bordes de la
+      // pantalla — a partir de ahí, el contenido hace scroll solo.
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.8,
         ),
         child: SingleChildScrollView(
           child: Padding(
@@ -127,7 +147,9 @@ class _EditarCuentaSheetState extends State<_EditarCuentaSheet> {
                 // el número tras pagar la tarjeta ---
                 TextField(
                   controller: _saldoCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   style: AppTextStyles.bodyLg,
                   decoration: InputDecoration(
                     hintText: esCredito ? 'Disponible actual' : 'Saldo actual',
@@ -139,9 +161,13 @@ class _EditarCuentaSheetState extends State<_EditarCuentaSheet> {
                   const SizedBox(height: 12),
                   TextField(
                     controller: _limiteCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     style: AppTextStyles.bodyLg,
-                    decoration: const InputDecoration(hintText: 'Límite de crédito'),
+                    decoration: const InputDecoration(
+                      hintText: 'Límite de crédito',
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -152,7 +178,10 @@ class _EditarCuentaSheetState extends State<_EditarCuentaSheet> {
                   const SizedBox(height: 16),
                   // --- Fecha de corte y límite de pago: 100% opcionales, solo de
                   // referencia — la app nunca los usa para calcular ni recordar nada ---
-                  Text('DATOS DE REFERENCIA (OPCIONALES)', style: AppTextStyles.labelCode),
+                  Text(
+                    'DATOS DE REFERENCIA (OPCIONALES)',
+                    style: AppTextStyles.labelCode,
+                  ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -160,9 +189,13 @@ class _EditarCuentaSheetState extends State<_EditarCuentaSheet> {
                         child: TextField(
                           controller: _corteCtrl,
                           keyboardType: TextInputType.number,
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
                           style: AppTextStyles.bodyLg,
-                          decoration: const InputDecoration(hintText: 'Día de corte (1-31)'),
+                          decoration: const InputDecoration(
+                            hintText: 'Día de corte (1-31)',
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -170,9 +203,13 @@ class _EditarCuentaSheetState extends State<_EditarCuentaSheet> {
                         child: TextField(
                           controller: _limitePagoCtrl,
                           keyboardType: TextInputType.number,
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
                           style: AppTextStyles.bodyLg,
-                          decoration: const InputDecoration(hintText: 'Día límite de pago'),
+                          decoration: const InputDecoration(
+                            hintText: 'Día límite de pago',
+                          ),
                         ),
                       ),
                     ],
@@ -182,7 +219,10 @@ class _EditarCuentaSheetState extends State<_EditarCuentaSheet> {
                 // diferenciar una tarjeta física de una digital del mismo banco ---
                 if (esTarjeta) ...[
                   const SizedBox(height: 16),
-                  Text('ÚLTIMOS 4 DÍGITOS (RECOMENDADO)', style: AppTextStyles.labelCode),
+                  Text(
+                    'ÚLTIMOS 4 DÍGITOS (RECOMENDADO)',
+                    style: AppTextStyles.labelCode,
+                  ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: _digitosCtrl,
@@ -212,7 +252,10 @@ class _EditarCuentaSheetState extends State<_EditarCuentaSheet> {
                     for (final color in paletaColoresCuentas)
                       GestureDetector(
                         onTap: () => setState(
-                          () => _colorElegido = _colorElegido == color.toARGB32() ? null : color.toARGB32(),
+                          () =>
+                              _colorElegido = _colorElegido == color.toARGB32()
+                              ? null
+                              : color.toARGB32(),
                         ),
                         child: Container(
                           width: 32,
@@ -228,7 +271,11 @@ class _EditarCuentaSheetState extends State<_EditarCuentaSheet> {
                             ),
                           ),
                           child: _colorElegido == color.toARGB32()
-                              ? const Icon(Icons.check_rounded, size: 16, color: Colors.white)
+                              ? const Icon(
+                                  Icons.check_rounded,
+                                  size: 16,
+                                  color: Colors.white,
+                                )
                               : null,
                         ),
                       ),

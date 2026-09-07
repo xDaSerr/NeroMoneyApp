@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/router/app_shell.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/glass_card.dart';
@@ -40,7 +41,10 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
           final visibles = _filtro == null ? cuentas : cuentas.where((c) => c.tipo == _filtro).toList();
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+            // El extra abajo es para que la píldora flotante de navegación
+            // (ver AppShell, extendBody:true) nunca tape el formulario de
+            // "Agregar cuenta".
+            padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + espacioParaBarraFlotante(context)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

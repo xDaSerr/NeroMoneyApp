@@ -11,6 +11,7 @@ import '../../features/auth/forgot_password_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/onboarding/data/perfil_repository.dart';
 import '../../features/onboarding/onboarding_flow_screen.dart';
+import '../../features/profile/personalizar_asistente_screen.dart';
 import '../../features/profile/profile_screen.dart';
 import '../../features/transactions/add_transaction_screen.dart';
 import '../../features/transactions/data/transaccion.dart';
@@ -78,6 +79,13 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/reports',
       builder: (context, state) => const PlaceholderScreen(title: 'Reportes'),
+    ),
+    // Igual que Reportes: se llega desde el menú de Perfil, no desde una
+    // pestaña — el usuario pidió explícitamente que esto NO sea parte del
+    // onboarding, sino algo que se cambia cuando uno quiera.
+    GoRoute(
+      path: '/personalizar-asistente',
+      builder: (context, state) => const PersonalizarAsistenteScreen(),
     ),
 
     StatefulShellRoute.indexedStack(

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/router/app_shell.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/glass_card.dart';
@@ -69,8 +70,14 @@ class HomeScreen extends ConsumerWidget {
 
     return Scaffold(
       body: SafeArea(
+        // El margen inferior va dentro del scroll para que las tarjetas
+        // puedan pasar detrás de la navegación flotante.
+        bottom: false,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          // El extra abajo (espacioParaBarraFlotante) es para que la
+          // píldora flotante de navegación (ver AppShell, extendBody:true)
+          // nunca tape el último movimiento de la lista.
+          padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + espacioParaBarraFlotante(context)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

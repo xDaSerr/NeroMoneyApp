@@ -97,14 +97,24 @@ const HERRAMIENTA_CONSULTAR_GASTO = {
     description:
       "Consulta el gasto neto exacto de un periodo (calculado por la app, no " +
       "por ti). Úsala SIEMPRE que el usuario pregunte cuánto ha gastado en un " +
-      "periodo, en vez de sumarlo tú con transaccionesRecientes.",
+      "periodo, en vez de sumarlo tú con transaccionesRecientes o de calcular " +
+      "fechas tú mismo. Para un día puntual (hoy, ayer, anteayer, 'hace N " +
+      "días'), usa periodo:'dia' junto con diasAtras. Para 'esta semana' o " +
+      "'este mes' usa esos periodos tal cual, sin diasAtras.",
     parameters: {
       type: "object",
       properties: {
         periodo: {
           type: "string",
-          enum: ["hoy", "semana", "mes"],
+          enum: ["dia", "semana", "mes"],
           description: "El periodo por el que pregunta el usuario.",
+        },
+        diasAtras: {
+          type: "integer",
+          description:
+            "Solo aplica si periodo es 'dia': cuántos días atrás de hoy es " +
+            "el día por el que preguntan. 0 = hoy, 1 = ayer, 2 = anteayer, " +
+            "3 = hace tres días, y así sucesivamente.",
         },
       },
       required: ["periodo"],
@@ -148,10 +158,12 @@ const MENSAJE_SISTEMA =
   "cuentasDelUsuario, devuelve en cuentaMencionada el nombre EXACTO de esa " +
   "lista, no lo que transcribió el reconocimiento de voz. Solo si de " +
   "verdad no se parece a ninguna, deja el término genérico tal cual. " +
-  "Si el usuario pregunta cuánto ha gastado en un periodo (hoy, esta " +
-  "semana, este mes), NO intentes sumarlo tú con transaccionesRecientes — " +
-  "llama a consultar_gasto_periodo con el periodo que corresponda y deja " +
-  "que la app calcule el número exacto. " +
+  "Si el usuario pregunta cuánto ha gastado en un periodo — hoy, ayer, " +
+  "anteayer, hace N días, esta semana, este mes — NO intentes sumarlo tú " +
+  "con transaccionesRecientes ni calcules la fecha tú mismo: llama a " +
+  "consultar_gasto_periodo con el periodo que corresponda (usa 'dia' + " +
+  "diasAtras para cualquier día puntual) y deja que la app calcule el " +
+  "número exacto. " +
   "Si el usuario pide CANCELAR, BORRAR o ELIMINAR un movimiento que ya se " +
   "registró (distinto de un reembolso — un reembolso es dinero nuevo que " +
   "entra, y se registra con registrar_transaccion como ingreso, nunca borra " +
@@ -262,7 +274,8 @@ exports.interpretarMensajeIA = onCall(
 
     if (llamadaHerramienta.function.name === "consultar_gasto_periodo") {
       const argumentos = JSON.parse(llamadaHerramienta.function.arguments);
-      return {tipo: "consulta_gasto", periodo: argumentos.periodo};
+      const diasAtras = Number.isInteger(argumentos.diasAtras) ? argumentos.diasAtras : 0;
+      return {tipo: "consulta_gasto", periodo: argumentos.periodo, diasAtras};
     }
 
     const datos = JSON.parse(llamadaHerramienta.function.arguments);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/router/app_shell.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../accounts/data/cuenta.dart';
@@ -20,11 +21,17 @@ class MovementsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Movimientos')),
       // --- Botón flotante "+": abre la pantalla de alta manual (add_transaction_screen.dart) ---
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.primaryCyan,
-        foregroundColor: AppColors.canvas,
-        onPressed: () => context.push('/add-transaction'),
-        child: const Icon(Icons.add_rounded),
+      // Envuelto en Padding (en vez de solo el FAB) para subirlo por
+      // encima de la píldora flotante de navegación (ver AppShell,
+      // extendBody:true) — si no, quedaría tapado detrás de ella.
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(bottom: espacioParaBarraFlotante(context)),
+        child: FloatingActionButton(
+          backgroundColor: AppColors.primaryCyan,
+          foregroundColor: AppColors.canvas,
+          onPressed: () => context.push('/add-transaction'),
+          child: const Icon(Icons.add_rounded),
+        ),
       ),
       body: transaccionesAsync.when(
         data: (transacciones) {
@@ -43,7 +50,10 @@ class MovementsScreen extends ConsumerWidget {
           final cuentas = cuentasAsync.value ?? const <Cuenta>[];
           final cuentasPorId = {for (final c in cuentas) c.id: c};
           return ListView.separated(
-            padding: const EdgeInsets.all(20),
+            // El extra abajo es para que la píldora flotante de navegación
+            // (ver AppShell, extendBody:true) nunca tape el último
+            // movimiento de la lista.
+            padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + espacioParaBarraFlotante(context)),
             itemCount: transacciones.length,
             separatorBuilder: (_, _) => const SizedBox(height: 10),
             itemBuilder: (context, i) {

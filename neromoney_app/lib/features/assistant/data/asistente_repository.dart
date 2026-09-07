@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+
 import '../../accounts/data/cuenta.dart';
 import '../../transactions/data/resumen_gastos.dart';
 import '../../transactions/data/transaccion.dart';
@@ -44,9 +45,11 @@ class AsistenteRepository {
       _usuarioDoc.collection('estadoAsistente').doc('borrador');
 
   Stream<List<MensajeChat>> observarMensajes({int limite = 200}) {
-    return _mensajes.orderBy('fecha').limitToLast(limite).snapshots().map(
-          (snap) => snap.docs.map(MensajeChat.fromFirestore).toList(),
-        );
+    return _mensajes
+        .orderBy('fecha')
+        .limitToLast(limite)
+        .snapshots()
+        .map((snap) => snap.docs.map(MensajeChat.fromFirestore).toList());
   }
 
   Stream<BorradorPendiente?> observarBorrador() {
@@ -66,24 +69,30 @@ class AsistenteRepository {
   /// `_completarConCuenta`, etc.) propaguen un valor de retorno hasta
   /// arriba solo para este caso.
   String? ultimoMensajeAsistente;
+  MensajeChat? ultimaRespuesta;
+  OrigenTransaccion _origenActual = OrigenTransaccion.iaTexto;
 
   Future<void> _guardarMensaje(
     AutorMensaje autor,
     String contenido, {
     List<String> chipsCuentas = const [],
     bool registrado = false,
-  }) {
-    if (autor == AutorMensaje.asistente) ultimoMensajeAsistente = contenido;
-    return _mensajes.add(
-      MensajeChat(
-        id: '',
-        autor: autor,
-        contenido: contenido,
-        fecha: DateTime.now(),
-        chipsCuentas: chipsCuentas,
-        registrado: registrado,
-      ).toFirestore(),
+  }) async {
+    final mensaje = MensajeChat(
+      id: '',
+      autor: autor,
+      contenido: contenido,
+      fecha: DateTime.now(),
+      chipsCuentas: chipsCuentas,
+      registrado: registrado,
     );
+    await _mensajes.add(mensaje.toFirestore());
+    // La barra rápida muestra el mismo mensaje confirmado que el chat.
+    // Nunca marcar como registrado antes de que termine la escritura.
+    if (autor == AutorMensaje.asistente) {
+      ultimoMensajeAsistente = contenido;
+      ultimaRespuesta = mensaje;
+    }
   }
 
   // Solo para continuidad conversacional INMEDIATA (ej. si el mensaje
@@ -103,7 +112,10 @@ class AsistenteRepository {
   /// Los últimos mensajes YA guardados (sin incluir el que se está por
   /// mandar) — le da a DeepSeek continuidad conversacional inmediata.
   Future<List<Map<String, String>>> _historialReciente() async {
-    final snap = await _mensajes.orderBy('fecha').limitToLast(_limiteHistorial).get();
+    final snap = await _mensajes
+        .orderBy('fecha')
+        .limitToLast(_limiteHistorial)
+        .get();
     return snap.docs.map((doc) {
       final m = MensajeChat.fromFirestore(doc);
       return {
@@ -118,7 +130,9 @@ class AsistenteRepository {
   /// limpiar el chat, ver `limpiarHistorial`). Le sirve a Lucy tanto para
   /// resolver referencias a gastos pasados (reembolsos) con datos exactos,
   /// como para responder preguntas simples ("¿cuánto llevo gastado hoy?").
-  Future<List<Map<String, dynamic>>> _transaccionesRecientes(List<Cuenta> cuentas) async {
+  Future<List<Map<String, dynamic>>> _transaccionesRecientes(
+    List<Cuenta> cuentas,
+  ) async {
     final cuentasPorId = {for (final c in cuentas) c.id: c.nombre};
     final snap = await _usuarioDoc
         .collection('transacciones')
@@ -138,33 +152,48 @@ class AsistenteRepository {
     }).toList();
   }
 
-  /// Responde "¿cuánto llevo gastado hoy/esta semana/este mes?" con el
-  /// número EXACTO — se calcula aquí, sobre TODOS los movimientos del
-  /// periodo (no la lista limitada de `transaccionesRecientes`) y neteando
-  /// reembolsos por categoría (`ResumenGastos`, la misma lógica que
-  /// "Gastos del mes" en Inicio). El modelo nunca hace esta cuenta: solo
-  /// decide qué periodo preguntaron, para evitar que "redondee" o cuente
-  /// mal un reembolso, como ya pasó cuando se le pedía sumarlo él mismo.
-  Future<void> _responderConsultaGasto(String periodo) async {
+  /// Responde "¿cuánto llevo gastado hoy/ayer/hace N días/esta semana/este
+  /// mes?" con el número EXACTO — se calcula aquí, sobre TODOS los
+  /// movimientos del periodo (no la lista limitada de
+  /// `transaccionesRecientes`) y neteando reembolsos por categoría
+  /// (`ResumenGastos`, la misma lógica que "Gastos del mes" en Inicio). El
+  /// modelo nunca hace esta cuenta ni calcula fechas: solo decide qué
+  /// periodo preguntaron (y, para un día puntual, cuántos días atrás), para
+  /// evitar que "redondee" o cuente mal un reembolso, como ya pasó cuando
+  /// se le pedía sumarlo él mismo.
+  Future<void> _responderConsultaGasto(String periodo, {int diasAtras = 0}) async {
     final hoy = DateTime.now();
+    final hoySinHora = DateTime(hoy.year, hoy.month, hoy.day);
     final DateTime desde;
+    final DateTime hasta;
     final String etiqueta;
     switch (periodo) {
-      case 'hoy':
-        desde = DateTime(hoy.year, hoy.month, hoy.day);
-        etiqueta = 'hoy';
+      case 'dia':
+        // Un día puntual en el pasado (o hoy) es una ventana cerrada de un
+        // solo día — a diferencia de semana/mes, NO se extiende hasta hoy.
+        final diasAtrasSeguro = diasAtras.clamp(0, 3650);
+        final dia = hoySinHora.subtract(Duration(days: diasAtrasSeguro));
+        desde = dia;
+        hasta = dia.add(const Duration(days: 1));
+        etiqueta = switch (diasAtrasSeguro) {
+          0 => 'hoy',
+          1 => 'ayer',
+          2 => 'anteayer',
+          _ => 'hace $diasAtrasSeguro días',
+        };
         break;
       case 'semana':
         // weekday: lunes=1 ... domingo=7 — así se calcula el lunes de esta semana.
-        desde = DateTime(hoy.year, hoy.month, hoy.day).subtract(Duration(days: hoy.weekday - 1));
+        desde = hoySinHora.subtract(Duration(days: hoy.weekday - 1));
+        hasta = hoySinHora.add(const Duration(days: 1)); // hasta el final de hoy
         etiqueta = 'esta semana';
         break;
       case 'mes':
       default:
         desde = DateTime(hoy.year, hoy.month, 1);
+        hasta = hoySinHora.add(const Duration(days: 1)); // hasta el final de hoy
         etiqueta = 'este mes';
     }
-    final hasta = DateTime(hoy.year, hoy.month, hoy.day + 1); // hasta el final de hoy
 
     final snap = await _usuarioDoc
         .collection('transacciones')
@@ -172,7 +201,11 @@ class AsistenteRepository {
         .where('fecha', isLessThan: Timestamp.fromDate(hasta))
         .get();
     final transacciones = snap.docs.map(Transaccion.fromFirestore).toList();
-    final resumen = ResumenGastos.calcular(transacciones, desde: desde, hasta: hasta);
+    final resumen = ResumenGastos.calcular(
+      transacciones,
+      desde: desde,
+      hasta: hasta,
+    );
 
     final texto = resumen.total <= 0.01
         ? 'No tienes gasto neto $etiqueta (o se canceló con reembolsos).'
@@ -188,7 +221,9 @@ class AsistenteRepository {
   /// MENSAJE_SISTEMA en functions/index.js, donde también se acotó eso).
   Future<void> saludarSiEsNuevo(String nombreAsistente) async {
     final snap = await _mensajes.limit(1).get();
-    if (snap.docs.isNotEmpty) return; // ya hay conversación, no hace falta saludar
+    if (snap.docs.isNotEmpty) {
+      return; // ya hay conversación, no hace falta saludar
+    }
     await _guardarMensaje(
       AutorMensaje.asistente,
       'Hola, soy $nombreAsistente 👋 Cuéntame qué gastaste o qué te ingresó y lo registro, '
@@ -222,7 +257,14 @@ class AsistenteRepository {
   /// Punto de entrada principal: el usuario mandó `texto`. `cuentas` son sus
   /// cuentas reales (ya cargadas por la pantalla vía `cuentasProvider`) —
   /// se usan aquí para resolver ambigüedad, nunca se le mandan a la IA.
-  Future<void> enviarMensaje(String texto, List<Cuenta> cuentas) async {
+  Future<void> enviarMensaje(
+    String texto,
+    List<Cuenta> cuentas, {
+    OrigenTransaccion origen = OrigenTransaccion.iaTexto,
+  }) async {
+    ultimaRespuesta = null;
+    ultimoMensajeAsistente = null;
+    _origenActual = origen;
     final mensaje = texto.trim();
     if (mensaje.isEmpty) return;
 
@@ -262,14 +304,16 @@ class AsistenteRepository {
     }
 
     try {
-      final resultado = await _functions.httpsCallable('interpretarMensajeIA').call({
-        'mensaje': mensaje,
-        'historial': historial,
-        'transaccionesRecientes': transaccionesRecientes,
-        // Le sirve al modelo para corregir una transcripción de voz
-        // imperfecta hacia el nombre exacto (ej. "rapicar" → "Rappi Card").
-        'nombresCuentas': cuentas.map((c) => c.nombre).toList(),
-      });
+      final resultado = await _functions
+          .httpsCallable('interpretarMensajeIA')
+          .call({
+            'mensaje': mensaje,
+            'historial': historial,
+            'transaccionesRecientes': transaccionesRecientes,
+            // Le sirve al modelo para corregir una transcripción de voz
+            // imperfecta hacia el nombre exacto (ej. "rapicar" → "Rappi Card").
+            'nombresCuentas': cuentas.map((c) => c.nombre).toList(),
+          });
       final data = Map<String, dynamic>.from(resultado.data as Map);
 
       if (data['tipo'] == 'mensaje') {
@@ -281,7 +325,10 @@ class AsistenteRepository {
       }
 
       if (data['tipo'] == 'consulta_gasto') {
-        await _responderConsultaGasto(data['periodo'] as String? ?? 'mes');
+        await _responderConsultaGasto(
+          data['periodo'] as String? ?? 'mes',
+          diasAtras: (data['diasAtras'] as num?)?.toInt() ?? 0,
+        );
         return;
       }
 
@@ -306,7 +353,14 @@ class AsistenteRepository {
 
   /// El usuario tocó uno de los chips de cuenta de un borrador pendiente
   /// (nivel 4 — sin ninguna pista, nunca pregunta abierta).
-  Future<void> completarBorradorConChip(String cuentaId, List<Cuenta> cuentas) async {
+  Future<void> completarBorradorConChip(
+    String cuentaId,
+    List<Cuenta> cuentas, {
+    OrigenTransaccion origen = OrigenTransaccion.iaTexto,
+  }) async {
+    ultimaRespuesta = null;
+    ultimoMensajeAsistente = null;
+    _origenActual = origen;
     final snap = await _borradorDoc.get();
     if (!snap.exists) return;
     final borrador = BorradorPendiente.fromFirestore(snap.data()!);
@@ -326,7 +380,10 @@ class AsistenteRepository {
     await _borradorDoc.delete();
   }
 
-  Future<void> _completarConCuenta(BorradorPendiente borrador, Cuenta cuenta) async {
+  Future<void> _completarConCuenta(
+    BorradorPendiente borrador,
+    Cuenta cuenta,
+  ) async {
     await _intentarRegistrarYConfirmar(
       tipo: borrador.tipo,
       monto: borrador.monto,
@@ -352,17 +409,23 @@ class AsistenteRepository {
     required String mensajeExito,
   }) async {
     try {
-      await _transaccionesRepository.registrarTransaccion(Transaccion(
-        id: '',
-        monto: monto,
-        tipo: tipo,
-        categoria: categoria,
-        descripcion: descripcion,
-        cuentaId: cuentaId,
-        fecha: DateTime.now(),
-        origen: OrigenTransaccion.iaTexto,
-      ));
-      await _guardarMensaje(AutorMensaje.asistente, mensajeExito, registrado: true);
+      await _transaccionesRepository.registrarTransaccion(
+        Transaccion(
+          id: '',
+          monto: monto,
+          tipo: tipo,
+          categoria: categoria,
+          descripcion: descripcion,
+          cuentaId: cuentaId,
+          fecha: DateTime.now(),
+          origen: _origenActual,
+        ),
+      );
+      await _guardarMensaje(
+        AutorMensaje.asistente,
+        mensajeExito,
+        registrado: true,
+      );
     } on SaldoInsuficienteException catch (e) {
       await _guardarMensaje(
         AutorMensaje.asistente,
@@ -409,14 +472,18 @@ class AsistenteRepository {
           // Nivel 3: varias del mismo tipo — se usa la predeterminada (o la
           // primera como respaldo), se registra de una vez para no frenar
           // al usuario, y se avisa que se puede corregir hablando de nuevo.
-          final elegida = delTipo.firstWhere((c) => c.esPredeterminada, orElse: () => delTipo.first);
+          final elegida = delTipo.firstWhere(
+            (c) => c.esPredeterminada,
+            orElse: () => delTipo.first,
+          );
           await _intentarRegistrarYConfirmar(
             tipo: tipo,
             monto: monto,
             categoria: categoria,
             descripcion: descripcion,
             cuentaId: elegida.id,
-            mensajeExito: '${_confirmacion(tipo, monto, categoria)} Como tienes varias cuentas de '
+            mensajeExito:
+                '${_confirmacion(tipo, monto, categoria)} Como tienes varias cuentas de '
                 '${elegida.tipo.etiqueta.toLowerCase()}, lo puse en "${elegida.nombre}" — '
                 'dime "cámbialo a [cuenta]" si no era esa.',
           );
@@ -432,7 +499,8 @@ class AsistenteRepository {
         categoria: categoria,
         descripcion: descripcion,
         cuentaId: cuenta.id,
-        mensajeExito: '${_confirmacion(tipo, monto, categoria)} Lo cargué a "${cuenta.nombre}".',
+        mensajeExito:
+            '${_confirmacion(tipo, monto, categoria)} Lo cargué a "${cuenta.nombre}".',
       );
       return;
     }
@@ -442,15 +510,17 @@ class AsistenteRepository {
     // hablando de otra cosa y el borrador simplemente expira en 1 hora.
     // OJO: todavía no se guarda nada en este punto — por eso el mensaje NO
     // dice "registrado" (eso solo pasa cuando el usuario elige la cuenta).
-    await _borradorDoc.set(BorradorPendiente(
-      tipo: tipo,
-      monto: monto,
-      categoria: categoria,
-      descripcion: descripcion,
-      cuentaMencionada: cuentaMencionada,
-      creadoEn: DateTime.now(),
-      idsCuentasSugeridas: cuentas.map((c) => c.id).toList(),
-    ).toFirestore());
+    await _borradorDoc.set(
+      BorradorPendiente(
+        tipo: tipo,
+        monto: monto,
+        categoria: categoria,
+        descripcion: descripcion,
+        cuentaMencionada: cuentaMencionada,
+        creadoEn: DateTime.now(),
+        idsCuentasSugeridas: cuentas.map((c) => c.id).toList(),
+      ).toFirestore(),
+    );
 
     await _guardarMensaje(
       AutorMensaje.asistente,
@@ -477,7 +547,10 @@ class AsistenteRepository {
     if (tipos == null) return null;
     final delTipo = cuentas.where((c) => tipos.contains(c.tipo)).toList();
     if (delTipo.isEmpty) return null;
-    return delTipo.firstWhere((c) => c.esPredeterminada, orElse: () => delTipo.first);
+    return delTipo.firstWhere(
+      (c) => c.esPredeterminada,
+      orElse: () => delTipo.first,
+    );
   }
 
   /// Mapea cómo la gente realmente nombra sus formas de pago a los tipos de
@@ -485,11 +558,19 @@ class AsistenteRepository {
   /// a propósito (ver la conversación de diseño en CLAUDE.md) — se resuelve
   /// buscando entre ambos tipos, no adivinando uno.
   List<TipoCuenta>? _tiposCuentaDesdeTermino(String termino) {
-    if (termino.contains('efectivo') || termino.contains('cash')) return [TipoCuenta.efectivo];
-    if (termino.contains('crédito') || termino.contains('credito')) return [TipoCuenta.credito];
-    if (termino.contains('débito') || termino.contains('debito')) return [TipoCuenta.debito];
+    if (termino.contains('efectivo') || termino.contains('cash')) {
+      return [TipoCuenta.efectivo];
+    }
+    if (termino.contains('crédito') || termino.contains('credito')) {
+      return [TipoCuenta.credito];
+    }
+    if (termino.contains('débito') || termino.contains('debito')) {
+      return [TipoCuenta.debito];
+    }
     if (termino.contains('vale')) return [TipoCuenta.vale];
-    if (termino.contains('tarjeta')) return [TipoCuenta.debito, TipoCuenta.credito];
+    if (termino.contains('tarjeta')) {
+      return [TipoCuenta.debito, TipoCuenta.credito];
+    }
     return null;
   }
 
@@ -503,7 +584,9 @@ class AsistenteRepository {
   /// Para usar ANTES de tener la cuenta (nivel 4) — todavía no se guardó
   /// nada, así que no debe sonar como si ya estuviera hecho.
   String _deteccion(TipoTransaccion tipo, double monto, String categoria) {
-    final sustantivo = tipo == TipoTransaccion.gasto ? 'un gasto' : 'un ingreso';
+    final sustantivo = tipo == TipoTransaccion.gasto
+        ? 'un gasto'
+        : 'un ingreso';
     return 'Detecté $sustantivo de \$${monto.toStringAsFixed(2)} en $categoria.';
   }
 

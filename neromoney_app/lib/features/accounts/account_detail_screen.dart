@@ -8,6 +8,7 @@ import '../transactions/providers/transacciones_providers.dart';
 import '../transactions/widgets/movimiento_tile.dart';
 import 'data/cuenta.dart';
 import 'providers/cuentas_providers.dart';
+import 'widgets/chip_emv.dart';
 import 'widgets/editar_cuenta_sheet.dart';
 
 /// Detalle de una cuenta específica — sigue el diseño de
@@ -167,6 +168,9 @@ class _TarjetaGrande extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final esCredito = cuenta.tipo == TipoCuenta.credito;
+    // Débito también es una tarjeta física de verdad (a diferencia de
+    // efectivo/vale/otro) — lleva chip igual que crédito.
+    final esTarjeta = esCredito || cuenta.tipo == TipoCuenta.debito;
     final digitos = cuenta.ultimos4Digitos;
 
     return Container(
@@ -190,12 +194,14 @@ class _TarjetaGrande extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(
-                esCredito ? Icons.credit_card_rounded : Icons.account_balance_rounded,
-                color: Colors.white,
-                size: 28,
-              ),
-              if (esCredito) const Icon(Icons.contactless_rounded, color: Colors.white70, size: 22),
+              // --- Chip EMV para crédito y débito (ambos son tarjeta
+              // física de verdad), mismo widget que usa CuentaTile en el
+              // carrusel de Inicio (congruencia visual pedida por el
+              // usuario) — efectivo/vale/otro no llevan chip. ---
+              esTarjeta
+                  ? const ChipEmv()
+                  : const Icon(Icons.account_balance_rounded, color: Colors.white, size: 28),
+              if (esTarjeta) const Icon(Icons.contactless_rounded, color: Colors.white70, size: 22),
             ],
           ),
           const Spacer(),
@@ -313,7 +319,17 @@ class _CasillaFecha extends StatelessWidget {
             children: [
               Icon(icono, size: 14, color: AppColors.textSecondary),
               const SizedBox(width: 4),
-              Text(etiqueta, style: AppTextStyles.labelCode),
+              // Expanded + ellipsis: "Próximo corte"/"Límite de pago" no
+              // cabían junto al ícono en una columna angosta y se
+              // desbordaban por la derecha.
+              Expanded(
+                child: Text(
+                  etiqueta,
+                  style: AppTextStyles.labelCode,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 4),

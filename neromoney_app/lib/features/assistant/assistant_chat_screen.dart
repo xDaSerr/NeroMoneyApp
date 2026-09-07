@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_tts/flutter_tts.dart';
-import 'package:speech_to_text/speech_recognition_error.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
+
+import 'package:go_router/go_router.dart';
+
+import '../../core/router/app_shell.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/widgets/asistente_avatar.dart';
 import '../accounts/data/cuenta.dart';
 import '../accounts/providers/cuentas_providers.dart';
 import '../onboarding/providers/perfil_providers.dart';
-import '../onboarding/widgets/currency_picker.dart';
+import 'data/controlador_asistente.dart';
+import 'providers/controlador_asistente_provider.dart';
 import 'data/mensaje_chat.dart';
 import 'providers/asistente_providers.dart';
 import 'widgets/burbuja_mensaje.dart';
@@ -26,142 +29,46 @@ import 'widgets/burbuja_mensaje.dart';
 /// usuario escribe a mano, la respuesta es silenciosa, como hasta ahora. No
 /// hay un interruptor de "modo voz" separado: activar el micrófono para
 /// una pregunta ES la decisión de activar la voz para esa respuesta.
-/// Reemplaza "$1,234.56" por "1,234.56 pesos" (o la moneda que corresponda)
-/// antes de mandarle el texto al lector de voz — sin esto, el "$" se lee
-/// como dólares sin importar la moneda real que configuró el usuario.
-String _textoParaVoz(String texto, String codigoMoneda) {
-  final palabra = monedaHablada(codigoMoneda);
-  return texto.replaceAllMapped(
-    RegExp(r'\$([\d,]+\.?\d*)'),
-    (match) => '${match.group(1)} $palabra',
-  );
-}
-
 class AssistantChatScreen extends ConsumerStatefulWidget {
   const AssistantChatScreen({super.key});
 
   @override
-  ConsumerState<AssistantChatScreen> createState() => _AssistantChatScreenState();
+  ConsumerState<AssistantChatScreen> createState() =>
+      _AssistantChatScreenState();
 }
 
 class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
   final _inputCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
-  bool _enviando = false;
+  ControladorAsistente get _asistente => ref.read(controladorAsistenteProvider);
+  bool get _enviando => _asistente.ocupado;
   // Evita disparar el saludo fijo más de una vez por sesión de la pantalla
   // (mensajesAsync puede reconstruir el build() varias veces mientras está
   // vacío). Se reinicia al limpiar la conversación, ver _confirmarLimpiar.
   bool _saludoEnviado = false;
 
-  final _voz = stt.SpeechToText();
-  final _tts = FlutterTts();
-  bool _vozDisponible = false;
-  // Marca si el mensaje que se está por mandar vino del micrófono — así
-  // sabemos si hay que leer la respuesta de Lucy en voz alta o no.
-  bool _ultimoMensajeFueVoz = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _iniciarVoz();
-    _tts.setLanguage('es-MX');
-  }
-
-  Future<void> _iniciarVoz() async {
-    final disponible = await _voz.initialize(onError: _errorDeVoz);
-    if (mounted) setState(() => _vozDisponible = disponible);
-  }
-
-  void _errorDeVoz(SpeechRecognitionError error) {
-    if (!mounted) return;
-    setState(() {});
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('No se pudo escuchar bien: ${error.errorMsg}')),
-    );
-  }
-
   @override
   void dispose() {
     _inputCtrl.dispose();
     _scrollCtrl.dispose();
-    _voz.stop();
-    _tts.stop();
     super.dispose();
   }
 
   Future<void> _enviar() async {
     final texto = _inputCtrl.text.trim();
     if (texto.isEmpty || _enviando) return;
-    final cuentas = ref.read(cuentasProvider).value ?? const <Cuenta>[];
-    final fueVoz = _ultimoMensajeFueVoz;
-    _ultimoMensajeFueVoz = false;
-
-    setState(() => _enviando = true);
     _inputCtrl.clear();
-    try {
-      final repositorio = ref.read(asistenteRepositoryProvider);
-      await repositorio.enviarMensaje(texto, cuentas);
-      _irAlFinal();
-      // Solo se lee en voz alta si el usuario dictó esta pregunta por
-      // micrófono — un mensaje escrito a mano siempre responde en silencio.
-      final respuesta = repositorio.ultimoMensajeAsistente;
-      if (fueVoz && respuesta != null) {
-        final moneda = ref.read(perfilProvider).value?.moneda ?? 'MXN';
-        await _tts.speak(_textoParaVoz(respuesta, moneda));
-      }
-    } finally {
-      if (mounted) setState(() => _enviando = false);
-    }
+    await _asistente.enviarTexto(texto);
+    if (mounted) _irAlFinal();
   }
 
-  // --- Botón de micrófono estilo "mantener presionado para hablar" ---
-  // Empieza a escuchar al presionar (onTapDown) y se detiene al soltar
-  // (onTapUp/onTapCancel) — como una nota de voz, no un interruptor.
-  Future<void> _iniciarEscucha() async {
-    if (_voz.isListening) return;
-    if (!_vozDisponible) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No se pudo activar el micrófono — revisa los permisos de la app.'),
-        ),
-      );
-      return;
-    }
-    _inputCtrl.clear();
-    setState(() {});
-    await _voz.listen(
-      listenOptions: stt.SpeechListenOptions(localeId: 'es_MX'),
-      onResult: (resultado) {
-        setState(() => _inputCtrl.text = resultado.recognizedWords);
-        // `finalResult` también llega si el usuario ya soltó el botón (eso
-        // llama a `_voz.stop()`, que fuerza este resultado final) — en ese
-        // caso mandamos el mensaje ya transcrito solo, sin tocar "enviar".
-        if (resultado.finalResult && resultado.recognizedWords.trim().isNotEmpty) {
-          _ultimoMensajeFueVoz = true;
-          _enviar();
-        }
-      },
-    );
-    setState(() {});
-  }
+  // --- Micrófono y chips: comparten sesión con el acceso de la barra ---
+  void _iniciarEscucha() => _asistente.iniciar();
+  void _detenerEscucha() => _asistente.soltar();
 
-  Future<void> _detenerEscucha() async {
-    if (!_voz.isListening) return;
-    await _voz.stop();
-    setState(() {});
-  }
-
-  // --- Se dispara al tocar un chip de cuenta (nivel 4 de resolución de ambigüedad) ---
   Future<void> _elegirCuenta(String cuentaId) async {
-    if (_enviando) return;
-    final cuentas = ref.read(cuentasProvider).value ?? const <Cuenta>[];
-    setState(() => _enviando = true);
-    try {
-      await ref.read(asistenteRepositoryProvider).completarBorradorConChip(cuentaId, cuentas);
-      _irAlFinal();
-    } finally {
-      if (mounted) setState(() => _enviando = false);
-    }
+    await _asistente.elegirCuenta(cuentaId);
+    if (mounted) _irAlFinal();
   }
 
   // Borrar la conversación es irreversible (aunque no toca dinero real,
@@ -178,10 +85,16 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
           style: AppTextStyles.bodyMd,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Limpiar', style: TextStyle(color: AppColors.outflowCrimson)),
+            child: const Text(
+              'Limpiar',
+              style: TextStyle(color: AppColors.outflowCrimson),
+            ),
           ),
         ],
       ),
@@ -206,48 +119,67 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final asistente = ref.watch(controladorAsistenteProvider);
+    return ListenableBuilder(
+      listenable: asistente,
+      builder: (context, _) => _construirChat(context, ref),
+    );
+  }
+
+  Widget _construirChat(BuildContext context, WidgetRef ref) {
     final mensajesAsync = ref.watch(mensajesChatProvider);
     final hayBorrador = ref.watch(borradorPendienteProvider).value != null;
     final cuentas = ref.watch(cuentasProvider).value ?? const <Cuenta>[];
-    final nombreAsistente = ref.watch(perfilProvider).value?.nombreAsistente ?? 'Lucy';
+    final perfil = ref.watch(perfilProvider).value;
+    final nombreAsistente = perfil?.nombreAsistente ?? 'Lucy';
+    final avatarAsistente = perfil?.avatarAsistenteBase64;
     final cuentasPorId = {for (final c in cuentas) c.id: c};
 
     return Scaffold(
       appBar: AppBar(
         title: Row(
           children: [
-            // --- Avatar de Lucy en el encabezado ---
-            Container(
-              width: 36,
-              height: 36,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(colors: AppColors.userBubbleGradient),
-              ),
-              child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 18),
-            ),
+            // --- Avatar del asistente en el encabezado (foto elegida por
+            // el usuario, o el ícono de la app por defecto) ---
+            AsistenteAvatar(avatarBase64: avatarAsistente, size: 36),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(nombreAsistente, style: AppTextStyles.headlineSm, overflow: TextOverflow.ellipsis),
+                  Text(
+                    nombreAsistente,
+                    style: AppTextStyles.headlineSm,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   // Esto sí es verdad, no es adorno: el backend (Cloud
                   // Function + DeepSeek) ya está conectado de verdad.
-                  Text('Conectada',
-                      style: AppTextStyles.bodySm.copyWith(color: AppColors.inflowEmerald)),
+                  Text(
+                    'Conectada',
+                    style: AppTextStyles.bodySm.copyWith(
+                      color: AppColors.inflowEmerald,
+                    ),
+                  ),
                 ],
               ),
             ),
           ],
         ),
-        // --- Botón "Limpiar conversación" (como el del Stitch) ---
+        // --- Botones "Personalizar asistente" y "Limpiar conversación": el
+        // primero es el mismo destino que el menú de Perfil (ver
+        // ProfileScreen) — solo un atajo, no un lugar distinto — para no
+        // tener que salirse del chat a cambiarle la foto o el nombre ---
         actions: [
+          IconButton(
+            icon: const Icon(Icons.face_retouching_natural_rounded),
+            tooltip: 'Personalizar asistente',
+            onPressed: () => context.push('/personalizar-asistente'),
+          ),
           IconButton(
             icon: const Icon(Icons.history_rounded),
             tooltip: 'Limpiar conversación',
-            onPressed: () => _confirmarLimpiar(context),
+            onPressed: _enviando ? null : () => _confirmarLimpiar(context),
           ),
         ],
       ),
@@ -261,10 +193,15 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
                   if (!_saludoEnviado) {
                     _saludoEnviado = true;
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      ref.read(asistenteRepositoryProvider).saludarSiEsNuevo(nombreAsistente);
+                      ref
+                          .read(asistenteRepositoryProvider)
+                          .saludarSiEsNuevo(nombreAsistente);
                     });
                   }
-                  return _EstadoVacio(nombreAsistente: nombreAsistente);
+                  return _EstadoVacio(
+                    nombreAsistente: nombreAsistente,
+                    avatarBase64: avatarAsistente,
+                  );
                 }
                 _irAlFinal();
                 return ListView.builder(
@@ -276,7 +213,8 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
                     final esUltimo = i == mensajes.length - 1;
                     // Solo el último mensaje puede mostrar chips activos —
                     // los de mensajes viejos ya se resolvieron o vencieron.
-                    final mostrarChips = esUltimo && hayBorrador && m.chipsCuentas.isNotEmpty;
+                    final mostrarChips =
+                        esUltimo && hayBorrador && m.chipsCuentas.isNotEmpty;
 
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 14),
@@ -296,13 +234,19 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
                                 for (final id in m.chipsCuentas)
                                   if (cuentasPorId[id] != null)
                                     ActionChip(
-                                      avatar: const Icon(Icons.account_balance_wallet_outlined,
-                                          size: 16, color: AppColors.primaryCyan),
+                                      avatar: const Icon(
+                                        Icons.account_balance_wallet_outlined,
+                                        size: 16,
+                                        color: AppColors.primaryCyan,
+                                      ),
                                       label: Text(cuentasPorId[id]!.nombre),
-                                      backgroundColor: AppColors.surface3ActiveGlass,
+                                      backgroundColor:
+                                          AppColors.surface3ActiveGlass,
                                       labelStyle: AppTextStyles.bodySm,
                                       side: BorderSide.none,
-                                      onPressed: _enviando ? null : () => _elegirCuenta(id),
+                                      onPressed: _enviando
+                                          ? null
+                                          : () => _elegirCuenta(id),
                                     ),
                               ],
                             ),
@@ -313,10 +257,16 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
                   },
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primaryCyan)),
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: AppColors.primaryCyan),
+              ),
               error: (e, _) => Center(
-                child: Text('No se pudo cargar la conversación: $e',
-                    style: AppTextStyles.bodyMd.copyWith(color: AppColors.outflowCrimson)),
+                child: Text(
+                  'No se pudo cargar la conversación: $e',
+                  style: AppTextStyles.bodyMd.copyWith(
+                    color: AppColors.outflowCrimson,
+                  ),
+                ),
               ),
             ),
           ),
@@ -325,11 +275,14 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
             enviando: _enviando,
             nombreAsistente: nombreAsistente,
             onEnviar: _enviar,
-            escuchando: _voz.isListening,
-            micDisponible: _vozDisponible,
+            escuchando: _asistente.pulsado,
+            onMicCancel: _asistente.cancelar,
             onMicPress: _iniciarEscucha,
             onMicRelease: _detenerEscucha,
           ),
+          // Para que la píldora flotante de navegación (ver AppShell,
+          // extendBody:true) nunca tape la barra de texto.
+          SizedBox(height: espacioParaBarraFlotante(context)),
         ],
       ),
     );
@@ -337,8 +290,12 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
 }
 
 class _EstadoVacio extends StatelessWidget {
-  const _EstadoVacio({required this.nombreAsistente});
+  const _EstadoVacio({
+    required this.nombreAsistente,
+    required this.avatarBase64,
+  });
   final String nombreAsistente;
+  final String? avatarBase64;
 
   @override
   Widget build(BuildContext context) {
@@ -348,7 +305,7 @@ class _EstadoVacio extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.auto_awesome_rounded, color: AppColors.secondaryVioletTint, size: 40),
+            AsistenteAvatar(avatarBase64: avatarBase64, size: 64),
             const SizedBox(height: 16),
             Text(
               'Cuéntale a $nombreAsistente un gasto o ingreso, ej. "gasté 200 en un café".',
@@ -369,7 +326,7 @@ class _BarraDeEntrada extends StatelessWidget {
     required this.nombreAsistente,
     required this.onEnviar,
     required this.escuchando,
-    required this.micDisponible,
+    required this.onMicCancel,
     required this.onMicPress,
     required this.onMicRelease,
   });
@@ -379,7 +336,7 @@ class _BarraDeEntrada extends StatelessWidget {
   final String nombreAsistente;
   final VoidCallback onEnviar;
   final bool escuchando;
-  final bool micDisponible;
+  final VoidCallback onMicCancel;
   final VoidCallback onMicPress;
   final VoidCallback onMicRelease;
 
@@ -387,6 +344,8 @@ class _BarraDeEntrada extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,
+      // La separación de la navegación ya se añade debajo de esta barra.
+      bottom: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
         child: Row(
@@ -420,7 +379,9 @@ class _BarraDeEntrada extends StatelessWidget {
                     filled: false,
                     isCollapsed: true,
                     contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                    hintText: escuchando ? 'Escuchando...' : 'Escribe a $nombreAsistente...',
+                    hintText: escuchando
+                        ? 'Escuchando...'
+                        : 'Escribe a $nombreAsistente...',
                   ),
                   onSubmitted: (_) => onEnviar(),
                 ),
@@ -429,9 +390,9 @@ class _BarraDeEntrada extends StatelessWidget {
             const SizedBox(width: 8),
             // --- Botón de micrófono: mantener presionado para hablar, soltar para enviar ---
             GestureDetector(
-              onTapDown: enviando ? null : (_) => onMicPress(),
+              onTapDown: (_) => onMicPress(),
               onTapUp: (_) => onMicRelease(),
-              onTapCancel: onMicRelease,
+              onTapCancel: onMicCancel,
               child: Container(
                 width: 48,
                 height: 48,
@@ -441,12 +402,16 @@ class _BarraDeEntrada extends StatelessWidget {
                       : AppColors.surface3ActiveGlass,
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: escuchando ? AppColors.outflowCrimson : AppColors.glassStrokeStandard,
+                    color: escuchando
+                        ? AppColors.outflowCrimson
+                        : AppColors.glassStrokeStandard,
                   ),
                 ),
                 child: Icon(
                   escuchando ? Icons.mic_rounded : Icons.mic_none_rounded,
-                  color: escuchando ? AppColors.outflowCrimson : AppColors.textSecondary,
+                  color: escuchando
+                      ? AppColors.outflowCrimson
+                      : AppColors.textSecondary,
                   size: 20,
                 ),
               ),
@@ -465,9 +430,16 @@ class _BarraDeEntrada extends StatelessWidget {
                 child: enviando
                     ? const Padding(
                         padding: EdgeInsets.all(14),
-                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.canvas),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.canvas,
+                        ),
                       )
-                    : const Icon(Icons.send_rounded, color: AppColors.canvas, size: 20),
+                    : const Icon(
+                        Icons.send_rounded,
+                        color: AppColors.canvas,
+                        size: 20,
+                      ),
               ),
             ),
           ],

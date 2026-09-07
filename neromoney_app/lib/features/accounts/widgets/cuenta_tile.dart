@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../data/cuenta.dart';
+import 'chip_emv.dart';
 
 /// Tarjeta que representa una cuenta — usada tanto en el carrusel de Inicio
 /// como en la lista de la pestaña Cuentas. Con forma de tarjeta física real
@@ -23,6 +24,9 @@ class CuentaTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final esCredito = cuenta.tipo == TipoCuenta.credito;
+    // Débito también es una tarjeta física de verdad (a diferencia de
+    // efectivo/vale/otro) — lleva chip igual que crédito.
+    final esTarjeta = esCredito || cuenta.tipo == TipoCuenta.debito;
     final acento = cuenta.colorPersonalizado != null
         ? Color(cuenta.colorPersonalizado!)
         : (esCredito ? AppColors.secondaryViolet : AppColors.primaryCyan);
@@ -126,9 +130,10 @@ class CuentaTile extends StatelessWidget {
                         ),
                         Row(
                           children: [
-                            // --- Chip EMV dorado: solo crédito, detalle de tarjeta física ---
-                            if (esCredito) ...[
-                              const _ChipEmv(),
+                            // --- Chip EMV dorado: crédito y débito son
+                            // tarjetas físicas de verdad, efectivo/vale/otro no ---
+                            if (esTarjeta) ...[
+                              const ChipEmv(),
                               const SizedBox(width: 8),
                             ],
                             // --- Insignia: contactless para tarjetas, cartera para el resto ---
@@ -221,36 +226,3 @@ class CuentaTile extends StatelessWidget {
   }
 }
 
-/// El chip dorado de una tarjeta física — puramente decorativo (ninguna
-/// tarjeta real tiene chip electrónico de verdad, obvio), pero es el
-/// detalle que hace que una tarjeta de crédito se sienta como tarjeta de
-/// verdad en vez de solo una caja con degradado.
-class _ChipEmv extends StatelessWidget {
-  const _ChipEmv();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 26,
-      height: 19,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(4),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFFDE68A), Color(0xFFF59E0B), Color(0xFFB45309)],
-        ),
-      ),
-      child: Center(
-        child: Container(
-          width: 13,
-          height: 9,
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.black.withValues(alpha: 0.35)),
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-      ),
-    );
-  }
-}
