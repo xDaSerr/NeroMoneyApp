@@ -107,19 +107,45 @@ class _AppShellState extends ConsumerState<AppShell>
         body: Stack(
           children: [
             Positioned.fill(child: navigationShell),
-            if (asistente.mostrarPanel)
-              Positioned(
-                left: 16,
-                right: 16,
-                bottom:
-                    MediaQuery.viewInsetsOf(context).bottom +
-                    espacioParaBarraFlotante(context) +
-                    8,
-                child: PanelVozAsistente(
-                  controlador: asistente,
-                  nombre: perfil?.nombreAsistente ?? 'Lucy',
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom:
+                  MediaQuery.viewInsetsOf(context).bottom +
+                  espacioParaBarraFlotante(context) +
+                  8,
+              // AnimatedSwitcher en vez de solo "if (mostrarPanel)": así
+              // aparecer/desaparecer es una transición (fundido + pequeño
+              // deslizamiento), no un corte seco — se notaba sobre todo al
+              // cerrarse solo (ver ControladorAsistente._duracionAutoOcultar).
+              // Mientras mostrarPanel se mantiene en el mismo valor (ej. la
+              // transcripción cambia en vivo durante el dictado), el child
+              // conserva la misma key, así que NO se reinicia la animación
+              // en cada notifyListeners() — solo cruza cuando de verdad
+              // aparece o desaparece.
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 220),
+                switchInCurve: Curves.easeOut,
+                switchOutCurve: Curves.easeIn,
+                transitionBuilder: (child, animacion) => FadeTransition(
+                  opacity: animacion,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.08),
+                      end: Offset.zero,
+                    ).animate(animacion),
+                    child: child,
+                  ),
                 ),
+                child: asistente.mostrarPanel
+                    ? PanelVozAsistente(
+                        key: const ValueKey('panel-visible'),
+                        controlador: asistente,
+                        nombre: perfil?.nombreAsistente ?? 'Lucy',
+                      )
+                    : const SizedBox.shrink(key: ValueKey('panel-oculto')),
               ),
+            ),
           ],
         ),
         bottomNavigationBar: BarraFlotante(

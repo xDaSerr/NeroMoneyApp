@@ -6,6 +6,7 @@
     "node": "22"
   },
   "scripts": {
+    "test": "node --test test/*.test.cjs",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log"
   },

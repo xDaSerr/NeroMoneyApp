@@ -10,6 +10,7 @@
 const {onCall, HttpsError} = require("firebase-functions/v2/https");
 const {defineSecret} = require("firebase-functions/params");
 const OpenAI = require("openai");
+const logger = require("firebase-functions/logger");
 
 // La API key vive en Google Secret Manager (se guarda una sola vez con
 // `firebase functions:secrets:set DEEPSEEK_API_KEY`), nunca en un archivo
@@ -22,9 +23,11 @@ const deepseekApiKey = defineSecret("DEEPSEEK_API_KEY");
 // pueda usar.
 const CATEGORIAS_GASTO = [
   "Alimentación", "Transporte", "Vivienda", "Servicios",
-  "Salud", "Ocio", "Compras", "Educación", "Otro",
+  "Salud", "Ocio", "Compras", "Educación", "Ajuste", "Otro",
 ];
-const CATEGORIAS_INGRESO = ["Nómina", "Ventas", "Regalo", "Inversión", "Otro"];
+const CATEGORIAS_INGRESO = [
+  "Nómina", "Ventas", "Regalo", "Inversión", "Ajuste", "Pago de tarjeta", "Otro",
+];
 
 // La única herramienta que le damos al modelo: extraer los datos de un
 // gasto/ingreso. La resolución de a qué CUENTA aplica (ver
@@ -100,14 +103,18 @@ const HERRAMIENTA_CONSULTAR_GASTO = {
       "periodo, en vez de sumarlo tú con transaccionesRecientes o de calcular " +
       "fechas tú mismo. Para un día puntual (hoy, ayer, anteayer, 'hace N " +
       "días'), usa periodo:'dia' junto con diasAtras. Para 'esta semana' o " +
-      "'este mes' usa esos periodos tal cual, sin diasAtras.",
+      "'este mes' usa esos periodos tal cual, sin diasAtras. Si el usuario no " +
+      "menciona ningún periodo (ej. 'cuánto llevo gastado con mi Rappi " +
+      "Card'), usa 'mes' por defecto. Si además menciona una cuenta " +
+      "específica (ej. 'con mi Rappi Card', 'de mi tarjeta de Nu'), llena " +
+      "cuentaMencionada para que la app calcule el gasto SOLO de esa cuenta.",
     parameters: {
       type: "object",
       properties: {
         periodo: {
           type: "string",
           enum: ["dia", "semana", "mes"],
-          description: "El periodo por el que pregunta el usuario.",
+          description: "El periodo por el que pregunta el usuario (o 'mes' si no dijo ninguno).",
         },
         diasAtras: {
           type: "integer",
@@ -116,8 +123,130 @@ const HERRAMIENTA_CONSULTAR_GASTO = {
             "el día por el que preguntan. 0 = hoy, 1 = ayer, 2 = anteayer, " +
             "3 = hace tres días, y así sucesivamente.",
         },
+        cuentaMencionada: {
+          type: "string",
+          description:
+            "Solo si preguntó por el gasto de UNA cuenta en particular. Mismo " +
+            "criterio que en registrar_transaccion: si se parece a una de " +
+            "cuentasDelUsuario devuelve el nombre EXACTO de esa lista; si no, " +
+            "el término genérico tal cual. Cadena vacía si preguntó por el " +
+            "gasto total (todas las cuentas).",
+        },
       },
       required: ["periodo"],
+      additionalProperties: false,
+    },
+  },
+};
+
+// Corrige el saldo/disponible de una cuenta a un número EXACTO que el
+// usuario acaba de dar (ej. después de contar su efectivo). Nunca hace la
+// escritura ella misma: solo entrega cuentaMencionada + nuevoSaldo, y la app
+// (AsistenteRepository._actualizarSaldoCuenta) resuelve la cuenta y aplica
+// la diferencia como una transacción normal (categoría "Ajuste") — así
+// queda en el historial de Movimientos y se puede deshacer, en vez de
+// pisar el número sin dejar rastro.
+const HERRAMIENTA_ACTUALIZAR_SALDO = {
+  type: "function",
+  function: {
+    name: "actualizar_saldo_cuenta",
+    description:
+      "Corrige el saldo/disponible de una cuenta a un monto FINAL y exacto " +
+      "que el usuario acaba de decir (ej. 'actualiza mi efectivo a 10000', " +
+      "'tengo 8500 en mi Nu', 'mi saldo real es 3200 después de contarlo'). " +
+      "Solo úsala cuando el usuario da el número TOTAL/final de cuánto tiene " +
+      "ahora, nunca cuando describe un gasto o ingreso puntual — eso sigue " +
+      "siendo registrar_transaccion (ej. 'gasté 200' NO es un saldo nuevo).",
+    parameters: {
+      type: "object",
+      properties: {
+        cuentaMencionada: {
+          type: "string",
+          description:
+            "La cuenta que menciona. Mismo criterio que en " +
+            "registrar_transaccion: nombre EXACTO de cuentasDelUsuario si se " +
+            "parece, si no el término genérico tal cual.",
+        },
+        nuevoSaldo: {
+          type: "number",
+          description: "El nuevo saldo/disponible exacto, sin símbolo de moneda.",
+        },
+      },
+      required: ["cuentaMencionada", "nuevoSaldo"],
+      additionalProperties: false,
+    },
+  },
+};
+
+// Pagos/abonos a una tarjeta de crédito. Igual que arriba, solo entrega los
+// datos — AsistenteRepository._pagarTarjeta calcula la deuda real
+// (limiteCredito - saldoActual) y aplica el pago como un ingreso normal
+// (categoría "Pago de tarjeta"), topado a lo que de verdad se debe.
+const HERRAMIENTA_PAGAR_TARJETA = {
+  type: "function",
+  function: {
+    name: "pagar_tarjeta_credito",
+    description:
+      "Registra un pago o abono a una tarjeta de CRÉDITO (ej. 'pagué mi " +
+      "Rappi Card y ya no debo nada', 'liquidé toda la deuda de mi tarjeta " +
+      "de Nu', 'abone 500 a mi Stori Card', 'pagué toda mi deuda con mi " +
+      "tarjeta de crédito'). MUY IMPORTANTE, no la confundas con un gasto: " +
+      "'pagué CON mi tarjeta' o 'gasté en mi tarjeta' es una COMPRA (usa " +
+      "registrar_transaccion) — el dinero SALE. Esta función es solo cuando " +
+      "el dinero ENTRA a la tarjeta (le bajas la deuda): 'pagué A mi " +
+      "tarjeta', 'le abone a mi tarjeta', 'liquidé mi tarjeta'.",
+    parameters: {
+      type: "object",
+      properties: {
+        cuentaMencionada: {
+          type: "string",
+          description: "La tarjeta de crédito que menciona (nombre exacto de cuentasDelUsuario si se parece).",
+        },
+        tipoPago: {
+          type: "string",
+          enum: ["total", "parcial"],
+          description:
+            "'total' si dice que pagó/liquidó TODA la deuda, que ya no debe " +
+            "nada, o que la dejó en cero. 'parcial' si dio un monto " +
+            "específico que abonó, sin decir que quedó saldada del todo.",
+        },
+        monto: {
+          type: "number",
+          description: "Solo si tipoPago es 'parcial': cuánto abonó. Omite este campo si tipoPago es 'total'.",
+        },
+      },
+      required: ["cuentaMencionada", "tipoPago"],
+      additionalProperties: false,
+    },
+  },
+};
+
+// Estado ACTUAL de una cuenta (cuánto tiene disponible, o cuánto debe si es
+// crédito) — distinto de consultar_gasto_periodo, que es un total de FLUJO
+// (cuánto se gastó) en un rango de fechas. La app responde con el
+// saldoActual/deudaActual real, nunca con algo que el modelo calcule.
+const HERRAMIENTA_CONSULTAR_SALDO = {
+  type: "function",
+  function: {
+    name: "consultar_saldo_cuenta",
+    description:
+      "Consulta el estado ACTUAL de una cuenta: cuánto tiene disponible, o " +
+      "cuánto debe si es una tarjeta de crédito (ej. '¿cuánto debo en mi " +
+      "Rappi Card?', '¿cuánto tengo disponible en mi Nu?', '¿cuánto tengo " +
+      "de efectivo?'). Es el saldo de HOY, no un total gastado en un " +
+      "periodo — para 'cuánto he gastado' usa consultar_gasto_periodo.",
+    parameters: {
+      type: "object",
+      properties: {
+        cuentaMencionada: {
+          type: "string",
+          description:
+            "La cuenta que pregunta. Mismo criterio que en " +
+            "registrar_transaccion: nombre EXACTO de cuentasDelUsuario si se " +
+            "parece, si no el término genérico tal cual.",
+        },
+      },
+      required: ["cuentaMencionada"],
       additionalProperties: false,
     },
   },
@@ -162,8 +291,37 @@ const MENSAJE_SISTEMA =
   "anteayer, hace N días, esta semana, este mes — NO intentes sumarlo tú " +
   "con transaccionesRecientes ni calcules la fecha tú mismo: llama a " +
   "consultar_gasto_periodo con el periodo que corresponda (usa 'dia' + " +
-  "diasAtras para cualquier día puntual) y deja que la app calcule el " +
-  "número exacto. " +
+  "diasAtras para cualquier día puntual, 'mes' si no dijo ningún periodo) " +
+  "y deja que la app calcule el número exacto. Si además nombra una cuenta " +
+  "en particular (ej. '¿cuánto llevo gastado con mi Rappi Card?'), llena " +
+  "cuentaMencionada en esa misma llamada. " +
+  "Si el usuario da un monto FINAL y absoluto de cuánto tiene en una cuenta " +
+  "ahora mismo — no un gasto ni un ingreso puntual, sino una corrección " +
+  "(ej. 'actualiza mi efectivo a 10000', 'tengo 8500 en mi Nu después de " +
+  "contarlo', 'mi saldo real es X') — llama a actualizar_saldo_cuenta con " +
+  "ese número exacto. NUNCA la confundas con registrar_transaccion: si el " +
+  "mensaje describe algo que gastó o le entró (una acción, con un monto que " +
+  "se SUMA o RESTA a lo que ya tenía), es una transacción; si da el total " +
+  "final que tiene ahora (un monto que REEMPLAZA lo que ya tenía), es un " +
+  "ajuste de saldo. " +
+  "Si el usuario pregunta por el estado ACTUAL de una cuenta — cuánto " +
+  "DEBE, cuánto tiene DISPONIBLE, o cuánto TIENE ahora mismo (ej. '¿cuánto " +
+  "debo en mi Rappi Card?', '¿cuánto tengo en mi Nu?', '¿cuánto me queda " +
+  "de límite?') — usa consultar_saldo_cuenta. NO la confundas con " +
+  "consultar_gasto_periodo: 'cuánto debo/tengo' es el saldo de HOY, " +
+  "'cuánto he gastado' es un total sumado en un rango de fechas. " +
+  "Para pagos o abonos a una tarjeta de CRÉDITO (ej. 'pagué mi Rappi Card, " +
+  "ya no debo nada', 'liquidé mi tarjeta de Nu', 'abone 500 a mi Stori " +
+  "Card', 'pagué toda mi deuda con mi tarjeta de crédito'), llama a " +
+  "pagar_tarjeta_credito — tipoPago:'total' si dice que quedó en cero o " +
+  "saldada del todo, 'parcial' con el monto si dio una cantidad específica " +
+  "sin decir que terminó de pagarla. DISTINGUE con cuidado la dirección del " +
+  "dinero por la preposición: 'pagué A mi tarjeta' o 'le abone A mi " +
+  "tarjeta' es dinero que ENTRA (baja la deuda, usa pagar_tarjeta_credito); " +
+  "'pagué CON mi tarjeta' o 'gasté EN mi tarjeta' es dinero que SALE (una " +
+  "compra, usa registrar_transaccion) — confundir esta dirección haría que " +
+  "una compra real baje la deuda en vez de subirla, así que ante la duda " +
+  "prioriza la lectura más natural de la frase completa, no una palabra suelta. " +
   "Si el usuario pide CANCELAR, BORRAR o ELIMINAR un movimiento que ya se " +
   "registró (distinto de un reembolso — un reembolso es dinero nuevo que " +
   "entra, y se registra con registrar_transaccion como ingreso, nunca borra " +
@@ -250,18 +408,42 @@ exports.interpretarMensajeIA = onCall(
       apiKey: deepseekApiKey.value(),
     });
 
-    const completion = await openai.chat.completions.create({
-      model: "deepseek-v4-flash", // rápido y barato — perfecto para extracción estructurada
-      messages: [
-        {role: "system", content: MENSAJE_SISTEMA},
-        {role: "system", content: contextoTransacciones},
-        {role: "system", content: contextoCuentas},
-        ...historial,
-        {role: "user", content: mensaje},
-      ],
-      tools: [HERRAMIENTA_REGISTRAR_TRANSACCION, HERRAMIENTA_CONSULTAR_GASTO],
-      tool_choice: "auto",
-    });
+    const inicioIa = performance.now();
+    let completion;
+    try {
+      completion = await openai.chat.completions.create({
+        model: "deepseek-v4-flash", // rápido y barato — perfecto para extracción estructurada
+        // Extraer campos no necesita generar una cadena de razonamiento.
+        // En el SDK de JavaScript este campo se envía directamente en el body.
+        thinking: {type: "disabled"},
+        messages: [
+          {role: "system", content: MENSAJE_SISTEMA},
+          {role: "system", content: contextoTransacciones},
+          {role: "system", content: contextoCuentas},
+          ...historial,
+          {role: "user", content: mensaje},
+        ],
+        tools: [
+          HERRAMIENTA_REGISTRAR_TRANSACCION,
+          HERRAMIENTA_CONSULTAR_GASTO,
+          HERRAMIENTA_ACTUALIZAR_SALDO,
+          HERRAMIENTA_PAGAR_TARJETA,
+          HERRAMIENTA_CONSULTAR_SALDO,
+        ],
+        tool_choice: "auto",
+      });
+    } finally {
+      // Solo métricas operativas: nunca mensajes, argumentos, saldos ni claves.
+      logger.info("latencia_deepseek", {
+        duracionMs: Math.round(performance.now() - inicioIa),
+        modelo: "deepseek-v4-flash",
+        razonamiento: "disabled",
+        resultado: completion ? "ok" : "error",
+        tokensEntrada: completion?.usage?.prompt_tokens ?? null,
+        tokensSalida: completion?.usage?.completion_tokens ?? null,
+        tokensRazonamiento: completion?.usage?.completion_tokens_details?.reasoning_tokens ?? null,
+      });
+    }
 
     const respuesta = completion.choices[0].message;
     const llamadaHerramienta = respuesta.tool_calls && respuesta.tool_calls[0];
@@ -275,7 +457,43 @@ exports.interpretarMensajeIA = onCall(
     if (llamadaHerramienta.function.name === "consultar_gasto_periodo") {
       const argumentos = JSON.parse(llamadaHerramienta.function.arguments);
       const diasAtras = Number.isInteger(argumentos.diasAtras) ? argumentos.diasAtras : 0;
-      return {tipo: "consulta_gasto", periodo: argumentos.periodo, diasAtras};
+      return {
+        tipo: "consulta_gasto",
+        periodo: argumentos.periodo,
+        diasAtras,
+        cuentaMencionada: typeof argumentos.cuentaMencionada === "string" ?
+          argumentos.cuentaMencionada : "",
+      };
+    }
+
+    if (llamadaHerramienta.function.name === "actualizar_saldo_cuenta") {
+      const argumentos = JSON.parse(llamadaHerramienta.function.arguments);
+      return {
+        tipo: "actualizar_saldo",
+        cuentaMencionada: typeof argumentos.cuentaMencionada === "string" ?
+          argumentos.cuentaMencionada : "",
+        nuevoSaldo: argumentos.nuevoSaldo,
+      };
+    }
+
+    if (llamadaHerramienta.function.name === "pagar_tarjeta_credito") {
+      const argumentos = JSON.parse(llamadaHerramienta.function.arguments);
+      return {
+        tipo: "pagar_tarjeta",
+        cuentaMencionada: typeof argumentos.cuentaMencionada === "string" ?
+          argumentos.cuentaMencionada : "",
+        tipoPago: argumentos.tipoPago === "parcial" ? "parcial" : "total",
+        monto: typeof argumentos.monto === "number" ? argumentos.monto : 0,
+      };
+    }
+
+    if (llamadaHerramienta.function.name === "consultar_saldo_cuenta") {
+      const argumentos = JSON.parse(llamadaHerramienta.function.arguments);
+      return {
+        tipo: "consultar_saldo",
+        cuentaMencionada: typeof argumentos.cuentaMencionada === "string" ?
+          argumentos.cuentaMencionada : "",
+      };
     }
 
     const datos = JSON.parse(llamadaHerramienta.function.arguments);

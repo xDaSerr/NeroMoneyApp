@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
@@ -7,6 +9,7 @@ import '../../transactions/data/transaccion.dart';
 import '../../transactions/data/transacciones_repository.dart';
 import 'borrador_pendiente.dart';
 import 'mensaje_chat.dart';
+import 'medicion_asistente.dart';
 
 /// Todo el "cerebro" de Lucy del lado de la app: manda los mensajes al
 /// Cloud Function (ver `functions/index.js` → `interpretarMensajeIA`),
@@ -70,6 +73,7 @@ class AsistenteRepository {
   /// arriba solo para este caso.
   String? ultimoMensajeAsistente;
   MensajeChat? ultimaRespuesta;
+  Map<String, Object>? ultimaMedicion;
   OrigenTransaccion _origenActual = OrigenTransaccion.iaTexto;
 
   Future<void> _guardarMensaje(
@@ -167,6 +171,8 @@ class AsistenteRepository {
   Future<void> _responderConsultaGasto(
     String periodo, {
     int diasAtras = 0,
+    String? cuentaMencionada,
+    List<Cuenta> cuentas = const [],
   }) async {
     final hoy = DateTime.now();
     final hoySinHora = DateTime(hoy.year, hoy.month, hoy.day);
@@ -205,22 +211,196 @@ class AsistenteRepository {
         etiqueta = 'este mes';
     }
 
+    // Si preguntó por UNA cuenta en particular ("con mi Rappi Card"), se
+    // resuelve ANTES de consultar Firestore — mismo criterio de siempre: la
+    // IA nunca decide la cuenta, solo entrega el término tal cual lo dijo.
+    Cuenta? cuentaFiltro;
+    if (cuentaMencionada != null && cuentaMencionada.trim().isNotEmpty) {
+      final resuelto = _resolverCuentaUnica(cuentaMencionada, cuentas);
+      if (resuelto.cuenta == null) {
+        await _guardarMensaje(AutorMensaje.asistente, resuelto.motivo!);
+        return;
+      }
+      cuentaFiltro = resuelto.cuenta;
+    }
+
     final snap = await _usuarioDoc
         .collection('transacciones')
         .where('fecha', isGreaterThanOrEqualTo: Timestamp.fromDate(desde))
         .where('fecha', isLessThan: Timestamp.fromDate(hasta))
         .get();
-    final transacciones = snap.docs.map(Transaccion.fromFirestore).toList();
+    var transacciones = snap.docs.map(Transaccion.fromFirestore).toList();
+    if (cuentaFiltro != null) {
+      final idFiltro = cuentaFiltro.id;
+      transacciones = transacciones
+          .where((t) => t.cuentaId == idFiltro)
+          .toList();
+    }
     final resumen = ResumenGastos.calcular(
       transacciones,
       desde: desde,
       hasta: hasta,
     );
 
+    final sufijoCuenta = cuentaFiltro != null
+        ? ' con "${cuentaFiltro.nombre}"'
+        : '';
     final texto = resumen.total <= 0.01
-        ? 'No tienes gasto neto $etiqueta (o se canceló con reembolsos).'
-        : 'Llevas gastado \$${resumen.total.toStringAsFixed(2)} $etiqueta.';
+        ? 'No tienes gasto neto$sufijoCuenta $etiqueta (o se canceló con reembolsos).'
+        : 'Llevas gastado \$${resumen.total.toStringAsFixed(2)}$sufijoCuenta $etiqueta.';
     await _guardarMensaje(AutorMensaje.asistente, texto);
+  }
+
+  /// Responde "¿cuánto debo/tengo/me queda disponible en mi X cuenta?" —
+  /// el estado ACTUAL, a diferencia de `_responderConsultaGasto` (un total
+  /// sumado en un rango de fechas). Nunca inventa el número: lee
+  /// `saldoActual`/`deudaActual` directo de la cuenta real, igual que se
+  /// vería en Cuentas.
+  Future<void> _responderConsultaSaldo(
+    String cuentaMencionada,
+    List<Cuenta> cuentas,
+  ) async {
+    final resuelto = _resolverCuentaUnica(cuentaMencionada, cuentas);
+    final cuenta = resuelto.cuenta;
+    if (cuenta == null) {
+      await _guardarMensaje(AutorMensaje.asistente, resuelto.motivo!);
+      return;
+    }
+
+    final String texto;
+    if (cuenta.tipo == TipoCuenta.credito) {
+      final deuda = cuenta.deudaActual ?? 0;
+      final limite = cuenta.limiteCredito ?? 0;
+      texto = deuda <= 0.01
+          ? 'No debes nada en "${cuenta.nombre}" — tienes \$${cuenta.saldoActual.toStringAsFixed(2)} '
+                'disponibles de tu límite de \$${limite.toStringAsFixed(2)}.'
+          : 'En "${cuenta.nombre}" debes \$${deuda.toStringAsFixed(2)}. Te quedan '
+                '\$${cuenta.saldoActual.toStringAsFixed(2)} disponibles de tu límite de \$${limite.toStringAsFixed(2)}.';
+    } else {
+      texto =
+          'En "${cuenta.nombre}" tienes \$${cuenta.saldoActual.toStringAsFixed(2)}.';
+    }
+    await _guardarMensaje(AutorMensaje.asistente, texto);
+  }
+
+  /// Corrige el saldo/disponible de una cuenta a un monto FINAL que el
+  /// usuario acaba de dar (ej. "actualiza mi efectivo a 10000" después de
+  /// contarlo) — a diferencia de un gasto o ingreso puntual, aquí el número
+  /// REEMPLAZA lo que ya había, así que se traduce a la diferencia exacta
+  /// (`nuevoSaldo - saldoActual`) y se registra como una transacción normal
+  /// de categoría "Ajuste": queda en Movimientos, se puede deshacer
+  /// deslizando, y nunca pisa el saldo sin dejar rastro.
+  Future<void> _actualizarSaldoCuenta(
+    String cuentaMencionada,
+    double nuevoSaldo,
+    List<Cuenta> cuentas,
+  ) async {
+    if (!nuevoSaldo.isFinite || nuevoSaldo < 0) {
+      await _guardarMensaje(
+        AutorMensaje.asistente,
+        'Ese monto no es válido — dime un número positivo.',
+      );
+      return;
+    }
+
+    final resuelto = _resolverCuentaUnica(cuentaMencionada, cuentas);
+    final cuenta = resuelto.cuenta;
+    if (cuenta == null) {
+      await _guardarMensaje(AutorMensaje.asistente, resuelto.motivo!);
+      return;
+    }
+
+    // Se redondea a centavos antes de comparar/registrar, para no crear un
+    // "ajuste" de $0.001 por puro error de punto flotante.
+    final delta = double.parse(
+      (nuevoSaldo - cuenta.saldoActual).toStringAsFixed(2),
+    );
+    final etiquetaSaldo = cuenta.tipo == TipoCuenta.credito
+        ? 'disponible'
+        : 'saldo';
+    if (delta.abs() < 0.01) {
+      await _guardarMensaje(
+        AutorMensaje.asistente,
+        '"${cuenta.nombre}" ya tiene $etiquetaSaldo de \$${nuevoSaldo.toStringAsFixed(2)}, no cambié nada.',
+      );
+      return;
+    }
+
+    await _intentarRegistrarYConfirmar(
+      tipo: delta > 0 ? TipoTransaccion.ingreso : TipoTransaccion.gasto,
+      monto: delta.abs(),
+      categoria: 'Ajuste',
+      descripcion: 'Corrección de saldo',
+      cuentaId: cuenta.id,
+      mensajeExito:
+          'Listo, actualicé el $etiquetaSaldo de "${cuenta.nombre}" a \$${nuevoSaldo.toStringAsFixed(2)}.',
+    );
+  }
+
+  /// Pagos/abonos a una tarjeta de CRÉDITO. Igual que arriba, se traduce a
+  /// una transacción normal (ingreso, categoría "Pago de tarjeta") en vez
+  /// de escribir el saldo directo — un pago SIEMPRE sube el disponible
+  /// (Transaccion.efectoEnSaldo), así que este modelo encaja sin necesitar
+  /// un caso especial en TransaccionesRepository. El monto nunca pasa de lo
+  /// que de verdad se debe (`Cuenta.deudaActual`): pagar "de más" no tiene
+  /// sentido real aquí (esta app no modela saldo a favor del banco).
+  Future<void> _pagarTarjeta(
+    String cuentaMencionada,
+    String tipoPago,
+    double monto,
+    List<Cuenta> cuentas,
+  ) async {
+    final resuelto = _resolverCuentaUnica(
+      cuentaMencionada,
+      cuentas,
+      tiposPermitidos: const [TipoCuenta.credito],
+    );
+    final cuenta = resuelto.cuenta;
+    if (cuenta == null) {
+      await _guardarMensaje(AutorMensaje.asistente, resuelto.motivo!);
+      return;
+    }
+
+    final deudaActual = cuenta.deudaActual ?? 0;
+    if (deudaActual <= 0.01) {
+      await _guardarMensaje(
+        AutorMensaje.asistente,
+        'No debes nada en "${cuenta.nombre}" — ya está al día.',
+      );
+      return;
+    }
+
+    double montoAAplicar;
+    if (tipoPago == 'parcial') {
+      if (!monto.isFinite || monto <= 0) {
+        await _guardarMensaje(
+          AutorMensaje.asistente,
+          '¿Cuánto abonaste a "${cuenta.nombre}"?',
+        );
+        return;
+      }
+      montoAAplicar = monto > deudaActual ? deudaActual : monto;
+    } else {
+      montoAAplicar = deudaActual;
+    }
+
+    final tope = tipoPago == 'parcial' && monto > deudaActual
+        ? ' (solo debías \$${deudaActual.toStringAsFixed(2)}, así que apliqué eso)'
+        : '';
+    final deudaRestante = deudaActual - montoAAplicar;
+    final mensajeExito = deudaRestante <= 0.01
+        ? 'Listo, "${cuenta.nombre}" queda en \$0.00 de deuda.'
+        : 'Aboné \$${montoAAplicar.toStringAsFixed(2)} a "${cuenta.nombre}"$tope. '
+              'Te quedan \$${deudaRestante.toStringAsFixed(2)} de deuda.';
+
+    await _intentarRegistrarYConfirmar(
+      tipo: TipoTransaccion.ingreso,
+      monto: montoAAplicar,
+      categoria: 'Pago de tarjeta',
+      descripcion: 'Pago a ${cuenta.nombre}',
+      cuentaId: cuenta.id,
+      mensajeExito: mensajeExito,
+    );
   }
 
   /// Saludo fijo (NO generado por la IA, a propósito) que se guarda la
@@ -272,6 +452,20 @@ class AsistenteRepository {
     List<Cuenta> cuentas, {
     OrigenTransaccion origen = OrigenTransaccion.iaTexto,
   }) async {
+    final medicion = MedicionAsistente();
+    try {
+      await _enviarMensajeMedido(texto, cuentas, origen, medicion);
+    } finally {
+      ultimaMedicion = medicion.finalizar();
+    }
+  }
+
+  Future<void> _enviarMensajeMedido(
+    String texto,
+    List<Cuenta> cuentas,
+    OrigenTransaccion origen,
+    MedicionAsistente medicion,
+  ) async {
     ultimaRespuesta = null;
     ultimoMensajeAsistente = null;
     _origenActual = origen;
@@ -280,22 +474,38 @@ class AsistenteRepository {
 
     // Se lee ANTES de guardar el mensaje nuevo, para que no se incluya a sí
     // mismo — son los turnos reales que ya se hablaron.
-    final historial = await _historialReciente();
-    final transaccionesRecientes = await _transaccionesRecientes(cuentas);
+    // Las tres lecturas son independientes. Esperar a todas ANTES de escribir
+    // conserva el historial previo, sin duplicar el mensaje que vamos a enviar.
+    final (historial, transaccionesRecientes, borradorSnap) = await medicion
+        .medir(
+          'preparacion_ms',
+          () => (
+            medicion.medir('historial_ms', _historialReciente),
+            medicion.medir(
+              'movimientos_ms',
+              () => _transaccionesRecientes(cuentas),
+            ),
+            medicion.medir('borrador_ms', () => _borradorDoc.get()),
+          ).wait,
+        );
 
-    await _guardarMensaje(AutorMensaje.usuario, mensaje);
+    await medicion.medir(
+      'guardar_mensaje_ms',
+      () => _guardarMensaje(AutorMensaje.usuario, mensaje),
+    );
 
     // Si hay una pregunta pendiente (típicamente "¿con qué cuenta fue?"),
     // probamos primero si este mensaje ya la responde — así "con mi Nu" se
     // siente como una sola conversación en vez de un mensaje suelto.
-    final borradorSnap = await _borradorDoc.get();
     if (borradorSnap.exists) {
       final borrador = BorradorPendiente.fromFirestore(borradorSnap.data()!);
       if (!borrador.expirado) {
         final cuenta = _resolverRespuestaDeCuenta(mensaje, cuentas);
         if (cuenta != null) {
-          await _completarConCuenta(borrador, cuenta);
-          await _borradorDoc.delete();
+          await medicion.medir('resolver_y_guardar_ms', () async {
+            await _completarConCuenta(borrador, cuenta);
+            await _borradorDoc.delete();
+          });
           return;
         }
         // No pareció responder la pregunta — se descarta (venció o el
@@ -314,43 +524,75 @@ class AsistenteRepository {
     }
 
     try {
-      final resultado = await _functions
-          .httpsCallable('interpretarMensajeIA')
-          .call({
-            'mensaje': mensaje,
-            'historial': historial,
-            'transaccionesRecientes': transaccionesRecientes,
-            // Le sirve al modelo para corregir una transcripción de voz
-            // imperfecta hacia el nombre exacto (ej. "rapicar" → "Rappi Card").
-            'nombresCuentas': cuentas.map((c) => c.nombre).toList(),
-          });
-      final data = Map<String, dynamic>.from(resultado.data as Map);
-
-      if (data['tipo'] == 'mensaje') {
-        await _guardarMensaje(
-          AutorMensaje.asistente,
-          data['texto'] as String? ?? 'No entendí, ¿puedes darme más detalles?',
-        );
-        return;
-      }
-
-      if (data['tipo'] == 'consulta_gasto') {
-        await _responderConsultaGasto(
-          data['periodo'] as String? ?? 'mes',
-          diasAtras: (data['diasAtras'] as num?)?.toInt() ?? 0,
-        );
-        return;
-      }
-
-      final datos = Map<String, dynamic>.from(data['datos'] as Map);
-      await _resolverYRegistrar(
-        tipo: TipoTransaccion.values.byName(datos['tipo'] as String),
-        monto: (datos['monto'] as num).toDouble(),
-        categoria: datos['categoria'] as String,
-        descripcion: datos['descripcion'] as String? ?? '',
-        cuentaMencionada: datos['cuentaMencionada'] as String? ?? '',
-        cuentas: cuentas,
+      final resultado = await medicion.medir(
+        'funcion_ia_ms',
+        () => _functions.httpsCallable('interpretarMensajeIA').call({
+          'mensaje': mensaje,
+          'historial': historial,
+          'transaccionesRecientes': transaccionesRecientes,
+          // Le sirve al modelo para corregir una transcripción de voz
+          // imperfecta hacia el nombre exacto (ej. "rapicar" → "Rappi Card").
+          'nombresCuentas': cuentas.map((c) => c.nombre).toList(),
+        }),
       );
+      final data = Map<String, dynamic>.from(resultado.data as Map);
+      await medicion.medir('resolver_y_guardar_ms', () async {
+        if (data['tipo'] == 'mensaje') {
+          await _guardarMensaje(
+            AutorMensaje.asistente,
+            data['texto'] as String? ??
+                'No entendí, ¿puedes darme más detalles?',
+          );
+          return;
+        }
+
+        if (data['tipo'] == 'consulta_gasto') {
+          await _responderConsultaGasto(
+            data['periodo'] as String? ?? 'mes',
+            diasAtras: (data['diasAtras'] as num?)?.toInt() ?? 0,
+            cuentaMencionada: data['cuentaMencionada'] as String?,
+            cuentas: cuentas,
+          );
+          return;
+        }
+
+        if (data['tipo'] == 'actualizar_saldo') {
+          await _actualizarSaldoCuenta(
+            data['cuentaMencionada'] as String? ?? '',
+            (data['nuevoSaldo'] as num).toDouble(),
+            cuentas,
+          );
+          return;
+        }
+
+        if (data['tipo'] == 'pagar_tarjeta') {
+          await _pagarTarjeta(
+            data['cuentaMencionada'] as String? ?? '',
+            data['tipoPago'] as String? ?? 'total',
+            (data['monto'] as num?)?.toDouble() ?? 0,
+            cuentas,
+          );
+          return;
+        }
+
+        if (data['tipo'] == 'consultar_saldo') {
+          await _responderConsultaSaldo(
+            data['cuentaMencionada'] as String? ?? '',
+            cuentas,
+          );
+          return;
+        }
+
+        final datos = Map<String, dynamic>.from(data['datos'] as Map);
+        await _resolverYRegistrar(
+          tipo: TipoTransaccion.values.byName(datos['tipo'] as String),
+          monto: (datos['monto'] as num).toDouble(),
+          categoria: datos['categoria'] as String,
+          descripcion: datos['descripcion'] as String? ?? '',
+          cuentaMencionada: datos['cuentaMencionada'] as String? ?? '',
+          cuentas: cuentas,
+        );
+      });
     } on FirebaseFunctionsException catch (e) {
       await _guardarMensaje(AutorMensaje.asistente, _mensajeError(e));
     } catch (_) {
@@ -560,6 +802,67 @@ class AsistenteRepository {
     return delTipo.firstWhere(
       (c) => c.esPredeterminada,
       orElse: () => delTipo.first,
+    );
+  }
+
+  /// Resuelve una cuenta para acciones que NO deben adivinar en silencio
+  /// entre varias posibles (actualizar saldo, pagar tarjeta, gasto de una
+  /// cuenta) — a diferencia de `_resolverYRegistrar` (nivel 3: "hay varias,
+  /// uso la predeterminada y aviso"), aquí es mejor preguntar que arriesgarse
+  /// a corregir el saldo de la cuenta equivocada. `tiposPermitidos` acota de
+  /// entrada (ej. solo cuentas de crédito para pagar una tarjeta).
+  ({Cuenta? cuenta, String? motivo}) _resolverCuentaUnica(
+    String cuentaMencionada,
+    List<Cuenta> cuentas, {
+    List<TipoCuenta>? tiposPermitidos,
+  }) {
+    final candidatas = tiposPermitidos == null
+        ? cuentas
+        : cuentas.where((c) => tiposPermitidos.contains(c.tipo)).toList();
+    final termino = cuentaMencionada.trim().toLowerCase();
+
+    if (termino.isNotEmpty) {
+      // Coincidencia de nombre entre las candidatas.
+      for (final c in candidatas) {
+        final nombre = c.nombre.trim().toLowerCase();
+        if (termino.contains(nombre) || nombre.contains(termino)) {
+          return (cuenta: c, motivo: null);
+        }
+      }
+      // Término genérico ("mi tarjeta", "efectivo"...) acotado a las candidatas.
+      final tipos = _tiposCuentaDesdeTermino(termino);
+      if (tipos != null) {
+        final delTipo = candidatas
+            .where((c) => tipos.contains(c.tipo))
+            .toList();
+        if (delTipo.length == 1) return (cuenta: delTipo.first, motivo: null);
+        if (delTipo.length > 1) {
+          return (
+            cuenta: null,
+            motivo:
+                'Tienes varias: ${delTipo.map((c) => c.nombre).join(", ")} — ¿cuál de todas?',
+          );
+        }
+      }
+    }
+
+    // Sin ninguna pista útil, pero solo hay una cuenta posible entre las
+    // candidatas — se usa esa (mismo criterio de priorizar velocidad que el
+    // resto de la resolución de cuentas).
+    if (candidatas.length == 1) return (cuenta: candidatas.first, motivo: null);
+
+    if (candidatas.isEmpty) {
+      return (
+        cuenta: null,
+        motivo: tiposPermitidos != null
+            ? 'No tienes ninguna tarjeta de crédito registrada.'
+            : 'No encontré esa cuenta — ¿cómo se llama exactamente?',
+      );
+    }
+    return (
+      cuenta: null,
+      motivo:
+          '¿De cuál cuenta hablas? Tienes: ${candidatas.map((c) => c.nombre).join(", ")}.',
     );
   }
 

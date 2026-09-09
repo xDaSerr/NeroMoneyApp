@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/gradient_button.dart';
+import '../auth/providers/auth_providers.dart';
 import 'data/perfil_usuario.dart';
 import 'providers/perfil_providers.dart';
 import 'widgets/currency_picker.dart';
@@ -52,6 +53,21 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen> {
           ? 'Lucy'
           : _nombreAsistenteCtrl.text.trim();
 
+      // A esta pantalla se llega justo después de registrarte o iniciar
+      // sesión — el mismo instante en el que, alguna vez, se vio un
+      // parpadeo de "sin uid" mientras Firebase terminaba de asentar la
+      // sesión (ver AppShell, guardia de currentUidProvider). Si
+      // perfilRepositoryProvider alcanzó a construirse en ese parpadeo,
+      // Riverpod lo deja atascado en ese error para siempre, aunque la
+      // sesión ya esté lista — invalidarlo aquí obliga a recalcularlo con
+      // el uid actual antes de usarlo, en vez de heredar un error viejo.
+      ref.invalidate(currentUidProvider);
+      ref.invalidate(perfilRepositoryProvider);
+
+      if (ref.read(currentUidProvider) == null) {
+        throw StateError('Tu sesión se cerró. Vuelve a iniciar sesión.');
+      }
+
       await ref.read(perfilRepositoryProvider).guardarPerfil(
             PerfilUsuario(
               moneda: _monedaElegida,
@@ -68,8 +84,17 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen> {
       if (mounted) context.go('/home');
     } catch (e) {
       if (mounted) {
+        // Mensaje amigable, nunca el volcado técnico de la excepción — un
+        // ProviderException incluye su stack trace completo en el texto.
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No se pudo guardar la configuración: $e')),
+          SnackBar(
+            content: Text(
+              e is StateError
+                  ? e.message
+                  : 'No se pudo guardar la configuración. Revisa tu '
+                      'conexión e inténtalo de nuevo.',
+            ),
+          ),
         );
       }
     } finally {

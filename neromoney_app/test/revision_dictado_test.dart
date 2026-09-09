@@ -140,6 +140,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(envios, [('Gasté 20 en efectivo', true)]);
     expect(tester.takeException(), isNull);
+    // El panel de respuesta se oculta solo pasado un rato (ver
+    // ControladorAsistente._duracionAutoOcultar) — hay que dejar pasar ese
+    // tiempo simulado para no terminar la prueba con ese temporizador
+    // todavía pendiente.
+    await tester.pump(const Duration(seconds: 5));
     await tester.pumpWidget(const SizedBox());
   });
 }

@@ -257,6 +257,22 @@ class ControladorAsistente extends ChangeNotifier {
       if (voz) {
         _lectura = hablar(mensaje.contenido).catchError((Object _) {});
       }
+      // El panel flotante con la respuesta se oculta solo, dando tiempo a
+      // leerla (y a que termine de decirla en voz, si aplica) — antes se
+      // quedaba pegado en pantalla para siempre hasta que el usuario le
+      // daba a la "X" a mano. No detiene el habla si sigue sonando (solo
+      // esconde el cuadro): a diferencia de `ocultarPanel()` (para cuando
+      // el usuario SÍ pide cerrarlo), aquí cortar el audio a la mitad se
+      // sentiría como un error, no como que "ya se leyó".
+      if (panel) {
+        _temporizadorAviso?.cancel();
+        _temporizadorAviso = Timer(_duracionAutoOcultar(mensaje.contenido), () {
+          if (_vigente(sesion) && estado == EstadoDictado.respuesta) {
+            mostrarPanel = false;
+            _avisar();
+          }
+        });
+      }
     } catch (_) {
       if (_vigente(sesion)) {
         _fallar(
@@ -264,6 +280,15 @@ class ControladorAsistente extends ChangeNotifier {
         );
       }
     }
+  }
+
+  /// Cuánto dejar la respuesta en pantalla antes de ocultarla sola —
+  /// proporcional a lo largo del texto (aprox. lo que tarda en leerse/
+  /// escucharse en voz), con un mínimo para respuestas cortas y un tope
+  /// para que una respuesta larga no se quede pegada minutos enteros.
+  Duration _duracionAutoOcultar(String texto) {
+    final milisegundos = 3500 + texto.length * 45;
+    return Duration(milliseconds: milisegundos.clamp(4000, 12000));
   }
 
   void _fallar(String mensaje, {bool sinVoz = false}) {

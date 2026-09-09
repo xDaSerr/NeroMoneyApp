@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:go_router/go_router.dart';
 
-import '../../core/router/app_shell.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/asistente_avatar.dart';
+import '../../core/widgets/barra_flotante.dart';
 import '../accounts/data/cuenta.dart';
 import '../accounts/providers/cuentas_providers.dart';
 import '../onboarding/providers/perfil_providers.dart';
@@ -15,6 +15,22 @@ import 'providers/controlador_asistente_provider.dart';
 import 'data/mensaje_chat.dart';
 import 'providers/asistente_providers.dart';
 import 'widgets/burbuja_mensaje.dart';
+
+/// Cuánto dejar entre la barra de texto y la píldora de navegación cuando
+/// el teclado está cerrado — el alto real y visible de la píldora
+/// (`BarraFlotante.altura - 42`, ver `_FondoBarra.superior` en
+/// barra_flotante.dart: la franja transparente de arriba que solo existe
+/// para el relieve del avatar, que en el chat nunca aparece porque ahí el
+/// dictado del avatar de navegación está desactivado — se usa el
+/// micrófono propio del chat, ver CLAUDE.md → "Navegación"). Mientras
+/// hay teclado no hace falta: `_construirChat` ya empuja todo el dock
+/// hacia arriba con `viewInsets.bottom`.
+double _clearanceSobreBarraFlotante(BuildContext context) {
+  final gestoInicio = MediaQuery.viewPaddingOf(context).bottom;
+  final margenInferior = gestoInicio < 8 ? 8.0 : gestoInicio;
+  const alturaPildoraVisible = BarraFlotante.altura - 42;
+  return alturaPildoraVisible + margenInferior + 8;
+}
 
 /// Chat con Lucy — sigue el diseño de `11._asistente_ia_chat_con_lucy` del
 /// Stitch (burbujas, chips de selección rápida, barra de entrada en
@@ -137,6 +153,9 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
     final cuentasPorId = {for (final c in cuentas) c.id: c};
 
     return Scaffold(
+      extendBody: true,
+      // El teclado se reserva en el dock; no reducir el cuerpo dos veces.
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Row(
           children: [
@@ -184,118 +203,152 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: mensajesAsync.when(
-              data: (mensajes) {
-                if (mensajes.isEmpty) {
-                  _ultimoMensajeId = null;
-                  // --- Saludo fijo: se guarda una sola vez al abrir el chat vacío ---
-                  if (!_saludoEnviado) {
-                    _saludoEnviado = true;
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      ref
-                          .read(asistenteRepositoryProvider)
-                          .saludarSiEsNuevo(nombreAsistente);
-                    });
-                  }
-                  return _EstadoVacio(
-                    nombreAsistente: nombreAsistente,
-                    avatarBase64: avatarAsistente,
-                  );
-                }
-                final ultimoId = mensajes.last.id;
-                if (_ultimoMensajeId != ultimoId) {
-                  // Los eventos de voz no son mensajes nuevos. Conservar
-                  // la posición si el usuario está leyendo el historial.
-                  final seguirConversacion =
-                      _ultimoMensajeId == null ||
-                      (_scrollCtrl.hasClients &&
-                          _scrollCtrl.position.extentAfter < 120);
-                  _ultimoMensajeId = ultimoId;
-                  if (seguirConversacion) _irAlFinal();
-                }
-                return ListView.builder(
-                  controller: _scrollCtrl,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: mensajes.length,
-                  itemBuilder: (context, i) {
-                    final m = mensajes[i];
-                    final esUltimo = i == mensajes.length - 1;
-                    // Solo el último mensaje puede mostrar chips activos —
-                    // los de mensajes viejos ya se resolvieron o vencieron.
-                    final mostrarChips =
-                        esUltimo && hayBorrador && m.chipsCuentas.isNotEmpty;
+      body: Builder(
+        builder: (context) => mensajesAsync.when(
+          data: (mensajes) {
+            if (mensajes.isEmpty) {
+              _ultimoMensajeId = null;
+              // --- Saludo fijo: se guarda una sola vez al abrir el chat vacío ---
+              if (!_saludoEnviado) {
+                _saludoEnviado = true;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  ref
+                      .read(asistenteRepositoryProvider)
+                      .saludarSiEsNuevo(nombreAsistente);
+                });
+              }
+              return _EstadoVacio(
+                nombreAsistente: nombreAsistente,
+                avatarBase64: avatarAsistente,
+              );
+            }
+            final ultimoId = mensajes.last.id;
+            if (_ultimoMensajeId != ultimoId) {
+              // Los eventos de voz no son mensajes nuevos. Conservar
+              // la posición si el usuario está leyendo el historial.
+              final seguirConversacion =
+                  _ultimoMensajeId == null ||
+                  (_scrollCtrl.hasClients &&
+                      _scrollCtrl.position.extentAfter < 120);
+              _ultimoMensajeId = ultimoId;
+              if (seguirConversacion) _irAlFinal();
+            }
+            return ListView.builder(
+              controller: _scrollCtrl,
+              // Scaffold mide el dock real, incluso cuando el texto crece.
+              // El viewport llega al fondo; solo el contenido deja margen.
+              padding: EdgeInsets.fromLTRB(
+                16,
+                16,
+                16,
+                MediaQuery.paddingOf(context).bottom + 16,
+              ),
+              itemCount: mensajes.length,
+              itemBuilder: (context, i) {
+                final m = mensajes[i];
+                final esUltimo = i == mensajes.length - 1;
+                // Solo el último mensaje puede mostrar chips activos —
+                // los de mensajes viejos ya se resolvieron o vencieron.
+                final mostrarChips =
+                    esUltimo && hayBorrador && m.chipsCuentas.isNotEmpty;
 
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 14),
-                      child: Column(
-                        crossAxisAlignment: m.autor == AutorMensaje.usuario
-                            ? CrossAxisAlignment.end
-                            : CrossAxisAlignment.start,
-                        children: [
-                          BurbujaMensaje(mensaje: m),
-                          if (mostrarChips) ...[
-                            const SizedBox(height: 8),
-                            // --- Chips de selección rápida de cuenta (nunca pregunta abierta) ---
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: [
-                                for (final id in m.chipsCuentas)
-                                  if (cuentasPorId[id] != null)
-                                    ActionChip(
-                                      avatar: const Icon(
-                                        Icons.account_balance_wallet_outlined,
-                                        size: 16,
-                                        color: AppColors.primaryCyan,
-                                      ),
-                                      label: Text(cuentasPorId[id]!.nombre),
-                                      backgroundColor:
-                                          AppColors.surface3ActiveGlass,
-                                      labelStyle: AppTextStyles.bodySm,
-                                      side: BorderSide.none,
-                                      onPressed: _enviando
-                                          ? null
-                                          : () => _elegirCuenta(id),
-                                    ),
-                              ],
-                            ),
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: Column(
+                    crossAxisAlignment: m.autor == AutorMensaje.usuario
+                        ? CrossAxisAlignment.end
+                        : CrossAxisAlignment.start,
+                    children: [
+                      BurbujaMensaje(mensaje: m),
+                      if (mostrarChips) ...[
+                        const SizedBox(height: 8),
+                        // --- Chips de selección rápida de cuenta (nunca pregunta abierta) ---
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final id in m.chipsCuentas)
+                              if (cuentasPorId[id] != null)
+                                ActionChip(
+                                  avatar: const Icon(
+                                    Icons.account_balance_wallet_outlined,
+                                    size: 16,
+                                    color: AppColors.primaryCyan,
+                                  ),
+                                  label: Text(cuentasPorId[id]!.nombre),
+                                  backgroundColor:
+                                      AppColors.surface3ActiveGlass,
+                                  labelStyle: AppTextStyles.bodySm,
+                                  side: BorderSide.none,
+                                  onPressed: _enviando
+                                      ? null
+                                      : () => _elegirCuenta(id),
+                                ),
                           ],
-                        ],
-                      ),
-                    );
-                  },
+                        ),
+                      ],
+                    ],
+                  ),
                 );
               },
-              loading: () => const Center(
-                child: CircularProgressIndicator(color: AppColors.primaryCyan),
-              ),
-              error: (e, _) => Center(
-                child: Text(
-                  'No se pudo cargar la conversación: $e',
-                  style: AppTextStyles.bodyMd.copyWith(
-                    color: AppColors.outflowCrimson,
-                  ),
-                ),
+            );
+          },
+          loading: () => const Center(
+            child: CircularProgressIndicator(color: AppColors.primaryCyan),
+          ),
+          error: (e, _) => Center(
+            child: Text(
+              'No se pudo cargar la conversación: $e',
+              style: AppTextStyles.bodyMd.copyWith(
+                color: AppColors.outflowCrimson,
               ),
             ),
           ),
-          _BarraDeEntrada(
-            controller: _inputCtrl,
-            enviando: _enviando,
-            nombreAsistente: nombreAsistente,
-            onEnviar: _enviar,
-            escuchando: _asistente.pulsado,
-            onMicCancel: _asistente.cancelar,
-            onMicPress: _iniciarEscucha,
-            onMicRelease: _detenerEscucha,
-          ),
-          // Para que la píldora flotante de navegación (ver AppShell,
-          // extendBody:true) nunca tape la barra de texto.
-          SizedBox(height: espacioParaBarraFlotante(context)),
-        ],
+        ),
+      ),
+      bottomNavigationBar: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _BarraDeEntrada(
+              controller: _inputCtrl,
+              enviando: _enviando,
+              nombreAsistente: nombreAsistente,
+              onEnviar: _enviar,
+              escuchando: _asistente.pulsado,
+              onMicCancel: _asistente.cancelar,
+              onMicPress: _iniciarEscucha,
+              onMicRelease: _detenerEscucha,
+            ),
+            // Para que la píldora flotante de navegación (ver AppShell,
+            // extendBody:true) nunca tape la barra de texto — ver
+            // _clearanceSobreBarraFlotante arriba para por qué no se usa
+            // el alto completo de espacioParaBarraFlotante aquí.
+            //
+            // AnimatedContainer (con su propia animación de 220ms) en vez
+            // de calcular esto cuadro a cuadro contra viewInsets.bottom —
+            // esa primera versión sí quitaba el salto brusco, pero
+            // recalculaba (y por lo tanto obligaba a Scaffold a re-medir
+            // el dock y a la lista de mensajes a recalcular su padding,
+            // por el extendBody) en CADA cuadro de la animación nativa del
+            // teclado, además de terminar su propio movimiento antes de
+            // que el teclado visualmente acabara de cerrarse — esos dos
+            // efectos juntos se sentían como "lag"/desincronización. Con
+            // un booleano + una sola transición propia, el cálculo solo
+            // cambia una vez por apertura/cierre, y la suavidad la pone
+            // Flutter, no un valor recalculado a mano en cada frame.
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOut,
+              height: MediaQuery.viewInsetsOf(context).bottom > 0
+                  ? 0
+                  : _clearanceSobreBarraFlotante(context),
+            ),
+          ],
+        ),
       ),
     );
   }
