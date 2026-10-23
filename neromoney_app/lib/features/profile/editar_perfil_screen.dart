@@ -8,6 +8,8 @@ import '../../core/widgets/gradient_button.dart';
 import '../onboarding/data/perfil_usuario.dart';
 import '../onboarding/providers/perfil_providers.dart';
 import 'data/saludo_usuario.dart';
+import 'dart:convert';
+import 'package:image_picker/image_picker.dart';
 
 /// Pantalla para elegir el apodo (el nombre que se usa en los saludos, ej.
 /// "Hola, Apodo" en Inicio) y, si el usuario quiere, su nombre real —
@@ -97,8 +99,7 @@ class _EditarPerfilScreenState extends ConsumerState<EditarPerfilScreen> {
                 controller: _apodoCtrl,
                 onChanged: (_) => setState(() {}), // refresca la vista previa de abajo
                 textCapitalization: TextCapitalization.words,
-                style: AppTextStyles.headlineSm,
-                decoration: const InputDecoration(hintText: 'ej. Dani'),
+                style: AppTextStyles.headlineSm
               ),
               const SizedBox(height: 6),
               Text(
@@ -115,7 +116,7 @@ class _EditarPerfilScreenState extends ConsumerState<EditarPerfilScreen> {
                 textCapitalization: TextCapitalization.words,
                 style: AppTextStyles.bodyLg,
                 decoration: const InputDecoration(
-                  hintText: 'ej. Daniel Serrano',
+
                 ),
               ),
               const SizedBox(height: 6),

@@ -137,7 +137,22 @@ class _AppShellState extends ConsumerState<AppShell>
                     child: child,
                   ),
                 ),
-                child: asistente.mostrarPanel
+                // En el chat, "escuchando/enviando/respuesta" ya se ven en
+                // el propio campo de texto y en los mensajes (ver
+                // assistant_chat_screen.dart) — el mic ahí es el propio del
+                // chat (_BarraDeEntrada), pero comparte el mismo
+                // ControladorAsistente que el de la barra de navegación, así
+                // que también disparaba este panel flotante, encimándose
+                // con la barra de escribir (reportado por el usuario). Pero
+                // OJO: "revisión" (hay que editar y confirmar el texto) y
+                // los avisos de error/silencio NO tienen ningún otro lugar
+                // donde mostrarse dentro del chat — esos SÍ deben seguir
+                // apareciendo ahí, o esa función se perdería por completo.
+                child: asistente.mostrarPanel &&
+                        (navigationShell.currentIndex != 2 ||
+                            asistente.estado == EstadoDictado.error ||
+                            asistente.estado == EstadoDictado.sinVoz ||
+                            asistente.estado == EstadoDictado.revision)
                     ? PanelVozAsistente(
                         key: const ValueKey('panel-visible'),
                         controlador: asistente,

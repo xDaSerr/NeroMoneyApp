@@ -34,4 +34,11 @@ class PerfilRepository {
     }
     return _doc.set({'avatarAsistenteBase64': base64}, SetOptions(merge: true));
   }
+  /// Actualiza la foto del perfil. Lo mismo que la de la Asistente
+  Future<void> actualizarFotoUsuario(String? base64) {
+    if (base64 == null) {
+      return _doc.update({'fotoUsuarioBase64': FieldValue.delete()});
+    }
+    return _doc.set({'fotoUsuarioBase64': base64}, SetOptions(merge: true));
+  }
 }

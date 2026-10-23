@@ -10,6 +10,7 @@ class PerfilUsuario {
     required this.nombreAsistente,
     required this.onboardingCompletado,
     this.avatarAsistenteBase64,
+    this.fotoUsuarioBase64,
     this.colorAnilloInicio,
     this.colorAnilloFin,
     this.vozNombre = '',
@@ -65,6 +66,9 @@ class PerfilUsuario {
   // app.
   final String? avatarAsistenteBase64;
 
+  //La foto del usuario, no de la asistente  misma idea que el avatarAsistenteBase64
+  final String? fotoUsuarioBase64;
+
   // Los 2 colores (ARGB, `Color.toARGB32()`) del degradado del anillo
   // alrededor de la cara del asistente (ver AnilloAsistente), elegidos de
   // `paleta_anillos_asistente.dart`. A diferencia de la foto, este par
@@ -93,6 +97,7 @@ class PerfilUsuario {
           data['nombreAsistente'] as String? ?? vacio.nombreAsistente,
       onboardingCompletado: data['onboardingCompletado'] as bool? ?? false,
       avatarAsistenteBase64: data['avatarAsistenteBase64'] as String?,
+      fotoUsuarioBase64: data['fotoUsuarioBase64'] as String?,
       colorAnilloInicio: data['colorAnilloInicio'] as int?,
       colorAnilloFin: data['colorAnilloFin'] as int?,
       vozNombre: data['vozNombre'] as String? ?? '',
@@ -127,6 +132,8 @@ class PerfilUsuario {
       // FieldValue.delete() cuando el usuario elige quitar su foto).
       if (avatarAsistenteBase64 != null)
         'avatarAsistenteBase64': avatarAsistenteBase64,
+      if (fotoUsuarioBase64 != null)
+        'fotoUsuarioBase64': fotoUsuarioBase64,
       if (colorAnilloInicio != null) 'colorAnilloInicio': colorAnilloInicio,
       if (colorAnilloFin != null) 'colorAnilloFin': colorAnilloFin,
     };
@@ -153,6 +160,7 @@ class PerfilUsuario {
       nombreAsistente: nombreAsistente ?? this.nombreAsistente,
       onboardingCompletado: onboardingCompletado ?? this.onboardingCompletado,
       avatarAsistenteBase64: avatarAsistenteBase64,
+      fotoUsuarioBase64: fotoUsuarioBase64,
       colorAnilloInicio: colorAnilloInicio ?? this.colorAnilloInicio,
       colorAnilloFin: colorAnilloFin ?? this.colorAnilloFin,
       vozNombre: vozNombre ?? this.vozNombre,
