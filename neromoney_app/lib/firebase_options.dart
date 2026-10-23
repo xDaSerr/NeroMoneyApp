@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -48,6 +45,16 @@ class DefaultFirebaseOptions {
         );
     }
   }
+
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyCRz9wQZR3hL2jmldXVeLOtDnWm6tggVjw',
+    appId: '1:909698455391:web:3bdd52cd330a0be11d08ea',
+    messagingSenderId: '909698455391',
+    projectId: 'neromoneyapp',
+    authDomain: 'neromoneyapp.firebaseapp.com',
+    storageBucket: 'neromoneyapp.firebasestorage.app',
+    measurementId: 'G-XPMY4Q4DC9',
+  );
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyDFCUUOPV4Vwtt9e7TQX2GuD2_E7DVgMkM',

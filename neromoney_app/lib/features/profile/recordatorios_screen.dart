@@ -52,10 +52,12 @@ class _RecordatoriosScreenState extends ConsumerState<RecordatoriosScreen> {
     if (!mounted) return;
     if (!concedido) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Activa las notificaciones de NeroMoney en Ajustes del sistema '
-            'para poder mandarte estos avisos.',
+            RecordatoriosService.disponible
+                ? 'Activa las notificaciones de NeroMoney en Ajustes del '
+                      'sistema para poder mandarte estos avisos.'
+                : 'Los recordatorios todavía no funcionan en la versión web.',
           ),
         ),
       );

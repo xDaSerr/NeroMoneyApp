@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 
 /// ID de cliente OAuth "Web" (client_type 3) que Firebase generó para este
@@ -49,6 +50,20 @@ class AuthRepository {
   /// Devuelve null si el usuario cancela el diálogo de selección de cuenta
   /// (no se trata como error).
   Future<UserCredential?> signInWithGoogle() async {
+    // En web, `GoogleSignIn.authenticate()` no existe (google_sign_in v7 solo
+    // ofrece su propio botón renderizado) — Firebase Auth ya trae su propia
+    // ventana emergente de Google, así que ahí no se usa google_sign_in.
+    if (kIsWeb) {
+      try {
+        return await _firebaseAuth.signInWithPopup(GoogleAuthProvider());
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'popup-closed-by-user' ||
+            e.code == 'cancelled-popup-request') {
+          return null;
+        }
+        rethrow;
+      }
+    }
     await _ensureGoogleSignInReady();
     try {
       final googleUser = await GoogleSignIn.instance.authenticate();
@@ -63,7 +78,7 @@ class AuthRepository {
 
   Future<void> signOut() async {
     await _firebaseAuth.signOut();
-    if (_googleSignInInitialized) {
+    if (!kIsWeb && _googleSignInInitialized) {
       await GoogleSignIn.instance.signOut();
     }
   }

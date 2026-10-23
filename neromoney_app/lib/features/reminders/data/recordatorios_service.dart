@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz_data;
@@ -33,6 +34,11 @@ class RecordatoriosService {
   /// (`flutter_timezone` — el paquete `timezone` no la detecta solo). Debe
   /// llamarse antes de programar, reprogramar o cancelar cualquier aviso;
   /// es segura de llamar varias veces (solo hace el trabajo una vez).
+  /// En web, `flutter_local_notifications` no tiene implementación — ahí los
+  /// recordatorios tendrían que ser push enviados desde el servidor, que
+  /// todavía no existe. Mientras tanto, todo este servicio es un no-op.
+  static bool get disponible => !kIsWeb;
+
   static Future<void> _inicializar() async {
     if (_listo) return;
     tz_data.initializeTimeZones();
@@ -52,6 +58,7 @@ class RecordatoriosService {
   /// recordatorios — nunca antes, para no pedir permisos sin que el
   /// usuario haya mostrado intención real de usarlos.
   static Future<bool> pedirPermiso() async {
+    if (!disponible) return false;
     await _inicializar();
     final android = _plugin
         .resolvePlatformSpecificImplementation<
@@ -76,6 +83,7 @@ class RecordatoriosService {
     // respaldo y mandar "Hola. ¿Registraste..." sin nombre de por medio.
     required String nombreSaludo,
   }) async {
+    if (!disponible) return;
     await _inicializar();
 
     final tituloMediodia = '$nombreAsistente 👋';
@@ -127,6 +135,7 @@ class RecordatoriosService {
 
   /// Apaga los dos recordatorios — se llama al desactivar el interruptor.
   static Future<void> cancelarTodos() async {
+    if (!disponible) return;
     await _inicializar();
     await _plugin.cancel(id: _idMediodia);
     await _plugin.cancel(id: _idNoche);
