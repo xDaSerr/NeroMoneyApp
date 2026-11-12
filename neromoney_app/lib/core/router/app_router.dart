@@ -18,6 +18,7 @@ import '../../features/transactions/add_transaction_screen.dart';
 import '../../features/transactions/data/transaccion.dart';
 import '../../features/transactions/movements_screen.dart';
 import '../../features/transactions/transfer_screen.dart';
+import '../widgets/observador_modales.dart';
 import 'app_shell.dart';
 import 'go_router_refresh_stream.dart';
 
@@ -49,6 +50,8 @@ bool _onboardingConfirmado = false;
 /// de un StatefulShellRoute (ver app_shell.dart) para que cada una recuerde
 /// su propia navegación al cambiar de pestaña.
 final appRouter = GoRouter(
+  // Para saber cuándo hay un panel o diálogo abierto (ver ObservadorModales).
+  observers: [observadorModales],
   initialLocation: '/login',
   // Reacciona a login/logout: cada vez que cambia la sesión, go_router
   // vuelve a evaluar `redirect` de inmediato, sin que ninguna pantalla

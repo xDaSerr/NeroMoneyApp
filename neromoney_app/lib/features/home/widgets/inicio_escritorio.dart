@@ -9,6 +9,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/paleta_categorias.dart';
 import '../../../core/utils/fecha_es.dart';
 import '../../../core/utils/formato_monto.dart';
+import '../../../core/widgets/boton_con_panel.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/gradient_button.dart';
 import '../../auth/providers/auth_providers.dart';
@@ -22,6 +23,7 @@ import '../../transactions/data/resumen_gastos.dart';
 import '../../transactions/data/transaccion.dart';
 import '../../transactions/providers/transacciones_providers.dart';
 import '../../transactions/widgets/movimiento_tile.dart';
+import '../../transactions/widgets/panel_nuevo_movimiento.dart';
 import '../providers/privacidad_inicio_provider.dart';
 
 /// Inicio en ventanas anchas (ver HomeScreen): los mismos datos que el de
@@ -281,34 +283,52 @@ class _TarjetaPatrimonio extends StatelessWidget {
           // --- Accesos rápidos: Ingreso / Gasto / Transferir / Analizar ---
           Row(
             children: [
-              _AccionRapida(
-                icono: Icons.add_rounded,
-                texto: 'Ingreso',
-                onTap: () => context.push(
-                  '/add-transaction',
-                  extra: TipoTransaccion.ingreso,
+              Expanded(
+                // (se transforma en el panel "Crear movimiento")
+                child: BotonConPanel(
+                  colorBoton: AppColors.surface1,
+                  boton: (context, abrir) => _AccionRapida(
+                    icono: Icons.add_rounded,
+                    texto: 'Ingreso',
+                    onTap: abrir,
+                  ),
+                  panel: (context, cerrar) => PanelNuevoMovimiento(
+                    tipoInicial: TipoTransaccion.ingreso,
+                    onCerrar: cerrar,
+                  ),
                 ),
               ),
               const SizedBox(width: 14),
-              _AccionRapida(
-                icono: Icons.remove_rounded,
-                texto: 'Gasto',
-                onTap: () => context.push(
-                  '/add-transaction',
-                  extra: TipoTransaccion.gasto,
+              Expanded(
+                // (se transforma en el panel "Crear movimiento")
+                child: BotonConPanel(
+                  colorBoton: AppColors.surface1,
+                  boton: (context, abrir) => _AccionRapida(
+                    icono: Icons.remove_rounded,
+                    texto: 'Gasto',
+                    onTap: abrir,
+                  ),
+                  panel: (context, cerrar) => PanelNuevoMovimiento(
+                    tipoInicial: TipoTransaccion.gasto,
+                    onCerrar: cerrar,
+                  ),
                 ),
               ),
               const SizedBox(width: 14),
-              _AccionRapida(
-                icono: Icons.swap_horiz_rounded,
-                texto: 'Transferir',
-                onTap: () => context.push('/transfer'),
+              Expanded(
+                child: _AccionRapida(
+                  icono: Icons.swap_horiz_rounded,
+                  texto: 'Transferir',
+                  onTap: () => context.push('/transfer'),
+                ),
               ),
               const SizedBox(width: 14),
-              _AccionRapida(
-                icono: Icons.insights_rounded,
-                texto: 'Analizar',
-                onTap: () => context.push('/reports'),
+              Expanded(
+                child: _AccionRapida(
+                  icono: Icons.insights_rounded,
+                  texto: 'Analizar',
+                  onTap: () => context.push('/reports'),
+                ),
               ),
             ],
           ),
@@ -338,35 +358,33 @@ class _AccionRapidaState extends State<_AccionRapida> {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        onEnter: (_) => setState(() => _encima = true),
-        onExit: (_) => setState(() => _encima = false),
-        child: GestureDetector(
-          onTap: widget.onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(vertical: 18),
-            transform: Matrix4.translationValues(0, _encima ? -3 : 0, 0),
-            decoration: BoxDecoration(
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _encima = true),
+      onExit: (_) => setState(() => _encima = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          transform: Matrix4.translationValues(0, _encima ? -3 : 0, 0),
+          decoration: BoxDecoration(
+            color: _encima
+                ? AppColors.acento.withValues(alpha: 0.10)
+                : AppColors.surface3ActiveGlass,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
               color: _encima
-                  ? AppColors.acento.withValues(alpha: 0.10)
-                  : AppColors.surface3ActiveGlass,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: _encima
-                    ? AppColors.acento.withValues(alpha: 0.5)
-                    : AppColors.glassStrokeHighlight,
-              ),
+                  ? AppColors.acento.withValues(alpha: 0.5)
+                  : AppColors.glassStrokeHighlight,
             ),
-            child: Column(
-              children: [
-                Icon(widget.icono, color: AppColors.acento, size: 28),
-                const SizedBox(height: 8),
-                Text(widget.texto, style: AppTextStyles.bodyLg),
-              ],
-            ),
+          ),
+          child: Column(
+            children: [
+              Icon(widget.icono, color: AppColors.acento, size: 28),
+              const SizedBox(height: 8),
+              Text(widget.texto, style: AppTextStyles.bodyLg),
+            ],
           ),
         ),
       ),

@@ -8,9 +8,10 @@ import '../../features/auth/providers/auth_providers.dart';
 import '../../features/onboarding/data/perfil_usuario.dart';
 import '../../features/onboarding/providers/perfil_providers.dart';
 import '../../features/profile/data/saludo_usuario.dart';
-import '../theme/app_colors.dart';
 import 'boton_hablar.dart';
+import 'escucha_segura.dart';
 import 'menu_lateral.dart';
+import 'observador_modales.dart';
 
 /// Marco de la app en escritorio: menú lateral a la izquierda, el botón
 /// "Hablar con…" abajo a la derecha, y el contenido (el Navigator de toda la
@@ -19,9 +20,9 @@ import 'menu_lateral.dart';
 /// del mismo marco.
 ///
 /// Al cambiar de sección, la nueva "sale" del botón de esa sección: el
-/// contenido se revela desde el rectángulo del botón hasta llenar su área,
-/// con un contorno de luz alrededor que se apaga al terminar (pedido
-/// explícito del usuario). El chat sale del botón "Hablar con…".
+/// contenido se revela desde el rectángulo del botón hasta llenar su área
+/// (pedido explícito del usuario; se probó con un contorno de luz alrededor
+/// y pidió quitarlo). El chat sale del botón "Hablar con…".
 ///
 /// OJO: la estructura de widgets alrededor de [child] es la misma con el
 /// marco activo o no — si el Navigator cambiara de lugar en el árbol se
@@ -163,19 +164,6 @@ class _MarcoEscritorioState extends ConsumerState<MarcoEscritorio>
                   ),
                 ],
               ),
-              // --- Contorno de luz que acompaña a la sección mientras se abre ---
-              IgnorePointer(
-                child: AnimatedBuilder(
-                  animation: _revelado,
-                  builder: (context, _) => CustomPaint(
-                    painter: _Contorno(
-                      rect: _rectActual(contenido),
-                      progreso: _progreso,
-                      color: AppColors.acento,
-                    ),
-                  ),
-                ),
-              ),
             ],
           );
         },
@@ -239,11 +227,13 @@ class _CapaAsistente extends ConsumerWidget {
     final enChat = seccion == SeccionEscritorio.asistente;
     final conBoton = seccion != null && !enChat;
 
-    return ListenableBuilder(
-      listenable: asistente,
-      builder: (context, _) => Stack(
+    return EscuchaSegura(
+      escuchar: Listenable.merge([asistente, observadorModales.abiertos]),
+      builder: (context) => Stack(
         children: [
-          if (conBoton)
+          // Se esconde mientras haya un panel o diálogo abierto: dibujado
+          // encima del navegador, tapaba sus botones (ver ObservadorModales).
+          if (conBoton && observadorModales.abiertos.value == 0)
             Positioned(
               right: 28,
               bottom: 24,
@@ -343,43 +333,4 @@ class _Recorte extends CustomClipper<Path> {
   @override
   bool shouldReclip(_Recorte viejo) =>
       viejo.rect != rect || viejo.radio != radio;
-}
-
-class _Contorno extends CustomPainter {
-  _Contorno({required this.rect, required this.progreso, required this.color});
-
-  final Rect? rect;
-  final double progreso;
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final r = rect;
-    if (r == null) return;
-    // Visible casi todo el recorrido; se apaga en el último cuarto.
-    final intensidad = progreso < 0.75 ? 1.0 : (1 - progreso) / 0.25;
-    final forma = RRect.fromRectAndRadius(
-      r.deflate(1),
-      Radius.circular(18 * (1 - progreso) + 4),
-    );
-    canvas.drawRRect(
-      forma,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 6
-        ..color = color.withValues(alpha: 0.35 * intensidad)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10),
-    );
-    canvas.drawRRect(
-      forma,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.6
-        ..color = color.withValues(alpha: 0.9 * intensidad),
-    );
-  }
-
-  @override
-  bool shouldRepaint(_Contorno viejo) =>
-      viejo.rect != rect || viejo.progreso != progreso || viejo.color != color;
 }

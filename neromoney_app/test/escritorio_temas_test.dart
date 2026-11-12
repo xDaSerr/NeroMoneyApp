@@ -15,6 +15,7 @@ import 'package:neromoney_app/core/theme/controlador_tema.dart';
 import 'package:neromoney_app/core/theme/tema_app.dart';
 import 'package:neromoney_app/core/widgets/escucha_segura.dart';
 import 'package:neromoney_app/core/widgets/marco_escritorio.dart';
+import 'package:neromoney_app/core/widgets/observador_modales.dart';
 import 'package:neromoney_app/features/accounts/accounts_screen.dart';
 import 'package:neromoney_app/features/accounts/data/cuenta.dart';
 import 'package:neromoney_app/features/accounts/providers/cuentas_providers.dart';
@@ -141,6 +142,7 @@ Future<GlobalKey> _montarInicio(
   );
   final router = GoRouter(
     initialLocation: '/home',
+    observers: [observadorModales],
     routes: [
       StatefulShellRoute.indexedStack(
         builder: (_, _, shell) => AppShell(navigationShell: shell),
@@ -279,6 +281,39 @@ void main() {
     }
     expect(find.text('Mi perfil'), findsOneWidget);
 
+    // El botón "Nuevo movimiento" se transforma en el panel.
+    _router.go('/movements');
+    await _avanzar(tester);
+    await tester.tap(find.text('Nuevo movimiento'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 170));
+    await _capturar(tester, llave, 'panel_movimiento_abriendo');
+    await _avanzar(tester);
+    expect(
+      find.text(
+        'Crear'
+        '\n'
+        'movimiento',
+      ),
+      findsOneWidget,
+    );
+    await _capturar(tester, llave, 'panel_movimiento');
+    // "Crear" sin datos dice qué falta en vez de no hacer nada.
+    await tester.tap(find.text('Crear'));
+    await tester.pump();
+    expect(find.text('Escribe un monto mayor a 0.'), findsOneWidget);
+    await tester.tap(find.byTooltip('Cerrar'));
+    await _avanzar(tester);
+    expect(
+      find.text(
+        'Crear'
+        '\n'
+        'movimiento',
+      ),
+      findsNothing,
+    );
+    expect(tester.takeException(), isNull);
+
     // A media animación: la sección sale del botón "Cuentas" del menú, con
     // el contorno de luz alrededor.
     _router.go('/accounts');
@@ -301,6 +336,20 @@ void main() {
     expect(find.byType(InicioEscritorio), findsNothing);
     expect(find.text('Hola, xDaSerr 👋'), findsOneWidget);
     await _capturar(tester, llave, 'telefono_blanco');
+
+    // En teléfono, "Ingreso" se transforma en el panel ya en modo ingreso.
+    await tester.tap(find.text('Ingreso'));
+    await _avanzar(tester);
+    expect(
+      find.text(
+        'Crear'
+        '\n'
+        'movimiento',
+      ),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+    await _capturar(tester, llave, 'panel_telefono');
   });
 
   testWidgets('Onboarding: el paso 2 muestra los 8 colores', (tester) async {

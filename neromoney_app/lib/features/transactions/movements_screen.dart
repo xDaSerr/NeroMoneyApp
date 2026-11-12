@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../core/router/app_shell.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/widgets/boton_con_panel.dart';
 import '../accounts/data/cuenta.dart';
 import '../accounts/providers/cuentas_providers.dart';
 import 'data/transaccion.dart';
 import 'providers/transacciones_providers.dart';
 import 'widgets/movimiento_tile.dart';
 import 'widgets/movimientos_escritorio.dart';
+import 'widgets/panel_nuevo_movimiento.dart';
 
 class MovementsScreen extends ConsumerWidget {
   const MovementsScreen({super.key});
@@ -30,11 +31,16 @@ class MovementsScreen extends ConsumerWidget {
       // extendBody:true) — si no, quedaría tapado detrás de ella.
       floatingActionButton: Padding(
         padding: EdgeInsets.only(bottom: espacioParaBarraFlotante(context)),
-        child: FloatingActionButton(
-          backgroundColor: AppColors.acento,
-          foregroundColor: AppColors.sobreAcento,
-          onPressed: () => context.push('/add-transaction'),
-          child: const Icon(Icons.add_rounded),
+        // (se transforma en el panel "Crear movimiento")
+        child: BotonConPanel(
+          colorBoton: AppColors.acento,
+          boton: (context, abrir) => FloatingActionButton(
+            backgroundColor: AppColors.acento,
+            foregroundColor: AppColors.sobreAcento,
+            onPressed: abrir,
+            child: const Icon(Icons.add_rounded),
+          ),
+          panel: (context, cerrar) => PanelNuevoMovimiento(onCerrar: cerrar),
         ),
       ),
       body: transaccionesAsync.when(

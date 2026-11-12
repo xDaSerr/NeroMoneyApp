@@ -6,13 +6,14 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/formato_monto.dart';
+import '../../../core/widgets/boton_con_panel.dart';
 import '../../../core/widgets/piezas_escritorio.dart';
 import '../../home/providers/privacidad_inicio_provider.dart';
 import '../data/cuenta.dart';
 import '../providers/cuentas_providers.dart';
-import 'cuenta_form_card.dart';
 import 'cuenta_tile.dart';
 import 'editar_cuenta_sheet.dart';
+import 'panel_nueva_cuenta.dart';
 
 /// Cuentas en ventana ancha (ver referencia de diseño del usuario):
 /// patrimonio arriba, filtros por tipo y las tarjetas en columnas, cada
@@ -28,10 +29,15 @@ class CuentasEscritorio extends ConsumerStatefulWidget {
 class _CuentasEscritorioState extends ConsumerState<CuentasEscritorio> {
   TipoCuenta? _filtro; // null = todas
 
-  void _agregar() => mostrarFormularioNuevaCuenta(
-    context: context,
-    onAgregar: (cuenta) =>
-        ref.read(cuentasRepositoryProvider).crearCuenta(cuenta),
+  Widget _botonAgregar({required bool relleno}) => BotonConPanel(
+    colorBoton: relleno ? AppColors.acento : AppColors.surface1,
+    boton: (context, abrir) => BotonContorno(
+      texto: 'Agregar cuenta',
+      icono: Icons.add_rounded,
+      relleno: relleno,
+      onTap: abrir,
+    ),
+    panel: (context, cerrar) => PanelNuevaCuenta(onCerrar: cerrar),
   );
 
   @override
@@ -54,11 +60,8 @@ class _CuentasEscritorioState extends ConsumerState<CuentasEscritorio> {
                   subtitulo: 'Todo tu dinero, organizado.',
                   acciones: [
                     // --- Botón "Agregar cuenta" → formulario de alta ---
-                    BotonContorno(
-                      texto: 'Agregar cuenta',
-                      icono: Icons.add_rounded,
-                      onTap: _agregar,
-                    ),
+                    // (se transforma en el panel "Nueva cuenta")
+                    _botonAgregar(relleno: false),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -101,12 +104,7 @@ class _CuentasEscritorioState extends ConsumerState<CuentasEscritorio> {
                 style: AppTextStyles.bodyLg,
               ),
             ),
-            BotonContorno(
-              texto: 'Agregar cuenta',
-              icono: Icons.add_rounded,
-              relleno: true,
-              onTap: _agregar,
-            ),
+            _botonAgregar(relleno: true),
           ],
         ),
       );

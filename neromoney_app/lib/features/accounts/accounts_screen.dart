@@ -5,11 +5,12 @@ import 'package:go_router/go_router.dart';
 import '../../core/router/app_shell.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/widgets/boton_con_panel.dart';
 import 'data/cuenta.dart';
 import 'providers/cuentas_providers.dart';
-import 'widgets/cuenta_form_card.dart';
 import 'widgets/cuenta_tile.dart';
 import 'widgets/cuentas_escritorio.dart';
+import 'widgets/panel_nueva_cuenta.dart';
 
 /// Pestaña "Cuentas" — sigue `14._cuentas_y_tarjetas_vinculadas` del Stitch
 /// (chips de filtro por tipo, tarjetas visuales), pero solo con lo real:
@@ -44,15 +45,16 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
       // Movimientos (movements_screen.dart).
       floatingActionButton: Padding(
         padding: EdgeInsets.only(bottom: espacioParaBarraFlotante(context)),
-        child: FloatingActionButton(
-          backgroundColor: AppColors.acento,
-          foregroundColor: AppColors.sobreAcento,
-          onPressed: () => mostrarFormularioNuevaCuenta(
-            context: context,
-            onAgregar: (cuenta) =>
-                ref.read(cuentasRepositoryProvider).crearCuenta(cuenta),
+        // (se transforma en el panel "Nueva cuenta")
+        child: BotonConPanel(
+          colorBoton: AppColors.acento,
+          boton: (context, abrir) => FloatingActionButton(
+            backgroundColor: AppColors.acento,
+            foregroundColor: AppColors.sobreAcento,
+            onPressed: abrir,
+            child: const Icon(Icons.add_rounded),
           ),
-          child: const Icon(Icons.add_rounded),
+          panel: (context, cerrar) => PanelNuevaCuenta(onCerrar: cerrar),
         ),
       ),
       body: cuentasAsync.when(

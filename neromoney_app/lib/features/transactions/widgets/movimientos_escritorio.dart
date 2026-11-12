@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/fecha_es.dart';
 import '../../../core/utils/formato_monto.dart';
+import '../../../core/widgets/boton_con_panel.dart';
 import '../../../core/widgets/piezas_escritorio.dart';
 import '../../accounts/data/cuenta.dart';
 import '../../accounts/providers/cuentas_providers.dart';
@@ -14,6 +14,7 @@ import '../data/categoria.dart';
 import '../data/transaccion.dart';
 import '../movements_screen.dart';
 import '../providers/transacciones_providers.dart';
+import 'panel_nuevo_movimiento.dart';
 
 enum _Periodo { todo, esteMes, mesPasado, ultimos3Meses, esteAnio }
 
@@ -130,11 +131,17 @@ class _MovimientosEscritorioState extends ConsumerState<MovimientosEscritorio> {
                   subtitulo: 'Consulta y organiza tu actividad.',
                   acciones: [
                     // --- Botón "Nuevo movimiento" → alta manual ---
-                    BotonContorno(
-                      texto: 'Nuevo movimiento',
-                      icono: Icons.add_rounded,
-                      relleno: true,
-                      onTap: () => context.push('/add-transaction'),
+                    // (se transforma en el panel "Crear movimiento")
+                    BotonConPanel(
+                      colorBoton: AppColors.acento,
+                      boton: (context, abrir) => BotonContorno(
+                        texto: 'Nuevo movimiento',
+                        icono: Icons.add_rounded,
+                        relleno: true,
+                        onTap: abrir,
+                      ),
+                      panel: (context, cerrar) =>
+                          PanelNuevoMovimiento(onCerrar: cerrar),
                     ),
                   ],
                 ),

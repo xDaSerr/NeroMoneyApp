@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/paleta_categorias.dart';
 import '../../core/utils/fecha_es.dart';
+import '../../core/widgets/boton_con_panel.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/gradient_button.dart';
 import '../accounts/data/cuenta.dart';
@@ -18,6 +19,7 @@ import '../profile/data/saludo_usuario.dart';
 import '../transactions/data/resumen_gastos.dart';
 import '../transactions/data/transaccion.dart';
 import '../transactions/providers/transacciones_providers.dart';
+import '../transactions/widgets/panel_nuevo_movimiento.dart';
 import '../transactions/widgets/movimiento_tile.dart';
 import 'providers/privacidad_inicio_provider.dart';
 import 'widgets/inicio_escritorio.dart';
@@ -207,23 +209,43 @@ class HomeScreen extends ConsumerWidget {
                                   Row(
                                     children: [
                                       Expanded(
-                                        child: _AccionRapida(
-                                          icon: Icons.add_rounded,
-                                          label: 'Ingreso',
-                                          onTap: () => context.push(
-                                            '/add-transaction',
-                                            extra: TipoTransaccion.ingreso,
-                                          ),
+                                        // (se transforma en el panel "Crear movimiento")
+                                        child: BotonConPanel(
+                                          colorBoton:
+                                              AppColors.surface3ActiveGlass,
+                                          radioBoton: 24,
+                                          boton: (context, abrir) =>
+                                              _AccionRapida(
+                                                icon: Icons.add_rounded,
+                                                label: 'Ingreso',
+                                                onTap: abrir,
+                                              ),
+                                          panel: (context, cerrar) =>
+                                              PanelNuevoMovimiento(
+                                                tipoInicial:
+                                                    TipoTransaccion.ingreso,
+                                                onCerrar: cerrar,
+                                              ),
                                         ),
                                       ),
                                       Expanded(
-                                        child: _AccionRapida(
-                                          icon: Icons.remove_rounded,
-                                          label: 'Gasto',
-                                          onTap: () => context.push(
-                                            '/add-transaction',
-                                            extra: TipoTransaccion.gasto,
-                                          ),
+                                        // (se transforma en el panel "Crear movimiento")
+                                        child: BotonConPanel(
+                                          colorBoton:
+                                              AppColors.surface3ActiveGlass,
+                                          radioBoton: 24,
+                                          boton: (context, abrir) =>
+                                              _AccionRapida(
+                                                icon: Icons.remove_rounded,
+                                                label: 'Gasto',
+                                                onTap: abrir,
+                                              ),
+                                          panel: (context, cerrar) =>
+                                              PanelNuevoMovimiento(
+                                                tipoInicial:
+                                                    TipoTransaccion.gasto,
+                                                onCerrar: cerrar,
+                                              ),
                                         ),
                                       ),
                                       Expanded(
