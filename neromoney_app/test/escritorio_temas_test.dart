@@ -22,6 +22,7 @@ import 'package:neromoney_app/features/accounts/providers/cuentas_providers.dart
 import 'package:neromoney_app/features/assistant/data/controlador_asistente.dart';
 import 'package:neromoney_app/features/assistant/providers/controlador_asistente_provider.dart';
 import 'package:neromoney_app/features/assistant/widgets/pregunta_nombre_asistente.dart';
+import 'package:neromoney_app/features/auth/bienvenida_screen.dart';
 import 'package:neromoney_app/features/auth/providers/auth_providers.dart';
 import 'package:neromoney_app/features/home/home_screen.dart';
 import 'package:neromoney_app/features/home/widgets/inicio_escritorio.dart';
@@ -323,6 +324,52 @@ void main() {
     await _avanzar(tester);
     expect(tester.takeException(), isNull);
     expect(find.text('Cuentas y bolsillos'), findsOneWidget);
+  });
+
+  testWidgets('Portada: los botones se transforman en la tarjeta', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1600, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final llave = GlobalKey();
+    await tester.pumpWidget(
+      ProviderScope(
+        child: RepaintBoundary(
+          key: llave,
+          child: MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.actual,
+            home: const BienvenidaScreen(),
+          ),
+        ),
+      ),
+    );
+    await _avanzar(tester);
+    await _avanzar(tester);
+
+    await tester.tap(find.text('Iniciar sesión'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 160));
+    await _capturar(tester, llave, 'acceso_abriendo');
+    await _avanzar(tester);
+    expect(find.text('Bienvenido de nuevo'), findsOneWidget);
+    await _capturar(tester, llave, 'acceso_login');
+
+    // La flecha regresa: la tarjeta se encoge de vuelta al botón.
+    await tester.tap(find.byTooltip('Regresar'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 150));
+    await _capturar(tester, llave, 'acceso_cerrando');
+    await _avanzar(tester);
+    expect(find.text('Registrarme'), findsOneWidget);
+    expect(find.text('Bienvenido de nuevo'), findsNothing);
+
+    await tester.tap(find.text('Registrarme'));
+    await _avanzar(tester);
+    expect(find.text('Crea tu cuenta'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('Inicio de teléfono en tema Blanco', (tester) async {

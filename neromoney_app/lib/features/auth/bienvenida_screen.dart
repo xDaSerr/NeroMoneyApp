@@ -27,21 +27,142 @@ class BienvenidaScreen extends StatefulWidget {
   State<BienvenidaScreen> createState() => _BienvenidaScreenState();
 }
 
-class _BienvenidaScreenState extends State<BienvenidaScreen> {
+class _BienvenidaScreenState extends State<BienvenidaScreen>
+    with SingleTickerProviderStateMixin {
   late ModoAcceso _modo = widget.modoInicial;
 
+  // --- La transformación botón ↔ tarjeta (como los botones "+" de la app,
+  // ver BotonConPanel; pedido explícito del usuario) ---
+  final _llaveFondo = GlobalKey();
+  final _llaveArea = GlobalKey();
+  final _llaveLogin = GlobalKey();
+  final _llaveRegistro = GlobalKey();
+
+  /// 0 = la forma está en el botón; 1 = es la tarjeta completa.
+  late final AnimationController _morph = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 520),
+    reverseDuration: const Duration(milliseconds: 340),
+    value: 1,
+  );
+  late final _curva = CurvedAnimation(
+    parent: _morph,
+    // Con un poco de rebote al abrir; sin rebote al cerrar.
+    curve: const Cubic(0.3, 1.25, 0.5, 1),
+    reverseCurve: Curves.easeInCubic,
+  );
+
+  /// Dónde estaban los botones de la portada (para regresar a ellos) y de
+  /// qué color es cada uno.
+  final _botones = <ModoAcceso, Rect>{};
+  static const _colorVidrio = Color(0xFF1B2232);
+  Rect? _tarjeta;
+
+  /// true mientras la forma se estira o se encoge: los cambios de la
+  /// portada a la tarjeta son instantáneos porque la animación es la forma.
+  bool _transformando = false;
+
+  /// Al regresar de la tarjeta, la portada no repite su entrada: el botón
+  /// tiene que estar justo donde terminó la forma.
+  bool _animarPortada = true;
+
+  @override
+  void dispose() {
+    _morph.dispose();
+    super.dispose();
+  }
+
   void _ir(ModoAcceso modo) => setState(() => _modo = modo);
+
+  Rect? _rectDe(GlobalKey llave) {
+    final caja = llave.currentContext?.findRenderObject() as RenderBox?;
+    final fondo = _llaveFondo.currentContext?.findRenderObject() as RenderBox?;
+    if (caja == null || fondo == null || !caja.hasSize) return null;
+    return caja.localToGlobal(Offset.zero, ancestor: fondo) & caja.size;
+  }
+
+  /// Portada → tarjeta: el botón tocado se estira hasta ser la tarjeta.
+  Future<void> _abrir(ModoAcceso modo) async {
+    final login = _rectDe(_llaveLogin);
+    final registro = _rectDe(_llaveRegistro);
+    if (MediaQuery.disableAnimationsOf(context) ||
+        login == null ||
+        registro == null) {
+      _ir(modo);
+      return;
+    }
+    _botones
+      ..[ModoAcceso.login] = login
+      ..[ModoAcceso.registro] = registro;
+    setState(() {
+      _modo = modo;
+      _tarjeta = null;
+      _transformando = true;
+      _morph.value = 0;
+    });
+    // El tamaño de la tarjeta se conoce hasta que se dibuja.
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
+    final tarjeta = _rectDe(_llaveArea);
+    if (tarjeta == null) {
+      setState(() {
+        _transformando = false;
+        _morph.value = 1;
+      });
+      return;
+    }
+    setState(() => _tarjeta = tarjeta);
+    await _morph.forward();
+    if (mounted) setState(() => _transformando = false);
+  }
+
+  /// Tarjeta → portada: la tarjeta se encoge de vuelta a su botón.
+  Future<void> _volverAPortada() async {
+    final tarjeta = _rectDe(_llaveArea);
+    final boton =
+        _botones[_modo == ModoAcceso.registro
+            ? ModoAcceso.registro
+            : ModoAcceso.login];
+    if (MediaQuery.disableAnimationsOf(context) ||
+        tarjeta == null ||
+        boton == null) {
+      _ir(ModoAcceso.portada);
+      return;
+    }
+    setState(() {
+      _tarjeta = tarjeta;
+      _transformando = true;
+    });
+    await _morph.reverse();
+    if (!mounted) return;
+    setState(() {
+      _modo = ModoAcceso.portada;
+      _animarPortada = false;
+    });
+    // Un cuadro con la portada ya dibujada antes de quitar la forma, para
+    // que no parpadee el hueco del botón.
+    await WidgetsBinding.instance.endOfFrame;
+    if (mounted) {
+      setState(() {
+        _transformando = false;
+        _morph.value = 1;
+      });
+    }
+  }
 
   Widget _contenido() {
     switch (_modo) {
       case ModoAcceso.portada:
         return _Portada(
-          onIniciarSesion: () => _ir(ModoAcceso.login),
-          onRegistrarme: () => _ir(ModoAcceso.registro),
+          llaveLogin: _llaveLogin,
+          llaveRegistro: _llaveRegistro,
+          animar: _animarPortada,
+          onIniciarSesion: () => _abrir(ModoAcceso.login),
+          onRegistrarme: () => _abrir(ModoAcceso.registro),
         );
       case ModoAcceso.login:
         return _ConVolver(
-          onVolver: () => _ir(ModoAcceso.portada),
+          onVolver: _volverAPortada,
           child: FormularioLogin(
             onIrARegistro: () => _ir(ModoAcceso.registro),
             onOlvideContrasena: () => _ir(ModoAcceso.recuperar),
@@ -49,7 +170,7 @@ class _BienvenidaScreenState extends State<BienvenidaScreen> {
         );
       case ModoAcceso.registro:
         return _ConVolver(
-          onVolver: () => _ir(ModoAcceso.portada),
+          onVolver: _volverAPortada,
           child: FormularioRegistro(onIrALogin: () => _ir(ModoAcceso.login)),
         );
       case ModoAcceso.recuperar:
@@ -63,25 +184,34 @@ class _BienvenidaScreenState extends State<BienvenidaScreen> {
   @override
   Widget build(BuildContext context) {
     final sinMovimiento = MediaQuery.disableAnimationsOf(context);
+    // Durante la transformación, la portada sale rápido (se desvanece
+    // detrás de la forma) y la tarjeta no usa la transición genérica: la
+    // muestra la propia forma.
+    final instantaneo = sinMovimiento || _transformando;
     return PopScope(
       // El botón "atrás" de Android (o del navegador) regresa del
       // formulario a la portada en vez de salirse de la app.
       canPop: _modo == ModoAcceso.portada,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) {
-          _ir(
-            _modo == ModoAcceso.recuperar
-                ? ModoAcceso.login
-                : ModoAcceso.portada,
-          );
+        if (didPop || _transformando) return;
+        if (_modo == ModoAcceso.recuperar) {
+          _ir(ModoAcceso.login);
+        } else {
+          _volverAPortada();
         }
       },
       child: Scaffold(
         backgroundColor: AppColors.canvas,
         body: Stack(
+          key: _llaveFondo,
           fit: StackFit.expand,
           children: [
             const FondoAcceso(),
+            // --- La forma que pasa de botón a tarjeta (y de regreso) ---
+            AnimatedBuilder(
+              animation: _morph,
+              builder: (context, _) => _forma(),
+            ),
             SafeArea(
               child: Center(
                 child: SingleChildScrollView(
@@ -93,21 +223,27 @@ class _BienvenidaScreenState extends State<BienvenidaScreen> {
                     constraints: BoxConstraints(
                       maxWidth: _modo == ModoAcceso.portada ? 620 : 520,
                     ),
-                    // AnimatedSize hace que el espacio crezca/encoja con
-                    // suavidad mientras el AnimatedSwitcher cruza el
-                    // contenido — juntos dan el efecto de que la tarjeta
-                    // "se abre" desde donde estaban los botones.
+                    // AnimatedSize: entre formularios (login ↔ registro) la
+                    // tarjeta cambia de alto con suavidad.
                     child: AnimatedSize(
-                      duration: sinMovimiento
-                          ? Duration.zero
+                      key: _llaveArea,
+                      // 1 ms y no cero: con cero, AnimatedSize termina su
+                      // animación dentro de su propio layout y Flutter lo
+                      // marca como error.
+                      duration: instantaneo
+                          ? const Duration(milliseconds: 1)
                           : const Duration(milliseconds: 450),
                       curve: Curves.easeOutCubic,
                       child: AnimatedSwitcher(
-                        duration: sinMovimiento
+                        duration: instantaneo
                             ? Duration.zero
                             : const Duration(milliseconds: 520),
                         reverseDuration: sinMovimiento
                             ? Duration.zero
+                            : _transformando
+                            ? (_modo == ModoAcceso.portada
+                                  ? Duration.zero
+                                  : const Duration(milliseconds: 220))
                             : const Duration(milliseconds: 260),
                         switchInCurve: Curves.easeOutCubic,
                         switchOutCurve: Curves.easeIn,
@@ -118,7 +254,9 @@ class _BienvenidaScreenState extends State<BienvenidaScreen> {
                         ),
                         child: KeyedSubtree(
                           key: ValueKey(_modo),
-                          child: _contenido(),
+                          child: _modo == ModoAcceso.portada
+                              ? _contenido()
+                              : _apareciendo(_contenido()),
                         ),
                       ),
                     ),
@@ -129,6 +267,78 @@ class _BienvenidaScreenState extends State<BienvenidaScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  /// La forma que se estira del botón a la tarjeta. Solo existe mientras
+  /// dura la transformación.
+  Widget _forma() {
+    final tarjeta = _tarjeta;
+    final boton =
+        _botones[_modo == ModoAcceso.registro
+            ? ModoAcceso.registro
+            : ModoAcceso.login];
+    if (!_transformando || tarjeta == null || boton == null) {
+      return const SizedBox.shrink();
+    }
+    final t = _curva.value;
+    final avance = t.clamp(0.0, 1.0);
+    final rect = Rect.lerp(boton, tarjeta, t)!;
+    final colorBoton = _modo == ModoAcceso.registro
+        ? _colorVidrio
+        : AppColors.acento;
+    // Al llegar se desvanece y queda la tarjeta de vidrio de verdad.
+    final opacidad = avance < 0.85 ? 1.0 : (1 - avance) / 0.15;
+    return Positioned.fromRect(
+      rect: rect,
+      child: IgnorePointer(
+        child: Opacity(
+          opacity: opacidad,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Color.lerp(
+                colorBoton,
+                const Color(0xFF141A28),
+                (avance * 1.8).clamp(0.0, 1.0),
+              ),
+              borderRadius: BorderRadius.circular(
+                boton.height / 2 + (28 - boton.height / 2) * avance,
+              ),
+              border: Border.all(
+                color: AppColors.glassStrokeHighlight.withValues(alpha: avance),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// El formulario aparece desenfocado y se enfoca en la segunda mitad de
+  /// la transformación (y al revés al cerrar).
+  Widget _apareciendo(Widget hijo) {
+    return AnimatedBuilder(
+      animation: _morph,
+      child: hijo,
+      builder: (context, hijo) {
+        final v = const Interval(
+          0.4,
+          1,
+          curve: Curves.easeOut,
+        ).transform(_morph.value);
+        final desenfoque = (1 - v) * 10;
+        return Opacity(
+          opacity: v,
+          child: ImageFiltered(
+            enabled: desenfoque > 0.05,
+            imageFilter: ImageFilter.blur(
+              sigmaX: desenfoque,
+              sigmaY: desenfoque,
+            ),
+            child: hijo,
+          ),
+        );
+      },
     );
   }
 
@@ -201,15 +411,27 @@ class _ConVolver extends StatelessWidget {
 /// botones. Cada elemento entra uno tras otro, pasando de desenfocado a
 /// nítido.
 class _Portada extends StatelessWidget {
-  const _Portada({required this.onIniciarSesion, required this.onRegistrarme});
+  const _Portada({
+    required this.llaveLogin,
+    required this.llaveRegistro,
+    required this.animar,
+    required this.onIniciarSesion,
+    required this.onRegistrarme,
+  });
 
+  /// Para saber dónde están los botones: de ahí sale la tarjeta.
+  final GlobalKey llaveLogin;
+  final GlobalKey llaveRegistro;
+
+  /// false al regresar de la tarjeta: la entrada no se repite.
+  final bool animar;
   final VoidCallback onIniciarSesion;
   final VoidCallback onRegistrarme;
 
   @override
   Widget build(BuildContext context) {
     final angosto = MediaQuery.sizeOf(context).width < 600;
-    final sinMovimiento = MediaQuery.disableAnimationsOf(context);
+    final sinMovimiento = MediaQuery.disableAnimationsOf(context) || !animar;
 
     final titulo = AppTextStyles.display.copyWith(
       fontSize: angosto ? 44 : 64,
@@ -218,10 +440,13 @@ class _Portada extends StatelessWidget {
     );
 
     // --- Botón "Iniciar sesión" (abre la tarjeta con el formulario de login) ---
-    Widget botonLogin = GradientButton(
-      label: 'Iniciar sesión',
-      icon: Icons.arrow_forward_rounded,
-      onPressed: onIniciarSesion,
+    Widget botonLogin = KeyedSubtree(
+      key: llaveLogin,
+      child: GradientButton(
+        label: 'Iniciar sesión',
+        icon: Icons.arrow_forward_rounded,
+        onPressed: onIniciarSesion,
+      ),
     );
     if (!sinMovimiento) {
       // Un destello que cruza el botón cada pocos segundos, para invitar
@@ -236,9 +461,9 @@ class _Portada extends StatelessWidget {
     }
 
     // --- Botón "Registrarme" (abre la tarjeta con el formulario de registro) ---
-    final botonRegistro = BotonVidrio(
-      label: 'Registrarme',
-      onPressed: onRegistrarme,
+    final botonRegistro = KeyedSubtree(
+      key: llaveRegistro,
+      child: BotonVidrio(label: 'Registrarme', onPressed: onRegistrarme),
     );
 
     final botones = angosto
