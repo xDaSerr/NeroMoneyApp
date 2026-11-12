@@ -30,6 +30,8 @@ class GradientButton extends StatefulWidget {
 
 class _GradientButtonState extends State<GradientButton> {
   bool _pressed = false;
+  // Solo existe con mouse (versión web en PC): crece un poco y brilla más.
+  bool _hover = false;
 
   void _setPressed(bool value) {
     if (widget.onPressed == null) return;
@@ -39,59 +41,70 @@ class _GradientButtonState extends State<GradientButton> {
   @override
   Widget build(BuildContext context) {
     final disabled = widget.onPressed == null;
+    final hover = _hover && !disabled;
 
-    return GestureDetector(
-      onTapDown: (_) => _setPressed(true),
-      onTapUp: (_) => _setPressed(false),
-      onTapCancel: () => _setPressed(false),
-      onTap: widget.onPressed,
-      child: AnimatedScale(
-        scale: _pressed ? 0.97 : 1.0,
-        duration: const Duration(milliseconds: 120),
-        curve: Curves.easeOut,
-        child: AnimatedOpacity(
-          // Simula el "brightness: 90%" del spec sin filtros costosos.
-          opacity: disabled ? 0.5 : (_pressed ? 0.9 : 1.0),
-          duration: const Duration(milliseconds: 120),
-          child: Container(
-            width: widget.expand ? double.infinity : null,
-            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 28),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: widget.colors,
+    return MouseRegion(
+      cursor: disabled ? SystemMouseCursors.basic : SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: GestureDetector(
+        onTapDown: (_) => _setPressed(true),
+        onTapUp: (_) => _setPressed(false),
+        onTapCancel: () => _setPressed(false),
+        onTap: widget.onPressed,
+        child: AnimatedScale(
+          scale: _pressed ? 0.97 : (hover ? 1.02 : 1.0),
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOut,
+          child: AnimatedOpacity(
+            // Simula el "brightness: 90%" del spec sin filtros costosos.
+            opacity: disabled ? 0.5 : (_pressed ? 0.9 : 1.0),
+            duration: const Duration(milliseconds: 120),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: widget.expand ? double.infinity : null,
+              padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 28),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: widget.colors,
+                ),
+                borderRadius: BorderRadius.circular(999),
+                boxShadow: disabled
+                    ? null
+                    : [
+                        BoxShadow(
+                          color: widget.colors.first.withValues(
+                            alpha: hover ? 0.5 : 0.3,
+                          ),
+                          blurRadius: hover ? 28 : 18,
+                          spreadRadius: 0,
+                        ),
+                      ],
               ),
-              borderRadius: BorderRadius.circular(999),
-              boxShadow: disabled
-                  ? null
-                  : [
-                      BoxShadow(
-                        color: widget.colors.first.withValues(alpha: 0.3),
-                        blurRadius: 18,
-                        spreadRadius: 0,
+              child: Row(
+                mainAxisSize: widget.expand
+                    ? MainAxisSize.max
+                    : MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Flexible(
+                    child: Text(
+                      widget.label,
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.bodyLg.copyWith(
+                        color: AppColors.canvas,
+                        fontWeight: FontWeight.w600,
                       ),
-                    ],
-            ),
-            child: Row(
-              mainAxisSize: widget.expand ? MainAxisSize.max : MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Flexible(
-                  child: Text(
-                    widget.label,
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.bodyLg.copyWith(
-                      color: AppColors.canvas,
-                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                ),
-                if (widget.icon != null) ...[
-                  const SizedBox(width: 8),
-                  Icon(widget.icon, color: AppColors.canvas, size: 20),
+                  if (widget.icon != null) ...[
+                    const SizedBox(width: 8),
+                    Icon(widget.icon, color: AppColors.canvas, size: 20),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),

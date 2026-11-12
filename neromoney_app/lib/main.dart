@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
+import 'features/auth/widgets/fondo_acceso.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -49,10 +50,10 @@ void main() async {
 class NeroMoneyApp extends StatelessWidget {
   const NeroMoneyApp({super.key});
 
-  // Todo el diseño (Stitch) es de teléfono. En una pantalla ancha (la
-  // versión web abierta en una PC, o una tablet) estirarlo a todo lo ancho
-  // dejaba campos y tarjetas kilométricos — se centra una "columna" de
-  // teléfono en su lugar, como WhatsApp Web.
+  // Las pantallas internas (Stitch) son de teléfono. En una pantalla ancha
+  // (la web en una PC, o una tablet) estirarlas dejaba campos y tarjetas
+  // kilométricos — se centran en una columna sobre el fondo de la app. El
+  // acceso (BienvenidaScreen) sí tiene diseño propio de pantalla completa.
   static const double _anchoMaximo = 480;
 
   @override
@@ -62,33 +63,57 @@ class NeroMoneyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
       routerConfig: appRouter,
-      builder: (context, child) {
-        final mq = MediaQuery.of(context);
-        if (mq.size.width <= _anchoMaximo) return child!;
-        return ColoredBox(
-          color: const Color(0xFF05070B),
-          child: Center(
-            child: Container(
-              width: _anchoMaximo,
-              color: AppColors.canvas,
-              // foregroundDecoration (no decoration) para que el borde no
-              // le quite píxeles al ancho que se reporta abajo.
-              foregroundDecoration: const BoxDecoration(
-                border: Border.symmetric(
-                  vertical: BorderSide(color: AppColors.glassStrokeStandard),
-                ),
-              ),
-              // El tamaño se reescribe en MediaQuery para que todo lo que
-              // mide la pantalla (diálogos, panel de voz, barra flotante)
-              // calcule con el ancho de la columna, no con el de la ventana.
-              child: MediaQuery(
-                data: mq.copyWith(size: Size(_anchoMaximo, mq.size.height)),
-                child: ClipRect(child: child),
-              ),
+      // Se escucha al router porque el ancho depende de la ruta: las
+      // pantallas de acceso tienen su propio diseño de pantalla completa.
+      builder: (context, child) => ListenableBuilder(
+        listenable: appRouter.routerDelegate,
+        builder: (context, _) => _limitarAncho(context, child!),
+      ),
+    );
+  }
+
+  Widget _limitarAncho(BuildContext context, Widget child) {
+    final mq = MediaQuery.of(context);
+    final ruta = appRouter.routerDelegate.currentConfiguration.uri.path;
+    final columna = mq.size.width > _anchoMaximo && !esRutaDeAcceso(ruta);
+    final ancho = columna ? _anchoMaximo : mq.size.width;
+    // La estructura es la misma con o sin columna (solo cambia el ancho):
+    // si el Navigator cambiara de lugar en el árbol al pasar del acceso a la
+    // app, Flutter lo reconstruiría y se perdería su estado.
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        const ColoredBox(color: Color(0xFF05070B)),
+        Image.asset(
+          FondoAcceso.ruta,
+          fit: BoxFit.cover,
+          opacity: AlwaysStoppedAnimation(columna ? 0.45 : 0),
+        ),
+        Center(
+          child: Container(
+            width: ancho,
+            color: AppColors.canvas,
+            // foregroundDecoration (no decoration) para que el borde no le
+            // quite píxeles al ancho que se reporta abajo.
+            foregroundDecoration: columna
+                ? const BoxDecoration(
+                    border: Border.symmetric(
+                      vertical: BorderSide(
+                        color: AppColors.glassStrokeStandard,
+                      ),
+                    ),
+                  )
+                : null,
+            // El tamaño se reescribe en MediaQuery para que todo lo que mide
+            // la pantalla (diálogos, panel de voz, barra flotante) calcule
+            // con el ancho de la columna, no con el de la ventana.
+            child: MediaQuery(
+              data: mq.copyWith(size: Size(ancho, mq.size.height)),
+              child: ClipRect(child: child),
             ),
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 }

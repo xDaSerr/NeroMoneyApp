@@ -25,7 +25,9 @@ class AuthRepository {
 
   Future<void> _ensureGoogleSignInReady() async {
     if (_googleSignInInitialized) return;
-    await GoogleSignIn.instance.initialize(serverClientId: _googleServerClientId);
+    await GoogleSignIn.instance.initialize(
+      serverClientId: _googleServerClientId,
+    );
     _googleSignInInitialized = true;
   }
 
@@ -33,14 +35,20 @@ class AuthRepository {
     required String email,
     required String password,
   }) {
-    return _firebaseAuth.signInWithEmailAndPassword(email: email, password: password);
+    return _firebaseAuth.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
   }
 
   Future<UserCredential> registerWithEmail({
     required String email,
     required String password,
   }) {
-    return _firebaseAuth.createUserWithEmailAndPassword(email: email, password: password);
+    return _firebaseAuth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
   }
 
   Future<void> sendPasswordResetEmail(String email) {
@@ -68,7 +76,9 @@ class AuthRepository {
     try {
       final googleUser = await GoogleSignIn.instance.authenticate();
       final googleAuth = googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(idToken: googleAuth.idToken);
+      final credential = GoogleAuthProvider.credential(
+        idToken: googleAuth.idToken,
+      );
       return await _firebaseAuth.signInWithCredential(credential);
     } on GoogleSignInException catch (e) {
       if (e.code == GoogleSignInExceptionCode.canceled) return null;

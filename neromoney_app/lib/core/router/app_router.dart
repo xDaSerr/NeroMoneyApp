@@ -5,9 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/accounts/account_detail_screen.dart';
 import '../../features/accounts/accounts_screen.dart';
 import '../../features/assistant/assistant_chat_screen.dart';
-import '../../features/auth/login_screen.dart';
-import '../../features/auth/register_screen.dart';
-import '../../features/auth/forgot_password_screen.dart';
+import '../../features/auth/bienvenida_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/onboarding/data/perfil_repository.dart';
 import '../../features/onboarding/onboarding_flow_screen.dart';
@@ -24,6 +22,10 @@ import 'app_shell.dart';
 import 'go_router_refresh_stream.dart';
 
 const _authRoutes = {'/login', '/register', '/forgot-password'};
+
+/// Las pantallas de acceso (portada + formularios) tienen su propio diseño
+/// de pantalla completa; main.dart las excluye de la columna de teléfono.
+bool esRutaDeAcceso(String ruta) => _authRoutes.contains(ruta);
 const _onboardingRoute = '/onboarding';
 
 // Una vez que confirmamos que un usuario ya completó el onboarding, no tiene
@@ -73,14 +75,21 @@ final appRouter = GoRouter(
       path: '/transfer',
       builder: (context, state) => const TransferScreen(),
     ),
-    GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+    // Las tres rutas de acceso abren la misma pantalla (portada + tarjeta
+    // animada), solo cambia qué muestra al llegar.
+    GoRoute(
+      path: '/login',
+      builder: (context, state) => const BienvenidaScreen(),
+    ),
     GoRoute(
       path: '/register',
-      builder: (context, state) => const RegisterScreen(),
+      builder: (context, state) =>
+          const BienvenidaScreen(modoInicial: ModoAcceso.registro),
     ),
     GoRoute(
       path: '/forgot-password',
-      builder: (context, state) => const ForgotPasswordScreen(),
+      builder: (context, state) =>
+          const BienvenidaScreen(modoInicial: ModoAcceso.recuperar),
     ),
     GoRoute(
       path: _onboardingRoute,
