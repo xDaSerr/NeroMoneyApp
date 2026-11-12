@@ -11,7 +11,9 @@ import 'core/router/app_shell.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/controlador_tema.dart';
 import 'core/theme/tema_app.dart';
+import 'core/widgets/escucha_segura.dart';
 import 'core/widgets/fondo_tema.dart';
+import 'core/widgets/marco_escritorio.dart';
 import 'features/auth/providers/auth_providers.dart';
 import 'firebase_options.dart';
 
@@ -61,7 +63,7 @@ class _NeroMoneyAppState extends ConsumerState<NeroMoneyApp> {
   // centran en una columna; las pestañas usan el diseño de escritorio de
   // AppShell y el acceso, su propia pantalla completa.
   static const double _anchoTelefono = 480;
-  static const double _anchoColumnaEscritorio = 560;
+  static const double _anchoColumnaEscritorio = 640;
 
   TemaApp? _temaAplicado;
 
@@ -142,9 +144,9 @@ class _NeroMoneyAppState extends ConsumerState<NeroMoneyApp> {
       theme: AppTheme.actual,
       routerConfig: appRouter,
       // Se escucha al router porque la distribución depende de la ruta.
-      builder: (context, child) => ListenableBuilder(
-        listenable: appRouter.routerDelegate,
-        builder: (context, _) => _distribuir(context, child!),
+      builder: (context, child) => EscuchaSegura(
+        escuchar: appRouter.routerDelegate,
+        builder: (context) => _distribuir(context, child!),
       ),
     );
   }
@@ -154,15 +156,20 @@ class _NeroMoneyAppState extends ConsumerState<NeroMoneyApp> {
     final ruta = appRouter.routerDelegate.currentConfiguration.uri.path;
     final ventana = mq.size.width;
     final acceso = esRutaDeAcceso(ruta);
-    final escritorioConPestanas =
-        ventana >= anchoEscritorio && esRutaDePestana(ruta);
-    final pantallaCompleta =
-        acceso || ventana <= _anchoTelefono || escritorioConPestanas;
-    final ancho = pantallaCompleta
-        ? ventana
-        : (ventana >= anchoEscritorio
-              ? _anchoColumnaEscritorio
-              : _anchoTelefono);
+    final escritorio = ventana >= anchoEscritorio;
+    // Marco de escritorio (menú lateral + "Hablar con…") en todo lo que hay
+    // dentro de la sesión, salvo el onboarding.
+    final marco =
+        escritorio &&
+        ref.read(currentUidProvider) != null &&
+        !acceso &&
+        ruta != '/onboarding';
+    // Secciones con diseño propio de escritorio, a todo lo ancho del marco.
+    final seccionAncha = marco && (esRutaDePestana(ruta) || ruta == '/reports');
+    // Lo demás (formularios de un paso, onboarding; o todo en una tablet)
+    // va en una columna centrada del ancho de un teléfono.
+    final columna = !acceso && !seccionAncha && ventana > _anchoTelefono;
+    final anchoColumna = escritorio ? _anchoColumnaEscritorio : _anchoTelefono;
     final tema = Theme.of(context);
 
     // OJO: la estructura de widgets es SIEMPRE la misma, solo cambian sus
@@ -175,38 +182,44 @@ class _NeroMoneyAppState extends ConsumerState<NeroMoneyApp> {
       fit: StackFit.expand,
       children: [
         const FondoTema(),
-        Center(
-          child: SizedBox(
-            width: ancho,
-            child: ColoredBox(
-              // En escritorio las pestañas dejan ver el FondoTema (con sus
-              // resplandores); la columna y el teléfono usan el fondo liso.
-              color: escritorioConPestanas || acceso
-                  ? Colors.transparent
-                  : AppColors.canvas,
-              child: DecoratedBox(
-                position: DecorationPosition.foreground,
-                decoration: BoxDecoration(
-                  border: pantallaCompleta
-                      ? null
-                      : Border.symmetric(
-                          vertical: BorderSide(
-                            color: AppColors.glassStrokeStandard,
-                          ),
-                        ),
-                ),
-                // El tamaño se reescribe en MediaQuery para que todo lo que
-                // mide la pantalla (diálogos, panel de voz, barra flotante)
-                // calcule con el ancho de la columna, no con el de la ventana.
-                child: MediaQuery(
-                  data: mq.copyWith(size: Size(ancho, mq.size.height)),
-                  child: Theme(
-                    data: escritorioConPestanas
-                        ? tema.copyWith(
-                            scaffoldBackgroundColor: Colors.transparent,
+        MarcoEscritorio(
+          activo: marco,
+          ruta: ruta,
+          onIr: appRouter.go,
+          child: Center(
+            child: SizedBox(
+              width: columna ? anchoColumna : double.infinity,
+              child: ColoredBox(
+                // En el marco de escritorio se ve el FondoTema (con sus
+                // resplandores); la columna del teléfono usa el fondo liso.
+                color: marco || acceso ? Colors.transparent : AppColors.canvas,
+                child: DecoratedBox(
+                  position: DecorationPosition.foreground,
+                  decoration: BoxDecoration(
+                    border: columna
+                        ? Border.symmetric(
+                            vertical: BorderSide(
+                              color: AppColors.glassStrokeStandard,
+                            ),
                           )
-                        : tema,
-                    child: ClipRect(child: child),
+                        : null,
+                  ),
+                  // En la columna se reescribe el tamaño para que todo lo
+                  // que mide la pantalla (diálogos, panel de voz, barra
+                  // flotante) calcule con su ancho y use el diseño de
+                  // teléfono.
+                  child: MediaQuery(
+                    data: columna
+                        ? mq.copyWith(size: Size(anchoColumna, mq.size.height))
+                        : mq,
+                    child: Theme(
+                      data: marco
+                          ? tema.copyWith(
+                              scaffoldBackgroundColor: Colors.transparent,
+                            )
+                          : tema,
+                      child: ClipRect(child: child),
+                    ),
                   ),
                 ),
               ),

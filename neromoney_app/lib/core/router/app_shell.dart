@@ -4,15 +4,12 @@ import 'package:go_router/go_router.dart';
 
 import '../theme/controlador_tema.dart';
 import '../widgets/barra_flotante.dart';
-import '../widgets/boton_hablar.dart';
-import '../widgets/menu_lateral.dart';
 import '../../features/assistant/data/controlador_asistente.dart';
 import '../../features/assistant/providers/controlador_asistente_provider.dart';
 import '../../features/assistant/widgets/panel_voz_asistente.dart';
 import '../../features/auth/providers/auth_providers.dart';
 import '../../features/onboarding/data/perfil_usuario.dart';
 import '../../features/onboarding/providers/perfil_providers.dart';
-import '../../features/profile/data/saludo_usuario.dart';
 import '../../features/reminders/providers/recordatorios_sync_provider.dart';
 
 /// Desde este ancho de ventana las pestañas usan el diseño de escritorio:
@@ -107,15 +104,10 @@ class _AppShellState extends ConsumerState<AppShell>
     _asistente = asistente;
     final navigationShell = widget.navigationShell;
 
-    if (esEscritorio(context)) {
-      final usuario = ref.watch(authStateChangesProvider).value;
-      final saludo = datosDeSaludo(usuario, perfil?.apodo);
-      return ListenableBuilder(
-        listenable: asistente,
-        builder: (context, _) =>
-            _escritorio(context, asistente, perfil, navigationShell, saludo),
-      );
-    }
+    // En escritorio, el menú lateral, el botón "Hablar con…" y el panel de
+    // voz los pone MarcoEscritorio (main.dart), fuera del router, para que
+    // también rodeen a Reportes. Aquí solo va el contenido de la pestaña.
+    if (esEscritorio(context)) return navigationShell;
 
     return ListenableBuilder(
       listenable: asistente,
@@ -228,76 +220,6 @@ class _AppShellState extends ConsumerState<AppShell>
               nombre: perfil?.nombreAsistente ?? 'Lucy',
             )
           : const SizedBox.shrink(key: ValueKey('panel-oculto')),
-    );
-  }
-
-  /// Escritorio (ventana ancha): menú lateral a la izquierda y el botón
-  /// "Hablar con…" flotando abajo a la derecha, como en el diseño que pidió
-  /// el usuario. Las pestañas son las mismas (navigationShell); el chat
-  /// (índice 2) se abre con un clic en ese botón.
-  Widget _escritorio(
-    BuildContext context,
-    ControladorAsistente asistente,
-    PerfilUsuario? perfil,
-    StatefulNavigationShell navigationShell,
-    ({String nombre, String inicial}) saludo,
-  ) {
-    final indice = navigationShell.currentIndex;
-    void irA(int i) => navigationShell.goBranch(
-      i,
-      // Si ya estás en esa sección, regresa a su raíz en vez de apilar.
-      initialLocation: i == indice,
-    );
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      body: Row(
-        children: [
-          MenuLateral(
-            indiceActual: indice,
-            onSeleccionar: irA,
-            onReportes: () => context.push('/reports'),
-            nombreUsuario: saludo.nombre,
-            inicialUsuario: saludo.inicial,
-          ),
-          Expanded(
-            child: Stack(
-              children: [
-                Positioned.fill(child: navigationShell),
-                // En el chat no: ahí está su propio micrófono y el botón
-                // taparía la barra de escribir.
-                if (indice != 2)
-                  Positioned(
-                    right: 28,
-                    bottom: 24,
-                    child: BotonHablar(
-                      nombreAsistente: (perfil?.asistenteNombrado ?? true)
-                          ? perfil?.nombreAsistente
-                          : null,
-                      avatarBase64: perfil?.avatarAsistenteBase64,
-                      coloresAnillo: _coloresAnillo(perfil),
-                      escuchando: asistente.pulsado,
-                      enviando: asistente.enviando,
-                      onAbrirChat: () => irA(2),
-                      onPrepararGesto: asistente.descartarAviso,
-                      onMantener: () {
-                        FocusManager.instance.primaryFocus?.unfocus();
-                        asistente.iniciar();
-                      },
-                      onSoltar: asistente.soltar,
-                      onCancelar: asistente.cancelar,
-                    ),
-                  ),
-                Positioned(
-                  right: 28,
-                  bottom: indice == 2 ? 110 : 112,
-                  width: 420,
-                  child: _panelVoz(asistente, perfil, indice),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 

@@ -12,6 +12,7 @@ import '../auth/providers/auth_providers.dart';
 import '../onboarding/data/perfil_usuario.dart';
 import '../onboarding/providers/perfil_providers.dart';
 import 'data/saludo_usuario.dart';
+import 'widgets/perfil_escritorio.dart';
 import 'widgets/selector_moneda_dialog.dart';
 import 'widgets/selector_tema_dialog.dart';
 
@@ -24,6 +25,8 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Ventana ancha: tarjetas de usuario, preferencias y asistente.
+    if (esEscritorio(context)) return const PerfilEscritorio();
     final user = ref.watch(authStateChangesProvider).value;
     final perfil = ref.watch(perfilProvider).value;
     final nombreAsistente = perfil?.nombreAsistente ?? 'tu asistente';

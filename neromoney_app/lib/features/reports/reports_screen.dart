@@ -13,6 +13,7 @@ import '../transactions/providers/transacciones_providers.dart';
 import 'data/periodo_reporte.dart';
 import 'widgets/barras_flujo.dart';
 import 'widgets/dona_categorias.dart';
+import 'widgets/reportes_escritorio.dart';
 
 /// Reportes — sigue `12._reportes_y_estad_sticas` del Stitch (tarjetas de
 /// gasto/ingreso con variación, flujo de efectivo, desglose por categoría),
@@ -39,6 +40,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Ventana ancha: diseño de escritorio dentro del marco con menú lateral.
+    if (esEscritorio(context)) return const ReportesEscritorio();
     final rangoActual = calcularRangoPeriodo(_tipo, _offset);
     final rangoAnterior = calcularRangoPeriodo(_tipo, _offset - 1);
     // Una sola consulta que cubre el periodo actual Y el anterior (son

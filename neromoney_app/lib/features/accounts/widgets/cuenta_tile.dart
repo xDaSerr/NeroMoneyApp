@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/formato_monto.dart';
 import '../data/cuenta.dart';
 import 'chip_emv.dart';
 
@@ -22,10 +23,15 @@ class CuentaTile extends StatelessWidget {
     super.key,
     required this.cuenta,
     this.ocultarImportes = false,
+    this.accion,
   });
 
   final Cuenta cuenta;
   final bool ocultarImportes;
+
+  /// Botón extra junto al ícono de la tarjeta (el menú "⋯" de Cuentas en
+  /// escritorio). Opcional: en teléfono la tarjeta entera abre el detalle.
+  final Widget? accion;
 
   @override
   Widget build(BuildContext context) {
@@ -192,6 +198,10 @@ class CuentaTile extends StatelessWidget {
                                 size: 18,
                               ),
                             ),
+                            if (accion != null) ...[
+                              const SizedBox(width: 4),
+                              accion!,
+                            ],
                           ],
                         ),
                       ],
@@ -211,7 +221,7 @@ class CuentaTile extends StatelessWidget {
                           child: Text(
                             ocultarImportes
                                 ? '••••'
-                                : '\$${cuenta.saldoActual.toStringAsFixed(2)}',
+                                : formatoMonto(cuenta.saldoActual),
                             semanticsLabel: ocultarImportes
                                 ? 'Disponible oculto'
                                 : null,

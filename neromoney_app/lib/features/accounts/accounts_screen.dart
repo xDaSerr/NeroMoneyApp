@@ -9,6 +9,7 @@ import 'data/cuenta.dart';
 import 'providers/cuentas_providers.dart';
 import 'widgets/cuenta_form_card.dart';
 import 'widgets/cuenta_tile.dart';
+import 'widgets/cuentas_escritorio.dart';
 
 /// Pestaña "Cuentas" — sigue `14._cuentas_y_tarjetas_vinculadas` del Stitch
 /// (chips de filtro por tipo, tarjetas visuales), pero solo con lo real:
@@ -29,6 +30,8 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Ventana ancha: patrimonio, filtros y tarjetas en dos columnas.
+    if (esEscritorio(context)) return const CuentasEscritorio();
     final cuentasAsync = ref.watch(cuentasProvider);
 
     return Scaffold(

@@ -3,28 +3,67 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 
-/// Menú lateral del diseño de escritorio (ver AppShell): marca arriba, las
-/// secciones principales, y Perfil + el usuario abajo. Sustituye a la
-/// barra flotante del teléfono cuando la ventana es ancha.
+/// Secciones del diseño de escritorio y la ruta a la que lleva cada una. El
+/// chat ("asistente") no está en el menú: se abre con el botón "Hablar
+/// con…".
+enum SeccionEscritorio {
+  inicio('/home'),
+  movimientos('/movements'),
+  cuentas('/accounts'),
+  reportes('/reports'),
+  perfil('/profile'),
+  asistente('/assistant');
+
+  const SeccionEscritorio(this.ruta);
+  final String ruta;
+
+  /// La sección a la que pertenece una ruta (incluye lo que cuelga de ella,
+  /// ej. /accounts/detalle → cuentas). null = pantalla de un solo paso
+  /// (agregar movimiento, transferir, editar perfil...).
+  static SeccionEscritorio? deRuta(String ruta) {
+    for (final s in values) {
+      if (ruta == s.ruta || ruta.startsWith('${s.ruta}/')) return s;
+    }
+    return null;
+  }
+}
+
+/// Menú lateral del diseño de escritorio (ver MarcoEscritorio): marca arriba,
+/// las secciones principales, y Perfil + el usuario abajo.
 class MenuLateral extends StatelessWidget {
   const MenuLateral({
     super.key,
-    required this.indiceActual,
-    required this.onSeleccionar,
-    required this.onReportes,
+    required this.activa,
+    required this.onIr,
+    required this.llaves,
     required this.nombreUsuario,
     required this.inicialUsuario,
   });
 
   static const ancho = 240.0;
 
-  /// Índice de la pestaña activa (0 Inicio, 1 Movimientos, 3 Cuentas, 4
-  /// Perfil — el 2 es el chat, al que se llega con el botón "Hablar con").
-  final int indiceActual;
-  final ValueChanged<int> onSeleccionar;
-  final VoidCallback onReportes;
+  final SeccionEscritorio? activa;
+  final ValueChanged<SeccionEscritorio> onIr;
+
+  /// Una llave por botón: MarcoEscritorio la usa para saber dónde está cada
+  /// uno y hacer que la sección "salga" de su botón.
+  final Map<SeccionEscritorio, GlobalKey> llaves;
   final String nombreUsuario;
   final String inicialUsuario;
+
+  Widget _item(
+    SeccionEscritorio seccion,
+    String texto,
+    IconData icono, [
+    IconData? iconoActivo,
+  ]) => _ItemMenu(
+    key: llaves[seccion],
+    icono: icono,
+    iconoActivo: iconoActivo,
+    texto: texto,
+    activo: activa == seccion,
+    onTap: () => onIr(seccion),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -63,43 +102,36 @@ class MenuLateral extends StatelessWidget {
             ),
           ),
           // --- Secciones principales ---
-          _ItemMenu(
-            icono: Icons.home_outlined,
-            iconoActivo: Icons.home_rounded,
-            texto: 'Inicio',
-            activo: indiceActual == 0,
-            onTap: () => onSeleccionar(0),
+          _item(
+            SeccionEscritorio.inicio,
+            'Inicio',
+            Icons.home_outlined,
+            Icons.home_rounded,
           ),
-          _ItemMenu(
-            icono: Icons.swap_horiz_rounded,
-            texto: 'Movimientos',
-            activo: indiceActual == 1,
-            onTap: () => onSeleccionar(1),
+          _item(
+            SeccionEscritorio.movimientos,
+            'Movimientos',
+            Icons.swap_horiz_rounded,
           ),
-          _ItemMenu(
-            icono: Icons.credit_card_outlined,
-            iconoActivo: Icons.credit_card_rounded,
-            texto: 'Cuentas',
-            activo: indiceActual == 3,
-            onTap: () => onSeleccionar(3),
+          _item(
+            SeccionEscritorio.cuentas,
+            'Cuentas',
+            Icons.credit_card_outlined,
+            Icons.credit_card_rounded,
           ),
-          // Reportes no es una pestaña (vive fuera del shell, ver
-          // app_router.dart): se abre encima, igual que desde Perfil.
-          _ItemMenu(
-            icono: Icons.bar_chart_rounded,
-            texto: 'Reportes',
-            activo: false,
-            onTap: onReportes,
+          _item(
+            SeccionEscritorio.reportes,
+            'Reportes',
+            Icons.bar_chart_rounded,
           ),
           const Spacer(),
           Divider(color: AppColors.glassStrokeStandard, height: 24),
           // --- Perfil y el usuario ---
-          _ItemMenu(
-            icono: Icons.person_outline_rounded,
-            iconoActivo: Icons.person_rounded,
-            texto: 'Perfil',
-            activo: indiceActual == 4,
-            onTap: () => onSeleccionar(4),
+          _item(
+            SeccionEscritorio.perfil,
+            'Perfil',
+            Icons.person_outline_rounded,
+            Icons.person_rounded,
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(10, 8, 10, 0),
@@ -137,6 +169,7 @@ class MenuLateral extends StatelessWidget {
 
 class _ItemMenu extends StatefulWidget {
   const _ItemMenu({
+    super.key,
     required this.icono,
     required this.texto,
     required this.activo,

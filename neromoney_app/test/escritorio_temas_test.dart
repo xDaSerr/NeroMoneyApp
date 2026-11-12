@@ -13,6 +13,9 @@ import 'package:neromoney_app/core/theme/app_colors.dart';
 import 'package:neromoney_app/core/theme/app_theme.dart';
 import 'package:neromoney_app/core/theme/controlador_tema.dart';
 import 'package:neromoney_app/core/theme/tema_app.dart';
+import 'package:neromoney_app/core/widgets/escucha_segura.dart';
+import 'package:neromoney_app/core/widgets/marco_escritorio.dart';
+import 'package:neromoney_app/features/accounts/accounts_screen.dart';
 import 'package:neromoney_app/features/accounts/data/cuenta.dart';
 import 'package:neromoney_app/features/accounts/providers/cuentas_providers.dart';
 import 'package:neromoney_app/features/assistant/data/controlador_asistente.dart';
@@ -25,8 +28,11 @@ import 'package:neromoney_app/features/onboarding/data/perfil_usuario.dart';
 import 'package:neromoney_app/features/onboarding/onboarding_flow_screen.dart';
 import 'package:neromoney_app/features/onboarding/widgets/muestra_tema.dart';
 import 'package:neromoney_app/features/onboarding/providers/perfil_providers.dart';
+import 'package:neromoney_app/features/profile/profile_screen.dart';
 import 'package:neromoney_app/features/reminders/providers/recordatorios_sync_provider.dart';
+import 'package:neromoney_app/features/reports/reports_screen.dart';
 import 'package:neromoney_app/features/transactions/data/transaccion.dart';
+import 'package:neromoney_app/features/transactions/movements_screen.dart';
 import 'package:neromoney_app/features/transactions/providers/transacciones_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -150,16 +156,22 @@ Future<GlobalKey> _montarInicio(
               routes: [
                 GoRoute(
                   path: ruta,
-                  builder: (_, _) => ruta == '/home'
-                      ? const HomeScreen()
-                      : const Scaffold(body: SizedBox()),
+                  builder: (_, _) => switch (ruta) {
+                    '/home' => const HomeScreen(),
+                    '/movements' => const MovementsScreen(),
+                    '/accounts' => const AccountsScreen(),
+                    '/profile' => const ProfileScreen(),
+                    _ => const Scaffold(body: SizedBox()),
+                  },
                 ),
               ],
             ),
         ],
       ),
+      GoRoute(path: '/reports', builder: (_, _) => const ReportsScreen()),
     ],
   );
+  _router = router;
   final perfil = PerfilUsuario.vacio.copyWith(
     apodo: 'xDaSerr',
     onboardingCompletado: true,
@@ -176,6 +188,9 @@ Future<GlobalKey> _montarInicio(
         transaccionesProvider.overrideWith(
           (ref) => Stream.value(_movimientos()),
         ),
+        transaccionesPorRangoProvider.overrideWith(
+          (ref, rango) => Stream.value(_movimientos()),
+        ),
         perfilProvider.overrideWith((ref) => Stream.value(perfil)),
         recordatoriosSyncProvider.overrideWith((ref) {}),
         controladorAsistenteProvider.overrideWithValue(asistente),
@@ -186,6 +201,15 @@ Future<GlobalKey> _montarInicio(
           debugShowCheckedModeBanner: false,
           theme: AppTheme.actual,
           routerConfig: router,
+          builder: (context, child) => EscuchaSegura(
+            escuchar: router.routerDelegate,
+            builder: (context) => MarcoEscritorio(
+              activo: tamano.width >= anchoEscritorio,
+              ruta: router.routerDelegate.currentConfiguration.uri.path,
+              onIr: router.go,
+              child: child!,
+            ),
+          ),
         ),
       ),
     ),
@@ -193,6 +217,8 @@ Future<GlobalKey> _montarInicio(
   await _avanzar(tester);
   return llave;
 }
+
+late GoRouter _router;
 
 /// Las animaciones de entrada arrancan en un cuadro y avanzan en los
 /// siguientes: un solo pump largo las deja en su primer instante.
@@ -236,6 +262,33 @@ void main() {
       await _capturar(tester, llave, 'escritorio_${tema.name}');
     });
   }
+
+  testWidgets('Secciones de escritorio y transición desde el menú', (
+    tester,
+  ) async {
+    final llave = await _montarInicio(
+      tester,
+      TemaApp.negro,
+      const Size(1600, 1000),
+    );
+    for (final ruta in ['/movements', '/accounts', '/reports', '/profile']) {
+      _router.go(ruta);
+      await _avanzar(tester);
+      expect(tester.takeException(), isNull, reason: ruta);
+      await _capturar(tester, llave, 'seccion${ruta.replaceAll('/', '_')}');
+    }
+    expect(find.text('Mi perfil'), findsOneWidget);
+
+    // A media animación: la sección sale del botón "Cuentas" del menú, con
+    // el contorno de luz alrededor.
+    _router.go('/accounts');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 130));
+    await _capturar(tester, llave, 'transicion_cuentas');
+    await _avanzar(tester);
+    expect(tester.takeException(), isNull);
+    expect(find.text('Cuentas y bolsillos'), findsOneWidget);
+  });
 
   testWidgets('Inicio de teléfono en tema Blanco', (tester) async {
     final llave = await _montarInicio(
