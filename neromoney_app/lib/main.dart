@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'core/router/app_router.dart';
+import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'firebase_options.dart';
 
@@ -48,6 +49,12 @@ void main() async {
 class NeroMoneyApp extends StatelessWidget {
   const NeroMoneyApp({super.key});
 
+  // Todo el diseño (Stitch) es de teléfono. En una pantalla ancha (la
+  // versión web abierta en una PC, o una tablet) estirarlo a todo lo ancho
+  // dejaba campos y tarjetas kilométricos — se centra una "columna" de
+  // teléfono en su lugar, como WhatsApp Web.
+  static const double _anchoMaximo = 480;
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
@@ -55,6 +62,33 @@ class NeroMoneyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
       routerConfig: appRouter,
+      builder: (context, child) {
+        final mq = MediaQuery.of(context);
+        if (mq.size.width <= _anchoMaximo) return child!;
+        return ColoredBox(
+          color: const Color(0xFF05070B),
+          child: Center(
+            child: Container(
+              width: _anchoMaximo,
+              color: AppColors.canvas,
+              // foregroundDecoration (no decoration) para que el borde no
+              // le quite píxeles al ancho que se reporta abajo.
+              foregroundDecoration: const BoxDecoration(
+                border: Border.symmetric(
+                  vertical: BorderSide(color: AppColors.glassStrokeStandard),
+                ),
+              ),
+              // El tamaño se reescribe en MediaQuery para que todo lo que
+              // mide la pantalla (diálogos, panel de voz, barra flotante)
+              // calcule con el ancho de la columna, no con el de la ventana.
+              child: MediaQuery(
+                data: mq.copyWith(size: Size(_anchoMaximo, mq.size.height)),
+                child: ClipRect(child: child),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
