@@ -87,6 +87,7 @@ class NeroMoneyApp extends StatelessWidget {
         Image.asset(
           FondoAcceso.ruta,
           fit: BoxFit.cover,
+          cacheWidth: FondoAcceso.anchoDecodificado(context),
           opacity: AlwaysStoppedAnimation(columna ? 0.45 : 0),
         ),
         Center(

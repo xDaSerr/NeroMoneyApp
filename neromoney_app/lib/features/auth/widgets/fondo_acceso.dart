@@ -9,7 +9,28 @@ import '../../../core/theme/app_colors.dart';
 class FondoAcceso extends StatefulWidget {
   const FondoAcceso({super.key});
 
-  static const ruta = 'assets/img/fondo_auth.jpg';
+  // 3840×2160 en WebP (pesa menos que la versión anterior en JPG de 1672 px).
+  static const ruta = 'assets/img/fondo_auth.webp';
+  static const _anchoOriginal = 3840;
+
+  /// Ancho al que conviene decodificar la imagen para cubrir esta pantalla.
+  /// Decodificar el 4K completo en un teléfono gastaría ~33 MB de memoria
+  /// para nada; se redondea a múltiplos de 512 para no volver a decodificar
+  /// con cada pixel que cambie el tamaño de la ventana.
+  static int anchoDecodificado(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    // Con BoxFit.cover, una pantalla vertical obliga a cubrir el alto: el
+    // ancho necesario sale de la proporción 16:9 de la imagen.
+    final necesario =
+        (size.width > size.height * 16 / 9
+            ? size.width
+            : size.height * 16 / 9) *
+        dpr *
+        1.03; // el zoom lento agranda hasta 3%
+    final redondeado = ((necesario / 512).ceil() * 512);
+    return redondeado.clamp(512, _anchoOriginal);
+  }
 
   @override
   State<FondoAcceso> createState() => _FondoAccesoState();
@@ -55,8 +76,9 @@ class _FondoAccesoState extends State<FondoAcceso>
           child: Image.asset(
             FondoAcceso.ruta,
             fit: BoxFit.cover,
-            // En pantallas más grandes que la imagen hay que agrandarla; el
-            // filtro "high" (bicúbico) la deja más nítida que el de por
+            cacheWidth: FondoAcceso.anchoDecodificado(context),
+            // Al reducir/agrandar la imagen al tamaño exacto de la pantalla,
+            // el filtro "high" (bicúbico) la deja más nítida que el de por
             // defecto.
             filterQuality: FilterQuality.high,
             // Aparece con un fundido en vez de "saltar" cuando termina de

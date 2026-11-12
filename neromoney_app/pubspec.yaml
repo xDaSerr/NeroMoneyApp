@@ -86,7 +86,7 @@ flutter:
   # AsistenteAvatar).
   assets:
     - assets/icon/icon_full.png
-    - assets/img/fondo_auth.jpg
+    - assets/img/fondo_auth.webp
     - assets/fonts/
 
   # An image asset can refer to one or more resolution-specific "variants", see
