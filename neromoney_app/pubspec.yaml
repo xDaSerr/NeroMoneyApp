@@ -73,6 +73,8 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  shaders:
+    - shaders/fondo_ondas.frag
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
