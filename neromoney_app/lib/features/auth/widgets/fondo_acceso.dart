@@ -47,12 +47,18 @@ class _FondoAccesoState extends State<FondoAcceso>
         AnimatedBuilder(
           animation: _zoom,
           builder: (context, child) => Transform.scale(
-            scale: 1 + 0.07 * Curves.easeInOut.transform(_zoom.value),
+            // Solo 3%: cada punto de zoom agranda los píxeles de la imagen y
+            // con 7% ya se notaba borrosa en monitores grandes.
+            scale: 1 + 0.03 * Curves.easeInOut.transform(_zoom.value),
             child: child,
           ),
           child: Image.asset(
             FondoAcceso.ruta,
             fit: BoxFit.cover,
+            // En pantallas más grandes que la imagen hay que agrandarla; el
+            // filtro "high" (bicúbico) la deja más nítida que el de por
+            // defecto.
+            filterQuality: FilterQuality.high,
             // Aparece con un fundido en vez de "saltar" cuando termina de
             // decodificarse.
             frameBuilder: (context, child, frame, sincrono) => AnimatedOpacity(
