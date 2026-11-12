@@ -64,7 +64,7 @@ Future<void> mostrarSelectorMoneda({
                         },
                         child: GlassCard(
                           color: seleccionada
-                              ? AppColors.primaryCyan.withValues(alpha: 0.12)
+                              ? AppColors.acento.withValues(alpha: 0.12)
                               : AppColors.surface2Glass,
                           child: Row(
                             children: [
@@ -77,15 +77,21 @@ Future<void> mostrarSelectorMoneda({
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(opcion.codigo, style: AppTextStyles.bodyLg),
-                                    Text(opcion.nombre, style: AppTextStyles.bodySm),
+                                    Text(
+                                      opcion.codigo,
+                                      style: AppTextStyles.bodyLg,
+                                    ),
+                                    Text(
+                                      opcion.nombre,
+                                      style: AppTextStyles.bodySm,
+                                    ),
                                   ],
                                 ),
                               ),
                               if (seleccionada)
-                                const Icon(
+                                Icon(
                                   Icons.check_circle_rounded,
-                                  color: AppColors.primaryCyan,
+                                  color: AppColors.acento,
                                 ),
                             ],
                           ),

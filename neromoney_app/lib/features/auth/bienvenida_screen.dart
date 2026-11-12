@@ -185,7 +185,7 @@ class _ConVolver extends StatelessWidget {
             child: IconButton(
               tooltip: 'Regresar',
               onPressed: onVolver,
-              icon: const Icon(
+              icon: Icon(
                 Icons.arrow_back_rounded,
                 color: AppColors.textSecondary,
               ),
@@ -266,11 +266,8 @@ class _Portada extends StatelessWidget {
               text: 'en orden.',
               style: TextStyle(
                 foreground: Paint()
-                  ..shader = const LinearGradient(
-                    colors: [
-                      AppColors.primaryCyan,
-                      AppColors.secondaryVioletTint,
-                    ],
+                  ..shader = LinearGradient(
+                    colors: [AppColors.acento, AppColors.secundarioClaro],
                   ).createShader(const Rect.fromLTWH(0, 0, 320, 80)),
               ),
             ),

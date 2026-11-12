@@ -79,13 +79,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           _tipo = tipo;
                           _offset = 0;
                         }),
-                        selectedColor: AppColors.primaryCyan.withValues(
-                          alpha: 0.2,
-                        ),
+                        selectedColor: AppColors.acento.withValues(alpha: 0.2),
                         backgroundColor: AppColors.surface3ActiveGlass,
                         labelStyle: AppTextStyles.bodySm.copyWith(
                           color: _tipo == tipo
-                              ? AppColors.primaryCyan
+                              ? AppColors.acento
                               : AppColors.textSecondary,
                         ),
                         side: BorderSide.none,
@@ -118,15 +116,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                               vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.primaryCyan.withValues(
-                                alpha: 0.15,
-                              ),
+                              color: AppColors.acento.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: Text(
                               'EN CURSO',
                               style: AppTextStyles.labelCode.copyWith(
-                                color: AppColors.primaryCyan,
+                                color: AppColors.acento,
                               ),
                             ),
                           ),
@@ -154,12 +150,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   onCambiarDesglose: (tipo) =>
                       setState(() => _tipoDesglose = tipo),
                 ),
-                loading: () => const Padding(
+                loading: () => Padding(
                   padding: EdgeInsets.symmetric(vertical: 60),
                   child: Center(
-                    child: CircularProgressIndicator(
-                      color: AppColors.primaryCyan,
-                    ),
+                    child: CircularProgressIndicator(color: AppColors.acento),
                   ),
                 ),
                 error: (e, _) => Padding(
@@ -294,7 +288,10 @@ class _Contenido extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('AHORRO NETO GENERADO', style: AppTextStyles.labelCode),
+                    Text(
+                      'AHORRO NETO GENERADO',
+                      style: AppTextStyles.labelCode,
+                    ),
                     const SizedBox(height: 6),
                     Text(
                       '\$${ahorroNeto.toStringAsFixed(2)}',
@@ -315,7 +312,7 @@ class _Contenido extends StatelessWidget {
                     vertical: 10,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.primaryCyan.withValues(alpha: 0.12),
+                    color: AppColors.acento.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
@@ -329,7 +326,7 @@ class _Contenido extends StatelessWidget {
                       Text(
                         '${tasaAhorro.toStringAsFixed(0)}%',
                         style: AppTextStyles.headlineSm.copyWith(
-                          color: AppColors.primaryCyan,
+                          color: AppColors.acento,
                         ),
                       ),
                     ],
@@ -507,10 +504,10 @@ class _ChipDesglose extends StatelessWidget {
       label: Text(label),
       selected: seleccionado,
       onSelected: (_) => onTap(),
-      selectedColor: AppColors.primaryCyan.withValues(alpha: 0.2),
+      selectedColor: AppColors.acento.withValues(alpha: 0.2),
       backgroundColor: AppColors.surface3ActiveGlass,
       labelStyle: AppTextStyles.bodySm.copyWith(
-        color: seleccionado ? AppColors.primaryCyan : AppColors.textSecondary,
+        color: seleccionado ? AppColors.acento : AppColors.textSecondary,
       ),
       side: BorderSide.none,
     );

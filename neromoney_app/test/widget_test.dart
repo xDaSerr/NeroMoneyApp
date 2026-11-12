@@ -7,13 +7,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:neromoney_app/core/widgets/gradient_button.dart';
 
 void main() {
-  testWidgets('GradientButton dispara onPressed al tocarlo', (WidgetTester tester) async {
+  testWidgets('GradientButton dispara onPressed al tocarlo', (
+    WidgetTester tester,
+  ) async {
     var tapped = false;
 
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: GradientButton(label: 'Continuar', onPressed: () => tapped = true),
+          body: GradientButton(
+            label: 'Continuar',
+            onPressed: () => tapped = true,
+          ),
         ),
       ),
     );

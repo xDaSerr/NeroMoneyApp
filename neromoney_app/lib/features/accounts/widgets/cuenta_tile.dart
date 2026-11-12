@@ -35,7 +35,9 @@ class CuentaTile extends StatelessWidget {
     final esTarjeta = esCredito || cuenta.tipo == TipoCuenta.debito;
     final acento = cuenta.colorPersonalizado != null
         ? Color(cuenta.colorPersonalizado!)
-        : (esCredito ? AppColors.secondaryViolet : AppColors.primaryCyan);
+        : (esCredito
+              ? AppColors.secundarioEnTarjeta
+              : AppColors.acentoEnTarjeta);
     final digitos = cuenta.ultimos4Digitos;
     final limite = cuenta.limiteCredito;
     final deuda = cuenta.deudaActual;
@@ -58,13 +60,13 @@ class CuentaTile extends StatelessWidget {
             colors: [
               Color.alphaBlend(
                 acento.withValues(alpha: 0.55),
-                AppColors.canvas,
+                AppColors.fondoTarjetaFisica,
               ),
               Color.alphaBlend(
                 acento.withValues(alpha: 0.22),
-                AppColors.canvas,
+                AppColors.fondoTarjetaFisica,
               ),
-              AppColors.canvas,
+              AppColors.fondoTarjetaFisica,
             ],
             stops: const [0.0, 0.55, 1.0],
           ),

@@ -136,7 +136,7 @@ class _FondoAccesoState extends State<FondoAcceso>
     return Stack(
       fit: StackFit.expand,
       children: [
-        const ColoredBox(color: AppColors.canvas),
+        ColoredBox(color: AppColors.canvas),
         // La imagen fija siempre está debajo: es lo que se ve mientras carga
         // el shader, y el respaldo si no hay animación.
         Image.asset(

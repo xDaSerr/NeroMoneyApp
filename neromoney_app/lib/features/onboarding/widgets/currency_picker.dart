@@ -26,10 +26,10 @@ const monedasDisponibles = [
 /// la moneda real configurada — por eso, antes de leer un monto en voz alta
 /// (ver AssistantChatScreen), hay que cambiar el símbolo por esta palabra.
 String monedaHablada(String codigoMoneda) => switch (codigoMoneda) {
-      'USD' => 'dólares',
-      'EUR' => 'euros',
-      'PEN' => 'soles',
-      'GTQ' => 'quetzales',
-      'BRL' => 'reales',
-      _ => 'pesos', // MXN, COP, ARS, CLP
-    };
+  'USD' => 'dólares',
+  'EUR' => 'euros',
+  'PEN' => 'soles',
+  'GTQ' => 'quetzales',
+  'BRL' => 'reales',
+  _ => 'pesos', // MXN, COP, ARS, CLP
+};

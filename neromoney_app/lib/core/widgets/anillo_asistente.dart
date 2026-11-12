@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../theme/app_colors.dart';
 import 'asistente_avatar.dart';
 
@@ -9,7 +10,12 @@ import 'asistente_avatar.dart';
 /// (ver paleta_anillos_asistente.dart). Un solo widget para que se vea
 /// exactamente igual en los dos lugares.
 class AnilloAsistente extends StatelessWidget {
-  const AnilloAsistente({super.key, required this.avatarBase64, this.colores, this.size = 42});
+  const AnilloAsistente({
+    super.key,
+    required this.avatarBase64,
+    this.colores,
+    this.size = 42,
+  });
 
   final String? avatarBase64;
 
@@ -18,12 +24,17 @@ class AnilloAsistente extends StatelessWidget {
   final List<Color>? colores;
   final double size;
 
-  static const coloresPorDefecto = [AppColors.secondaryVioletTint, AppColors.primaryCyan];
+  // Sin elección del usuario, el anillo toma los acentos del tema activo.
+  static List<Color> get coloresPorDefecto => [
+    AppColors.secundarioClaro,
+    AppColors.acento,
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final coloresEfectivos =
-        (colores != null && colores!.length == 2) ? colores! : coloresPorDefecto;
+    final coloresEfectivos = (colores != null && colores!.length == 2)
+        ? colores!
+        : coloresPorDefecto;
 
     return Container(
       padding: const EdgeInsets.all(2.5),
@@ -35,8 +46,14 @@ class AnilloAsistente extends StatelessWidget {
           colors: coloresEfectivos,
         ),
         boxShadow: [
-          BoxShadow(color: coloresEfectivos[0].withValues(alpha: 0.45), blurRadius: 16),
-          BoxShadow(color: coloresEfectivos[1].withValues(alpha: 0.45), blurRadius: 16),
+          BoxShadow(
+            color: coloresEfectivos[0].withValues(alpha: 0.45),
+            blurRadius: 16,
+          ),
+          BoxShadow(
+            color: coloresEfectivos[1].withValues(alpha: 0.45),
+            blurRadius: 16,
+          ),
         ],
       ),
       // El pequeño espacio del color de fondo entre el anillo y la foto es
@@ -44,7 +61,10 @@ class AnilloAsistente extends StatelessWidget {
       // un simple borde pegado a la imagen.
       child: Container(
         padding: const EdgeInsets.all(2),
-        decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.surface1),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: AppColors.surface1,
+        ),
         child: AsistenteAvatar(avatarBase64: avatarBase64, size: size),
       ),
     );

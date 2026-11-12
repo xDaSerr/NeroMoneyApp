@@ -41,8 +41,10 @@ const categoriasIngreso = [
 
 IconData iconoParaCategoria(String nombre) {
   final todas = [...categoriasGasto, ...categoriasIngreso];
-  return todas.firstWhere(
-    (c) => c.nombre == nombre,
-    orElse: () => const Categoria('Otro', Icons.category_rounded),
-  ).icono;
+  return todas
+      .firstWhere(
+        (c) => c.nombre == nombre,
+        orElse: () => const Categoria('Otro', Icons.category_rounded),
+      )
+      .icono;
 }

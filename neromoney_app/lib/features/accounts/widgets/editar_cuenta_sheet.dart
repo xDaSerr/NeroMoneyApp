@@ -86,8 +86,8 @@ class _EditarCuentaSheetState extends State<_EditarCuentaSheet> {
     final saldo = double.tryParse(_saldoCtrl.text.replaceAll(',', '.'));
     final limite = double.tryParse(_limiteCtrl.text.replaceAll(',', '.'));
     if (nombre.isEmpty || saldo == null) return;
-    if (esCredito && limite == null)
-      return; // límite sigue siendo obligatorio en crédito
+    // El límite sigue siendo obligatorio en crédito.
+    if (esCredito && limite == null) return;
 
     final digitos = _digitosCtrl.text.trim();
 

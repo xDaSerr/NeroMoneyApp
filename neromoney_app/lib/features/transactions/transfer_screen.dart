@@ -194,7 +194,7 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
                             // --- Invertir: intercambia origen y destino ---
                             IconButton(
                               tooltip: 'Invertir cuentas',
-                              color: AppColors.primaryCyan,
+                              color: AppColors.acento,
                               onPressed: _bloquearEdicion
                                   ? null
                                   : () => setState(() {

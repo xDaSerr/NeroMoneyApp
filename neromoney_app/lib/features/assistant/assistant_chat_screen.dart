@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:go_router/go_router.dart';
 
+import '../../core/router/app_shell.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/asistente_avatar.dart';
@@ -15,6 +16,7 @@ import 'providers/controlador_asistente_provider.dart';
 import 'data/mensaje_chat.dart';
 import 'providers/asistente_providers.dart';
 import 'widgets/burbuja_mensaje.dart';
+import 'widgets/pregunta_nombre_asistente.dart';
 
 /// Cuánto dejar entre la barra de texto y la píldora de navegación cuando
 /// el teclado está cerrado — el alto real y visible de la píldora
@@ -26,6 +28,8 @@ import 'widgets/burbuja_mensaje.dart';
 /// hay teclado no hace falta: `_construirChat` ya empuja todo el dock
 /// hacia arriba con `viewInsets.bottom`.
 double _clearanceSobreBarraFlotante(BuildContext context) {
+  // En escritorio no hay píldora abajo: el menú es lateral (ver AppShell).
+  if (esEscritorio(context)) return 20;
   final gestoInicio = MediaQuery.viewPaddingOf(context).bottom;
   final margenInferior = gestoInicio < 8 ? 8.0 : gestoInicio;
   const alturaPildoraVisible = BarraFlotante.altura - 42;
@@ -63,6 +67,31 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
   // vacío). Se reinicia al limpiar la conversación, ver _confirmarLimpiar.
   bool _saludoEnviado = false;
   String? _ultimoMensajeId;
+  // La pregunta del nombre se hace una sola vez por pantalla, aunque el
+  // build() corra varias veces antes de que se guarde la respuesta.
+  bool _preguntandoNombre = false;
+
+  /// Primera vez que el usuario abre a su asistente: este se presenta y le
+  /// pregunta cómo llamarlo (ver PreguntaNombreAsistente).
+  Future<void> _preguntarNombre(String? avatarBase64) async {
+    final nombre = await preguntarNombreAsistente(
+      context,
+      avatarBase64: avatarBase64,
+    );
+    final perfil = ref.read(perfilProvider).value;
+    if (perfil == null) return;
+    try {
+      await ref
+          .read(perfilRepositoryProvider)
+          .guardarPerfil(
+            perfil.copyWith(nombreAsistente: nombre, asistenteNombrado: true),
+          );
+    } catch (_) {
+      // Sin conexión, Firestore lo guarda en cuanto vuelva; si de plano
+      // falla, se vuelve a preguntar la próxima vez que se abra el chat.
+      _preguntandoNombre = false;
+    }
+  }
 
   @override
   void dispose() {
@@ -151,6 +180,15 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
     final nombreAsistente = perfil?.nombreAsistente ?? 'Lucy';
     final avatarAsistente = perfil?.avatarAsistenteBase64;
     final cuentasPorId = {for (final c in cuentas) c.id: c};
+    // Hasta que el usuario elija el nombre, no se guarda el saludo fijo:
+    // así el primer mensaje ya usa el nombre nuevo, no "Lucy".
+    final nombrado = perfil?.asistenteNombrado ?? false;
+    if (perfil != null && !nombrado && !_preguntandoNombre) {
+      _preguntandoNombre = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _preguntarNombre(avatarAsistente);
+      });
+    }
 
     return Scaffold(
       extendBody: true,
@@ -209,7 +247,7 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
             if (mensajes.isEmpty) {
               _ultimoMensajeId = null;
               // --- Saludo fijo: se guarda una sola vez al abrir el chat vacío ---
-              if (!_saludoEnviado) {
+              if (!_saludoEnviado && nombrado) {
                 _saludoEnviado = true;
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   ref
@@ -270,10 +308,10 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
                             for (final id in m.chipsCuentas)
                               if (cuentasPorId[id] != null)
                                 ActionChip(
-                                  avatar: const Icon(
+                                  avatar: Icon(
                                     Icons.account_balance_wallet_outlined,
                                     size: 16,
-                                    color: AppColors.primaryCyan,
+                                    color: AppColors.acento,
                                   ),
                                   label: Text(cuentasPorId[id]!.nombre),
                                   backgroundColor:
@@ -293,9 +331,8 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
               },
             );
           },
-          loading: () => const Center(
-            child: CircularProgressIndicator(color: AppColors.primaryCyan),
-          ),
+          loading: () =>
+              Center(child: CircularProgressIndicator(color: AppColors.acento)),
           error: (e, _) => Center(
             child: Text(
               'No se pudo cargar la conversación: $e',
@@ -488,21 +525,21 @@ class _BarraDeEntrada extends StatelessWidget {
               child: Container(
                 width: 48,
                 height: 48,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(colors: AppColors.ctaGradient),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: AppColors.degradadoAccion),
                   shape: BoxShape.circle,
                 ),
                 child: enviando
-                    ? const Padding(
+                    ? Padding(
                         padding: EdgeInsets.all(14),
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: AppColors.canvas,
+                          color: AppColors.sobreAcento,
                         ),
                       )
-                    : const Icon(
+                    : Icon(
                         Icons.send_rounded,
-                        color: AppColors.canvas,
+                        color: AppColors.sobreAcento,
                         size: 20,
                       ),
               ),

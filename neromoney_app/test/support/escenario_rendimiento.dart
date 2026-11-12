@@ -118,7 +118,7 @@ void registrarPruebaRendimiento({
           recordatoriosSyncProvider.overrideWith((ref) {}),
           controladorAsistenteProvider.overrideWithValue(asistente),
         ],
-        child: MaterialApp.router(theme: AppTheme.dark, routerConfig: router),
+        child: MaterialApp.router(theme: AppTheme.actual, routerConfig: router),
       ),
     );
     await tester.pump();

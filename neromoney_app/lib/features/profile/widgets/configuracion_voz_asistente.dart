@@ -128,19 +128,23 @@ class _ConfiguracionVozAsistenteState
                   items: [
                     const DropdownMenuItem(
                       value: '',
-                        child: Text('Predeterminada'),
+                      child: Text('Predeterminada'),
                     ),
                     if (falta)
                       DropdownMenuItem(
                         value: id,
                         enabled: false,
-                          child: const Text('Voz no disponible', maxLines: 1, overflow: TextOverflow.ellipsis),
+                        child: const Text(
+                          'Voz no disponible',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     for (var i = 0; i < voces.length; i++)
                       DropdownMenuItem(
                         value: voces[i].id,
                         child: Text(
-                            'Voz ${i + 1} · ${voces[i].region}${voces[i].red ? ' · En línea' : ''}',
+                          'Voz ${i + 1} · ${voces[i].region}${voces[i].red ? ' · En línea' : ''}',
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),

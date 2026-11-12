@@ -25,7 +25,7 @@ class MovimientoTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final esIngreso = transaccion.tipo == TipoTransaccion.ingreso;
     final color = transaccion.esTransferencia
-        ? AppColors.primaryCyan
+        ? AppColors.acento
         : (esIngreso ? AppColors.inflowEmerald : AppColors.textPrimary);
     final signo = esIngreso ? '+' : '-';
     final recorrido = esIngreso
@@ -61,7 +61,7 @@ class MovimientoTile extends StatelessWidget {
                         ? 'Transferencia recibida'
                         : 'Transferencia enviada',
                     style: AppTextStyles.bodySm.copyWith(
-                      color: AppColors.primaryCyan,
+                      color: AppColors.acento,
                     ),
                   ),
                 Text(

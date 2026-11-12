@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'cuenta.dart';
 
 /// Todo el acceso a Firestore para las cuentas de un usuario pasa por aquí.
@@ -12,9 +13,10 @@ class CuentasRepository {
       _firestore.collection('usuarios').doc(_uid).collection('cuentas');
 
   Stream<List<Cuenta>> observarCuentas() {
-    return _coleccion.orderBy('nombre').snapshots().map(
-          (snap) => snap.docs.map(Cuenta.fromFirestore).toList(),
-        );
+    return _coleccion
+        .orderBy('nombre')
+        .snapshots()
+        .map((snap) => snap.docs.map(Cuenta.fromFirestore).toList());
   }
 
   Future<String> crearCuenta(Cuenta cuenta) async {

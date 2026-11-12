@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/asistente_avatar.dart';
@@ -21,10 +22,15 @@ class BurbujaMensaje extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final esUsuario = mensaje.autor == AutorMensaje.usuario;
-    final avatarAsistente = ref.watch(perfilProvider).value?.avatarAsistenteBase64;
+    final avatarAsistente = ref
+        .watch(perfilProvider)
+        .value
+        ?.avatarAsistenteBase64;
 
     return Row(
-      mainAxisAlignment: esUsuario ? MainAxisAlignment.end : MainAxisAlignment.start,
+      mainAxisAlignment: esUsuario
+          ? MainAxisAlignment.end
+          : MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         if (!esUsuario) ...[
@@ -37,8 +43,10 @@ class BurbujaMensaje extends ConsumerWidget {
           child: esUsuario
               ? Container(
                   padding: const EdgeInsets.all(14),
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(colors: AppColors.userBubbleGradient),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: AppColors.degradadoBurbuja,
+                    ),
                     borderRadius: BorderRadius.only(
                       topLeft: Radius.circular(18),
                       topRight: Radius.circular(4),
@@ -70,12 +78,18 @@ class BurbujaMensaje extends ConsumerWidget {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.check_circle_rounded,
-                                size: 13, color: AppColors.inflowEmerald),
+                            const Icon(
+                              Icons.check_circle_rounded,
+                              size: 13,
+                              color: AppColors.inflowEmerald,
+                            ),
                             const SizedBox(width: 4),
-                            Text('Registrado',
-                                style: AppTextStyles.labelCode
-                                    .copyWith(color: AppColors.inflowEmerald)),
+                            Text(
+                              'Registrado',
+                              style: AppTextStyles.labelCode.copyWith(
+                                color: AppColors.inflowEmerald,
+                              ),
+                            ),
                           ],
                         ),
                       ],

@@ -8,7 +8,9 @@ import '../../core/widgets/gradient_button.dart';
 import '../onboarding/data/perfil_usuario.dart';
 import '../onboarding/providers/perfil_providers.dart';
 import 'data/saludo_usuario.dart';
+
 import 'dart:convert';
+
 import 'package:image_picker/image_picker.dart';
 
 /// Pantalla para elegir el apodo (el nombre que se usa en los saludos, ej.
@@ -19,8 +21,7 @@ class EditarPerfilScreen extends ConsumerStatefulWidget {
   const EditarPerfilScreen({super.key});
 
   @override
-  ConsumerState<EditarPerfilScreen> createState() =>
-      _EditarPerfilScreenState();
+  ConsumerState<EditarPerfilScreen> createState() => _EditarPerfilScreenState();
 }
 
 class _EditarPerfilScreenState extends ConsumerState<EditarPerfilScreen> {
@@ -69,9 +70,8 @@ class _EditarPerfilScreenState extends ConsumerState<EditarPerfilScreen> {
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('No se pudo guardar: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('No se pudo guardar: $e')));
       }
     } finally {
       if (mounted) setState(() => _guardando = false);
@@ -97,9 +97,10 @@ class _EditarPerfilScreenState extends ConsumerState<EditarPerfilScreen> {
               const SizedBox(height: 8),
               TextField(
                 controller: _apodoCtrl,
-                onChanged: (_) => setState(() {}), // refresca la vista previa de abajo
+                onChanged: (_) =>
+                    setState(() {}), // refresca la vista previa de abajo
                 textCapitalization: TextCapitalization.words,
-                style: AppTextStyles.headlineSm
+                style: AppTextStyles.headlineSm,
               ),
               const SizedBox(height: 6),
               Text(
@@ -115,9 +116,7 @@ class _EditarPerfilScreenState extends ConsumerState<EditarPerfilScreen> {
                 controller: _nombreCompletoCtrl,
                 textCapitalization: TextCapitalization.words,
                 style: AppTextStyles.bodyLg,
-                decoration: const InputDecoration(
-
-                ),
+                decoration: const InputDecoration(),
               ),
               const SizedBox(height: 6),
               Text(
@@ -128,15 +127,18 @@ class _EditarPerfilScreenState extends ConsumerState<EditarPerfilScreen> {
               const SizedBox(height: 32),
               // --- Botón "Guardar cambios" ---
               _guardando
-                  ? const Padding(
+                  ? Padding(
                       padding: EdgeInsets.symmetric(vertical: 18),
                       child: Center(
                         child: CircularProgressIndicator(
-                          color: AppColors.primaryCyan,
+                          color: AppColors.acento,
                         ),
                       ),
                     )
-                  : GradientButton(label: 'Guardar cambios', onPressed: _guardar),
+                  : GradientButton(
+                      label: 'Guardar cambios',
+                      onPressed: _guardar,
+                    ),
             ],
           ),
         ),

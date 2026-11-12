@@ -14,14 +14,14 @@ class GradientButton extends StatefulWidget {
     required this.label,
     required this.onPressed,
     this.icon,
-    this.colors = AppColors.ctaGradient,
+    this.colors,
     this.expand = true,
   });
 
   final String label;
   final VoidCallback? onPressed;
   final IconData? icon;
-  final List<Color> colors;
+  final List<Color>? colors; // null = degradado del tema activo
   final bool expand;
 
   @override
@@ -42,6 +42,7 @@ class _GradientButtonState extends State<GradientButton> {
   Widget build(BuildContext context) {
     final disabled = widget.onPressed == null;
     final hover = _hover && !disabled;
+    final colores = widget.colors ?? AppColors.degradadoAccion;
 
     return MouseRegion(
       cursor: disabled ? SystemMouseCursors.basic : SystemMouseCursors.click,
@@ -68,14 +69,14 @@ class _GradientButtonState extends State<GradientButton> {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: widget.colors,
+                  colors: colores,
                 ),
                 borderRadius: BorderRadius.circular(999),
                 boxShadow: disabled
                     ? null
                     : [
                         BoxShadow(
-                          color: widget.colors.first.withValues(
+                          color: colores.first.withValues(
                             alpha: hover ? 0.5 : 0.3,
                           ),
                           blurRadius: hover ? 28 : 18,
@@ -94,14 +95,14 @@ class _GradientButtonState extends State<GradientButton> {
                       widget.label,
                       textAlign: TextAlign.center,
                       style: AppTextStyles.bodyLg.copyWith(
-                        color: AppColors.canvas,
+                        color: AppColors.sobreAcento,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
                   if (widget.icon != null) ...[
                     const SizedBox(width: 8),
-                    Icon(widget.icon, color: AppColors.canvas, size: 20),
+                    Icon(widget.icon, color: AppColors.sobreAcento, size: 20),
                   ],
                 ],
               ),

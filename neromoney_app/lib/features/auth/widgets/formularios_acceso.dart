@@ -104,11 +104,11 @@ class _BotonPrincipal extends StatelessWidget {
       child: AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
         child: cargando
-            ? const Center(
+            ? Center(
                 child: SizedBox.square(
                   dimension: 28,
                   child: CircularProgressIndicator(
-                    color: AppColors.primaryCyan,
+                    color: AppColors.acento,
                     strokeWidth: 3,
                   ),
                 ),
@@ -237,7 +237,7 @@ class _FormularioLoginState extends ConsumerState<FormularioLogin> {
             child: Text(
               '¿Olvidaste tu contraseña?',
               style: AppTextStyles.bodyMd.copyWith(
-                color: AppColors.primaryCyan,
+                color: AppColors.acento,
                 fontWeight: FontWeight.w600,
               ),
             ),

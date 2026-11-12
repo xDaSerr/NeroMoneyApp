@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
+
 import 'app_colors.dart';
 import 'app_text_styles.dart';
 
-/// ThemeData único de la app. Todo se arma sobre modo oscuro porque el
-/// diseño "Obsidian Cyber-Glass" no contempla modo claro (es la base de
-/// marca, no una preferencia de accesibilidad que alternar).
+/// ThemeData de la app, armado con la paleta del tema activo (ver
+/// tema_app.dart): oscuro en 7 de los 8 colores y claro en "Blanco".
 class AppTheme {
   AppTheme._();
 
-  static ThemeData get dark {
-    final colorScheme = const ColorScheme.dark(
+  static ThemeData get actual {
+    final claro = AppColors.paleta.esClaro;
+    final constructor = claro ? ColorScheme.light : ColorScheme.dark;
+    final colorScheme = constructor(
       surface: AppColors.canvas,
-      primary: AppColors.primaryCyan,
-      onPrimary: AppColors.canvas,
-      secondary: AppColors.secondaryViolet,
+      primary: AppColors.acento,
+      onPrimary: AppColors.sobreAcento,
+      secondary: AppColors.secundario,
       onSecondary: AppColors.textPrimary,
       tertiary: AppColors.inflowEmerald,
       error: AppColors.outflowCrimson,
@@ -25,7 +27,7 @@ class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
+      brightness: claro ? Brightness.light : Brightness.dark,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: AppColors.canvas,
       fontFamily: AppTextStyles.bodyLg.fontFamily,
@@ -48,7 +50,7 @@ class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: AppColors.glassStrokeStandard),
+          side: BorderSide(color: AppColors.glassStrokeStandard),
         ),
       ),
 
@@ -56,8 +58,8 @@ class AppTheme {
       // el widget GradientButton en core/widgets).
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primaryCyan,
-          foregroundColor: AppColors.canvas,
+          backgroundColor: AppColors.acento,
+          foregroundColor: AppColors.sobreAcento,
           textStyle: AppTextStyles.bodyLg.copyWith(fontWeight: FontWeight.w600),
           shape: const StadiumBorder(),
           padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
@@ -76,31 +78,36 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surface3ActiveGlass,
-        hintStyle: AppTextStyles.bodyLg.copyWith(color: AppColors.textPlaceholder),
+        hintStyle: AppTextStyles.bodyLg.copyWith(
+          color: AppColors.textPlaceholder,
+        ),
         labelStyle: AppTextStyles.labelCode,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.glassStrokeStandard),
+          borderSide: BorderSide(color: AppColors.glassStrokeStandard),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.glassStrokeStandard),
+          borderSide: BorderSide(color: AppColors.glassStrokeStandard),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.primaryCyan, width: 1.5),
+          borderSide: BorderSide(color: AppColors.acento, width: 1.5),
         ),
       ),
 
-      dividerTheme: const DividerThemeData(
+      dividerTheme: DividerThemeData(
         color: AppColors.glassStrokeStandard,
         thickness: 1,
       ),
 
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: AppColors.surface1,
-        indicatorColor: AppColors.primaryCyan.withValues(alpha: 0.15),
+        indicatorColor: AppColors.acento.withValues(alpha: 0.15),
         labelTextStyle: WidgetStateProperty.all(AppTextStyles.labelSm),
         surfaceTintColor: Colors.transparent,
       ),

@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,6 +10,7 @@ import '../../core/utils/fecha_es.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/gradient_button.dart';
 import '../accounts/data/cuenta.dart';
+import '../auth/providers/auth_providers.dart';
 import '../accounts/providers/cuentas_providers.dart';
 import '../accounts/widgets/cuenta_tile.dart';
 import '../onboarding/providers/perfil_providers.dart';
@@ -20,6 +20,7 @@ import '../transactions/data/transaccion.dart';
 import '../transactions/providers/transacciones_providers.dart';
 import '../transactions/widgets/movimiento_tile.dart';
 import 'providers/privacidad_inicio_provider.dart';
+import 'widgets/inicio_escritorio.dart';
 
 // "Gastos de Septiembre" — mesCapitalizado (core/utils/fecha_es.dart) es
 // compartido con Reportes, para no tener dos listas de nombres de mes.
@@ -37,6 +38,8 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Ventana ancha (web en PC): mismo contenido en dos columnas.
+    if (esEscritorio(context)) return const InicioEscritorio();
     final cuentasAsync = ref.watch(cuentasProvider);
     final transaccionesAsync = ref.watch(transaccionesProvider);
     final privacidad = ref.watch(privacidadInicioProvider);
@@ -44,7 +47,10 @@ class HomeScreen extends ConsumerWidget {
     final ocultarImportes = privacidad.value ?? true;
     final perfil = ref.watch(perfilProvider).value;
     final nombreAsistente = perfil?.nombreAsistente ?? 'tu asistente';
-    final saludo = datosDeSaludo(FirebaseAuth.instance.currentUser, perfil?.apodo);
+    final saludo = datosDeSaludo(
+      ref.watch(authStateChangesProvider).value,
+      perfil?.apodo,
+    );
 
     return Scaffold(
       body: SafeArea(
@@ -75,7 +81,7 @@ class HomeScreen extends ConsumerWidget {
                       Text(
                         'INICIO',
                         style: AppTextStyles.labelCode.copyWith(
-                          color: AppColors.primaryCyan,
+                          color: AppColors.acento,
                         ),
                       ),
                     ],
@@ -84,7 +90,7 @@ class HomeScreen extends ConsumerWidget {
                     onTap: () => context.go('/profile'),
                     child: CircleAvatar(
                       radius: 18,
-                      backgroundColor: AppColors.secondaryViolet.withValues(
+                      backgroundColor: AppColors.secundario.withValues(
                         alpha: 0.3,
                       ),
                       child: Text(saludo.inicial, style: AppTextStyles.bodyLg),
@@ -125,9 +131,7 @@ class HomeScreen extends ConsumerWidget {
                       // ve igual que en el Stitch, en vez de que los botones
                       // queden pegados sueltos justo debajo del número.
                       GlassCard(
-                        color: AppColors.secondaryViolet.withValues(
-                          alpha: 0.10,
-                        ),
+                        color: AppColors.secundario.withValues(alpha: 0.10),
                         // padding: cero a propósito. GlassCard normalmente le pone
                         // 16px de relleno a su `child` — si el reflejo fuera el
                         // `child` con ese relleno ya puesto, se quedaría metido 16px
@@ -157,7 +161,7 @@ class HomeScreen extends ConsumerWidget {
                                         tooltip: ocultarImportes
                                             ? 'Mostrar patrimonio y saldos'
                                             : 'Ocultar patrimonio y saldos',
-                                        color: AppColors.primaryCyan,
+                                        color: AppColors.acento,
                                         icon: Icon(
                                           ocultarImportes
                                               ? Icons.visibility_off_outlined
@@ -226,7 +230,8 @@ class HomeScreen extends ConsumerWidget {
                                         child: _AccionRapida(
                                           icon: Icons.swap_horiz_rounded,
                                           label: 'Transferir',
-                                          onTap: () => context.push('/transfer'),
+                                          onTap: () =>
+                                              context.push('/transfer'),
                                         ),
                                       ),
                                       Expanded(
@@ -353,12 +358,10 @@ class HomeScreen extends ConsumerWidget {
                     ],
                   );
                 },
-                loading: () => const Center(
+                loading: () => Center(
                   child: Padding(
                     padding: EdgeInsets.symmetric(vertical: 40),
-                    child: CircularProgressIndicator(
-                      color: AppColors.primaryCyan,
-                    ),
+                    child: CircularProgressIndicator(color: AppColors.acento),
                   ),
                 ),
                 error: (e, _) => Text(
@@ -376,7 +379,6 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-
 class _AvisoSinCuentas extends StatelessWidget {
   const _AvisoSinCuentas({required this.nombreAsistente});
   final String nombreAsistente;
@@ -384,14 +386,11 @@ class _AvisoSinCuentas extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GlassCard(
-      color: AppColors.secondaryViolet.withValues(alpha: 0.12),
+      color: AppColors.secundario.withValues(alpha: 0.12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.auto_awesome_rounded,
-            color: AppColors.secondaryVioletTint,
-          ),
+          Icon(Icons.auto_awesome_rounded, color: AppColors.secundarioClaro),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -444,11 +443,11 @@ class _AccionRapida extends StatelessWidget {
             Container(
               width: 48,
               height: 48,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: AppColors.surface3ActiveGlass,
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: AppColors.primaryCyan),
+              child: Icon(icon, color: AppColors.acento),
             ),
             const SizedBox(height: 6),
             Text(label, style: AppTextStyles.bodySm),
@@ -570,8 +569,7 @@ class _GastosDelMes extends StatelessWidget {
                           1000,
                         ),
                         child: Container(
-                          color:
-                              paletaCategorias[i % paletaCategorias.length],
+                          color: paletaCategorias[i % paletaCategorias.length],
                         ),
                       ),
                   ],

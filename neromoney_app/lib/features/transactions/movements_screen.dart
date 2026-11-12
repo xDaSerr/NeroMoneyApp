@@ -28,8 +28,8 @@ class MovementsScreen extends ConsumerWidget {
       floatingActionButton: Padding(
         padding: EdgeInsets.only(bottom: espacioParaBarraFlotante(context)),
         child: FloatingActionButton(
-          backgroundColor: AppColors.primaryCyan,
-          foregroundColor: AppColors.canvas,
+          backgroundColor: AppColors.acento,
+          foregroundColor: AppColors.sobreAcento,
           onPressed: () => context.push('/add-transaction'),
           child: const Icon(Icons.add_rounded),
         ),
@@ -120,9 +120,8 @@ class MovementsScreen extends ConsumerWidget {
             },
           );
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.primaryCyan),
-        ),
+        loading: () =>
+            Center(child: CircularProgressIndicator(color: AppColors.acento)),
         error: (e, _) => Center(
           child: Text(
             'No se pudieron cargar tus movimientos: $e',

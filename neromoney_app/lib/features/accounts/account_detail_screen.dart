@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/glass_card.dart';
@@ -47,8 +48,9 @@ class AccountDetailScreen extends ConsumerWidget {
     }
 
     final esCredito = cuenta.tipo == TipoCuenta.credito;
-    final colorAcento =
-        cuenta.colorPersonalizado != null ? Color(cuenta.colorPersonalizado!) : AppColors.secondaryViolet;
+    final colorAcento = cuenta.colorPersonalizado != null
+        ? Color(cuenta.colorPersonalizado!)
+        : AppColors.secundarioEnTarjeta;
 
     return Scaffold(
       appBar: AppBar(
@@ -60,8 +62,9 @@ class AccountDetailScreen extends ConsumerWidget {
             onPressed: () => mostrarEditorDeCuenta(
               context: context,
               cuenta: cuenta!,
-              onGuardar: (actualizada) =>
-                  ref.read(cuentasRepositoryProvider).actualizarCuenta(actualizada),
+              onGuardar: (actualizada) => ref
+                  .read(cuentasRepositoryProvider)
+                  .actualizarCuenta(actualizada),
             ),
           ),
         ],
@@ -83,8 +86,14 @@ class AccountDetailScreen extends ConsumerWidget {
             // --- Botón "Eliminar cuenta" ---
             OutlinedButton.icon(
               onPressed: () => _confirmarEliminar(context, ref, cuenta!),
-              icon: const Icon(Icons.delete_outline_rounded, color: AppColors.outflowCrimson),
-              label: const Text('Eliminar cuenta', style: TextStyle(color: AppColors.outflowCrimson)),
+              icon: const Icon(
+                Icons.delete_outline_rounded,
+                color: AppColors.outflowCrimson,
+              ),
+              label: const Text(
+                'Eliminar cuenta',
+                style: TextStyle(color: AppColors.outflowCrimson),
+              ),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(48),
                 side: const BorderSide(color: AppColors.outflowCrimson),
@@ -97,7 +106,9 @@ class AccountDetailScreen extends ConsumerWidget {
             const SizedBox(height: 12),
             Consumer(
               builder: (context, ref, _) {
-                final transacciones = ref.watch(transaccionesPorCuentaProvider(cuentaId));
+                final transacciones = ref.watch(
+                  transaccionesPorCuentaProvider(cuentaId),
+                );
                 return transacciones.when(
                   data: (lista) {
                     if (lista.isEmpty) {
@@ -111,16 +122,27 @@ class AccountDetailScreen extends ConsumerWidget {
                         for (final t in lista)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 10),
-                            child: MovimientoTile(transaccion: t, nombreCuenta: cuenta!.nombre,
-                              nombreContraparte: cuentas.where((c) => c.id == t.cuentaContraparteId).firstOrNull?.nombre),
+                            child: MovimientoTile(
+                              transaccion: t,
+                              nombreCuenta: cuenta!.nombre,
+                              nombreContraparte: cuentas
+                                  .where((c) => c.id == t.cuentaContraparteId)
+                                  .firstOrNull
+                                  ?.nombre,
+                            ),
                           ),
                       ],
                     );
                   },
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator(color: AppColors.primaryCyan)),
-                  error: (e, _) => Text('No se pudieron cargar: $e',
-                      style: AppTextStyles.bodyMd.copyWith(color: AppColors.outflowCrimson)),
+                  loading: () => Center(
+                    child: CircularProgressIndicator(color: AppColors.acento),
+                  ),
+                  error: (e, _) => Text(
+                    'No se pudieron cargar: $e',
+                    style: AppTextStyles.bodyMd.copyWith(
+                      color: AppColors.outflowCrimson,
+                    ),
+                  ),
                 );
               },
             ),
@@ -130,7 +152,11 @@ class AccountDetailScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _confirmarEliminar(BuildContext context, WidgetRef ref, Cuenta cuenta) async {
+  Future<void> _confirmarEliminar(
+    BuildContext context,
+    WidgetRef ref,
+    Cuenta cuenta,
+  ) async {
     final confirmado = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -142,10 +168,16 @@ class AccountDetailScreen extends ConsumerWidget {
           style: AppTextStyles.bodyMd,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Eliminar', style: TextStyle(color: AppColors.outflowCrimson)),
+            child: const Text(
+              'Eliminar',
+              style: TextStyle(color: AppColors.outflowCrimson),
+            ),
           ),
         ],
       ),
@@ -183,10 +215,17 @@ class _TarjetaGrande extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [colorAcento.withValues(alpha: 0.55), AppColors.canvas],
+          colors: [
+            colorAcento.withValues(alpha: 0.55),
+            AppColors.fondoTarjetaFisica,
+          ],
         ),
         boxShadow: [
-          BoxShadow(color: colorAcento.withValues(alpha: 0.25), blurRadius: 24, offset: const Offset(0, 8)),
+          BoxShadow(
+            color: colorAcento.withValues(alpha: 0.25),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
         ],
       ),
       child: Column(
@@ -201,19 +240,35 @@ class _TarjetaGrande extends StatelessWidget {
               // usuario) — efectivo/vale/otro no llevan chip. ---
               esTarjeta
                   ? const ChipEmv()
-                  : const Icon(Icons.account_balance_rounded, color: Colors.white, size: 28),
-              if (esTarjeta) const Icon(Icons.contactless_rounded, color: Colors.white70, size: 22),
+                  : const Icon(
+                      Icons.account_balance_rounded,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+              if (esTarjeta)
+                const Icon(
+                  Icons.contactless_rounded,
+                  color: Colors.white70,
+                  size: 22,
+                ),
             ],
           ),
           const Spacer(),
           Text(
-            digitos != null && digitos.isNotEmpty ? '•••• •••• •••• $digitos' : cuenta.tipo.etiqueta,
-            style: AppTextStyles.bodyLg.copyWith(color: Colors.white, letterSpacing: 2),
+            digitos != null && digitos.isNotEmpty
+                ? '•••• •••• •••• $digitos'
+                : cuenta.tipo.etiqueta,
+            style: AppTextStyles.bodyLg.copyWith(
+              color: Colors.white,
+              letterSpacing: 2,
+            ),
           ),
           const SizedBox(height: 8),
-          Text(cuenta.nombre,
-              style: AppTextStyles.headlineSm.copyWith(color: Colors.white),
-              overflow: TextOverflow.ellipsis),
+          Text(
+            cuenta.nombre,
+            style: AppTextStyles.headlineSm.copyWith(color: Colors.white),
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );
@@ -232,8 +287,9 @@ class _InfoCredito extends StatelessWidget {
   Widget build(BuildContext context) {
     final limite = cuenta.limiteCredito;
     final deuda = cuenta.deudaActual;
-    final progreso =
-        (limite != null && limite > 0 && deuda != null) ? (deuda / limite).clamp(0.0, 1.0) : null;
+    final progreso = (limite != null && limite > 0 && deuda != null)
+        ? (deuda / limite).clamp(0.0, 1.0)
+        : null;
     final diasCorte = cuenta.diasParaCorte;
     final diaLimitePago = cuenta.diaLimitePago;
 
@@ -245,7 +301,9 @@ class _InfoCredito extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             '\$${(deuda ?? 0).toStringAsFixed(2)}',
-            style: AppTextStyles.numericHero.copyWith(color: AppColors.outflowCrimson),
+            style: AppTextStyles.numericHero.copyWith(
+              color: AppColors.outflowCrimson,
+            ),
           ),
           if (progreso != null) ...[
             const SizedBox(height: 12),
@@ -262,10 +320,15 @@ class _InfoCredito extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Disponible: \$${cuenta.saldoActual.toStringAsFixed(2)}',
-                    style: AppTextStyles.bodySm),
+                Text(
+                  'Disponible: \$${cuenta.saldoActual.toStringAsFixed(2)}',
+                  style: AppTextStyles.bodySm,
+                ),
                 if (limite != null)
-                  Text('Límite: \$${limite.toStringAsFixed(2)}', style: AppTextStyles.bodySm),
+                  Text(
+                    'Límite: \$${limite.toStringAsFixed(2)}',
+                    style: AppTextStyles.bodySm,
+                  ),
               ],
             ),
           ],
@@ -281,7 +344,8 @@ class _InfoCredito extends StatelessWidget {
                       valor: 'En $diasCorte días',
                     ),
                   ),
-                if (diasCorte != null && diaLimitePago != null) const SizedBox(width: 10),
+                if (diasCorte != null && diaLimitePago != null)
+                  const SizedBox(width: 10),
                 if (diaLimitePago != null)
                   Expanded(
                     child: _CasillaFecha(
@@ -300,7 +364,11 @@ class _InfoCredito extends StatelessWidget {
 }
 
 class _CasillaFecha extends StatelessWidget {
-  const _CasillaFecha({required this.icono, required this.etiqueta, required this.valor});
+  const _CasillaFecha({
+    required this.icono,
+    required this.etiqueta,
+    required this.valor,
+  });
   final IconData icono;
   final String etiqueta;
   final String valor;
@@ -334,7 +402,10 @@ class _CasillaFecha extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 4),
-          Text(valor, style: AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            valor,
+            style: AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w600),
+          ),
         ],
       ),
     );

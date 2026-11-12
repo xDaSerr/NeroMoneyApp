@@ -271,9 +271,7 @@ class _BarraFlotanteState extends State<BarraFlotante>
 
   Widget _destino(int indice, IconData icono, String etiqueta) {
     final seleccionado = widget.indiceActual == indice;
-    final color = seleccionado
-        ? AppColors.primaryCyan
-        : AppColors.textSecondary;
+    final color = seleccionado ? AppColors.acento : AppColors.textSecondary;
     return Expanded(
       child: Semantics(
         button: true,

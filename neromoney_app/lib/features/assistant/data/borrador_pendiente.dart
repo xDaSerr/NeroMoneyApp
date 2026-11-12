@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../transactions/data/transaccion.dart';
 
 /// Una transacción que Lucy extrajo de un mensaje pero que aún no se puede
@@ -38,7 +39,8 @@ class BorradorPendiente {
 
   /// Una pregunta sin responder no debe bloquear el chat para siempre —
   /// pasada una hora, se considera vencida y un mensaje nuevo empieza de cero.
-  bool get expirado => DateTime.now().difference(creadoEn) > const Duration(hours: 1);
+  bool get expirado =>
+      DateTime.now().difference(creadoEn) > const Duration(hours: 1);
 
   factory BorradorPendiente.fromFirestore(Map<String, dynamic> data) {
     return BorradorPendiente(
@@ -49,7 +51,8 @@ class BorradorPendiente {
       cuentaMencionada: data['cuentaMencionada'] as String? ?? '',
       creadoEn: (data['creadoEn'] as Timestamp).toDate(),
       idsCuentasSugeridas:
-          (data['idsCuentasSugeridas'] as List<dynamic>?)?.cast<String>() ?? const [],
+          (data['idsCuentasSugeridas'] as List<dynamic>?)?.cast<String>() ??
+          const [],
     );
   }
 

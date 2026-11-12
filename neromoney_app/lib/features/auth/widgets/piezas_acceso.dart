@@ -23,11 +23,11 @@ class LogoNeroMoney extends StatelessWidget {
     return Text.rich(
       TextSpan(
         style: estilo,
-        children: const [
+        children: [
           TextSpan(text: 'NeroMoney'),
           TextSpan(
             text: '.',
-            style: TextStyle(color: AppColors.primaryCyan),
+            style: TextStyle(color: AppColors.acento),
           ),
         ],
       ),
@@ -158,7 +158,7 @@ class _BotonVidrioState extends State<BotonVidrio> {
               borderRadius: BorderRadius.circular(999),
               border: Border.all(
                 color: _encima
-                    ? AppColors.primaryCyan.withValues(alpha: 0.6)
+                    ? AppColors.acento.withValues(alpha: 0.6)
                     : const Color(0x33FFFFFF),
               ),
             ),
@@ -284,7 +284,7 @@ class EnlaceAcceso extends StatelessWidget {
             child: Text(
               enlace,
               style: AppTextStyles.bodyMd.copyWith(
-                color: AppColors.primaryCyan,
+                color: AppColors.acento,
                 fontWeight: FontWeight.w600,
               ),
             ),

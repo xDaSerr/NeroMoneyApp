@@ -1,5 +1,7 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
+
 import '../theme/app_colors.dart';
 
 /// Tarjeta de vidrio esmerilado ("Level 1/2" de DESIGN.md): desenfoca lo que
@@ -12,14 +14,14 @@ class GlassCard extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.all(16),
     this.borderRadius = 20,
-    this.color = AppColors.surface2Glass,
+    this.color,
     this.blurSigma = 20,
   });
 
   final Widget child;
   final EdgeInsetsGeometry padding;
   final double borderRadius;
-  final Color color;
+  final Color? color; // null = vidrio del tema activo
   final double blurSigma;
 
   @override
@@ -31,7 +33,7 @@ class GlassCard extends StatelessWidget {
         child: Container(
           padding: padding,
           decoration: BoxDecoration(
-            color: color,
+            color: color ?? AppColors.surface2Glass,
             borderRadius: BorderRadius.circular(borderRadius),
             border: Border.all(color: AppColors.glassStrokeStandard),
           ),

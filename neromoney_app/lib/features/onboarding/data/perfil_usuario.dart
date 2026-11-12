@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../../core/theme/tema_app.dart';
+
 /// Config general del usuario: moneda elegida, nombre y foto de su
 /// asistente IA, y si ya terminó el onboarding inicial. Vive en
 /// `usuarios/{uid}` (el documento raíz, junto a las subcolecciones de
@@ -22,6 +24,8 @@ class PerfilUsuario {
     this.recordatoriosActivados = false,
     this.horaRecordatorio1 = 14 * 60,
     this.horaRecordatorio2 = 20 * 60,
+    this.tema = TemaApp.negro,
+    this.asistenteNombrado = true,
   });
 
   final String moneda; // código ISO: "MXN", "USD", etc.
@@ -31,6 +35,18 @@ class PerfilUsuario {
   final String vozIdioma;
   final double vozTono;
   final bool revisarDictado;
+
+  // Color de la app elegido en el onboarding (y editable en Perfil). Ver
+  // tema_app.dart: pinta el fondo completo, "Blanco" es modo claro.
+  final TemaApp tema;
+
+  // El onboarding ya no pide el nombre del asistente: la primera vez que el
+  // usuario lo abre, el asistente se presenta y le pregunta cómo quiere
+  // llamarlo (ver PreguntaNombreAsistente). false = todavía no lo eligió y
+  // se usa "Lucy" mientras tanto. Los perfiles anteriores a este cambio no
+  // tienen el campo y sí eligieron nombre en el onboarding viejo, por eso
+  // por defecto vale true.
+  final bool asistenteNombrado;
 
   // Apodo elegido a mano en Perfil → Editar perfil (ver EditarPerfilScreen):
   // es lo que se muestra en saludos ("Hola, Apodo" en Inicio) y en el
@@ -109,6 +125,8 @@ class PerfilUsuario {
       recordatoriosActivados: data['recordatoriosActivados'] as bool? ?? false,
       horaRecordatorio1: data['horaRecordatorio1'] as int? ?? 14 * 60,
       horaRecordatorio2: data['horaRecordatorio2'] as int? ?? 20 * 60,
+      tema: TemaAppNombre.desdeTexto(data['tema'] as String?),
+      asistenteNombrado: data['asistenteNombrado'] as bool? ?? true,
     );
   }
 
@@ -126,14 +144,15 @@ class PerfilUsuario {
       'recordatoriosActivados': recordatoriosActivados,
       'horaRecordatorio1': horaRecordatorio1,
       'horaRecordatorio2': horaRecordatorio2,
+      'tema': tema.name,
+      'asistenteNombrado': asistenteNombrado,
       // OJO: quitar la foto (volver al ícono por defecto) NO pasa por aquí
       // — este mapa solo sabe agregar/actualizar el campo, nunca borrarlo.
       // Ver PerfilRepository.actualizarAvatarAsistente (usa
       // FieldValue.delete() cuando el usuario elige quitar su foto).
       if (avatarAsistenteBase64 != null)
         'avatarAsistenteBase64': avatarAsistenteBase64,
-      if (fotoUsuarioBase64 != null)
-        'fotoUsuarioBase64': fotoUsuarioBase64,
+      if (fotoUsuarioBase64 != null) 'fotoUsuarioBase64': fotoUsuarioBase64,
       if (colorAnilloInicio != null) 'colorAnilloInicio': colorAnilloInicio,
       if (colorAnilloFin != null) 'colorAnilloFin': colorAnilloFin,
     };
@@ -154,6 +173,8 @@ class PerfilUsuario {
     bool? recordatoriosActivados,
     int? horaRecordatorio1,
     int? horaRecordatorio2,
+    TemaApp? tema,
+    bool? asistenteNombrado,
   }) {
     return PerfilUsuario(
       moneda: moneda ?? this.moneda,
@@ -173,6 +194,8 @@ class PerfilUsuario {
           recordatoriosActivados ?? this.recordatoriosActivados,
       horaRecordatorio1: horaRecordatorio1 ?? this.horaRecordatorio1,
       horaRecordatorio2: horaRecordatorio2 ?? this.horaRecordatorio2,
+      tema: tema ?? this.tema,
+      asistenteNombrado: asistenteNombrado ?? this.asistenteNombrado,
     );
   }
 }

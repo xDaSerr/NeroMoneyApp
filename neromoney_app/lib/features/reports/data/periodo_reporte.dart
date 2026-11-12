@@ -129,8 +129,18 @@ typedef BucketFlujo = ({String etiqueta, double ingreso, double gasto});
 
 const _diasSemanaEs = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const _mesesAbreviados = [
-  'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-  'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic',
+  'Ene',
+  'Feb',
+  'Mar',
+  'Abr',
+  'May',
+  'Jun',
+  'Jul',
+  'Ago',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dic',
 ];
 
 /// Divide un `RangoPeriodo` en tramos para el gráfico de barras: por día si
@@ -155,9 +165,8 @@ List<BucketFlujo> calcularBuckets(
       var inicioTramo = rango.desde;
       var numero = 1;
       while (inicioTramo.isBefore(rango.hasta)) {
-        final finTramo = inicioTramo.add(const Duration(days: 7)).isBefore(
-              rango.hasta,
-            )
+        final finTramo =
+            inicioTramo.add(const Duration(days: 7)).isBefore(rango.hasta)
             ? inicioTramo.add(const Duration(days: 7))
             : rango.hasta;
         tramos.add((inicioTramo, finTramo, 'Sem $numero'));

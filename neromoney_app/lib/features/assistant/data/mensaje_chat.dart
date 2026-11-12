@@ -35,14 +35,17 @@ class MensajeChat {
   /// a la función que guarda el dato — ver CLAUDE.md → Backend de IA).
   final bool registrado;
 
-  factory MensajeChat.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+  factory MensajeChat.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final data = doc.data()!;
     return MensajeChat(
       id: doc.id,
       autor: AutorMensaje.values.byName(data['autor'] as String),
       contenido: data['contenido'] as String,
       fecha: (data['fecha'] as Timestamp).toDate(),
-      chipsCuentas: (data['chipsCuentas'] as List<dynamic>?)?.cast<String>() ?? const [],
+      chipsCuentas:
+          (data['chipsCuentas'] as List<dynamic>?)?.cast<String>() ?? const [],
       registrado: data['registrado'] as bool? ?? false,
     );
   }

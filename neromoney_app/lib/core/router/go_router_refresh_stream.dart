@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 /// Adapta cualquier Stream (aquí, authStateChanges de Firebase) a un

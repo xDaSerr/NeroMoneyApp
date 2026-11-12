@@ -53,7 +53,7 @@ void main() {
             ),
           ],
           child: MaterialApp(
-            theme: AppTheme.dark,
+            theme: AppTheme.actual,
             home: Scaffold(
               extendBody: true,
               resizeToAvoidBottomInset: false,

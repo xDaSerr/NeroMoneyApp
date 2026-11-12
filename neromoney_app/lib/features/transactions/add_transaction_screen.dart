@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/gradient_button.dart';
@@ -21,7 +22,8 @@ class AddTransactionScreen extends ConsumerStatefulWidget {
   final TipoTransaccion? tipoInicial;
 
   @override
-  ConsumerState<AddTransactionScreen> createState() => _AddTransactionScreenState();
+  ConsumerState<AddTransactionScreen> createState() =>
+      _AddTransactionScreenState();
 }
 
 class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
@@ -66,11 +68,18 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
 
   Future<void> _guardar() async {
     final monto = double.tryParse(_montoCtrl.text.replaceAll(',', '.'));
-    if (monto == null || monto <= 0 || _categoria == null || _cuentaId == null) return;
+    if (monto == null ||
+        monto <= 0 ||
+        _categoria == null ||
+        _cuentaId == null) {
+      return;
+    }
 
     setState(() => _guardando = true);
     try {
-      await ref.read(transaccionesRepositoryProvider).registrarTransaccion(
+      await ref
+          .read(transaccionesRepositoryProvider)
+          .registrarTransaccion(
             Transaccion(
               id: '',
               monto: monto,
@@ -84,7 +93,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
       if (mounted) context.pop();
     } on SaldoInsuficienteException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('$e')));
       }
     } catch (e) {
       if (mounted) {
@@ -144,7 +154,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
               const SizedBox(height: 8),
               TextField(
                 controller: _montoCtrl,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 style: AppTextStyles.numericHero,
                 decoration: const InputDecoration(hintText: r'$0.00'),
               ),
@@ -159,16 +171,22 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                 children: _categoriasDisponibles.map((cat) {
                   final seleccionada = cat.nombre == _categoria;
                   return ChoiceChip(
-                    avatar: Icon(cat.icono,
-                        size: 18,
-                        color: seleccionada ? AppColors.primaryCyan : AppColors.textSecondary),
+                    avatar: Icon(
+                      cat.icono,
+                      size: 18,
+                      color: seleccionada
+                          ? AppColors.acento
+                          : AppColors.textSecondary,
+                    ),
                     label: Text(cat.nombre),
                     selected: seleccionada,
                     onSelected: (_) => setState(() => _categoria = cat.nombre),
-                    selectedColor: AppColors.primaryCyan.withValues(alpha: 0.2),
+                    selectedColor: AppColors.acento.withValues(alpha: 0.2),
                     backgroundColor: AppColors.surface3ActiveGlass,
                     labelStyle: AppTextStyles.bodySm.copyWith(
-                      color: seleccionada ? AppColors.primaryCyan : AppColors.textSecondary,
+                      color: seleccionada
+                          ? AppColors.acento
+                          : AppColors.textSecondary,
                     ),
                     side: BorderSide.none,
                   );
@@ -195,18 +213,22 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                       return ChoiceChip(
                         label: Text(cuenta.nombre),
                         selected: seleccionada,
-                        onSelected: (_) => setState(() => _cuentaId = cuenta.id),
-                        selectedColor: AppColors.primaryCyan.withValues(alpha: 0.2),
+                        onSelected: (_) =>
+                            setState(() => _cuentaId = cuenta.id),
+                        selectedColor: AppColors.acento.withValues(alpha: 0.2),
                         backgroundColor: AppColors.surface3ActiveGlass,
                         labelStyle: AppTextStyles.bodySm.copyWith(
-                          color: seleccionada ? AppColors.primaryCyan : AppColors.textSecondary,
+                          color: seleccionada
+                              ? AppColors.acento
+                              : AppColors.textSecondary,
                         ),
                         side: BorderSide.none,
                       );
                     }).toList(),
                   );
                 },
-                loading: () => const CircularProgressIndicator(color: AppColors.primaryCyan),
+                loading: () =>
+                    CircularProgressIndicator(color: AppColors.acento),
                 error: (e, _) => Text('Error: $e'),
               ),
               const SizedBox(height: 24),
@@ -218,7 +240,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                 controller: _descripcionCtrl,
                 textCapitalization: TextCapitalization.sentences,
                 style: AppTextStyles.bodyLg,
-                decoration: const InputDecoration(hintText: 'ej. Café con amigos'),
+                decoration: const InputDecoration(
+                  hintText: 'ej. Café con amigos',
+                ),
               ),
               const SizedBox(height: 24),
 
@@ -232,7 +256,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(48),
                   alignment: Alignment.centerLeft,
-                  side: const BorderSide(color: AppColors.glassStrokeStandard),
+                  side: BorderSide(color: AppColors.glassStrokeStandard),
                   foregroundColor: AppColors.textPrimary,
                 ),
               ),
@@ -240,8 +264,13 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
 
               // --- Botón principal "Guardar movimiento" (llama a _guardar) ---
               _guardando
-                  ? const Center(child: CircularProgressIndicator(color: AppColors.primaryCyan))
-                  : GradientButton(label: 'Guardar movimiento', onPressed: _guardar),
+                  ? Center(
+                      child: CircularProgressIndicator(color: AppColors.acento),
+                    )
+                  : GradientButton(
+                      label: 'Guardar movimiento',
+                      onPressed: _guardar,
+                    ),
             ],
           ),
         ),
@@ -273,9 +302,13 @@ class _ToggleTipoBoton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 14),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: seleccionado ? color.withValues(alpha: 0.18) : AppColors.surface3ActiveGlass,
+          color: seleccionado
+              ? color.withValues(alpha: 0.18)
+              : AppColors.surface3ActiveGlass,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: seleccionado ? color : AppColors.glassStrokeStandard),
+          border: Border.all(
+            color: seleccionado ? color : AppColors.glassStrokeStandard,
+          ),
         ),
         child: Text(
           label,

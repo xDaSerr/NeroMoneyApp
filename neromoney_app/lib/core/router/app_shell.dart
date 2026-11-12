@@ -2,14 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../theme/controlador_tema.dart';
 import '../widgets/barra_flotante.dart';
+import '../widgets/boton_hablar.dart';
+import '../widgets/menu_lateral.dart';
 import '../../features/assistant/data/controlador_asistente.dart';
 import '../../features/assistant/providers/controlador_asistente_provider.dart';
 import '../../features/assistant/widgets/panel_voz_asistente.dart';
 import '../../features/auth/providers/auth_providers.dart';
 import '../../features/onboarding/data/perfil_usuario.dart';
 import '../../features/onboarding/providers/perfil_providers.dart';
+import '../../features/profile/data/saludo_usuario.dart';
 import '../../features/reminders/providers/recordatorios_sync_provider.dart';
+
+/// Desde este ancho de ventana las pestañas usan el diseño de escritorio:
+/// menú lateral y botón "Hablar con…" en vez de la barra flotante.
+const anchoEscritorio = 1000.0;
+
+bool esEscritorio(BuildContext context) =>
+    MediaQuery.sizeOf(context).width >= anchoEscritorio;
 
 /// Margen dentro del scroll para poder subir el último elemento por encima
 /// de la barra y su avatar. También separa los controles fijos del chat.
@@ -19,6 +30,10 @@ double espacioParaBarraFlotante(BuildContext context) {
   // Con el teclado abierto, Scaffold ya reduce el cuerpo hasta su borde;
   // la navegación queda debajo del teclado y no necesita otro margen.
   if (MediaQuery.viewInsetsOf(context).bottom > 0) return 0;
+
+  // En escritorio no hay barra abajo, pero el botón "Hablar con…" flota en
+  // la esquina inferior derecha y no debe tapar lo último de la lista.
+  if (esEscritorio(context)) return 96;
 
   // extendBody sustituye padding.bottom por la altura de la navegación.
   // viewPadding conserva el espacio real del sistema y evita contar la
@@ -83,9 +98,24 @@ class _AppShellState extends ConsumerState<AppShell>
     ref.watch(recordatoriosSyncProvider);
 
     final perfil = ref.watch(perfilProvider).value;
+    // El color de la app vive en el perfil (Firestore); ControladorTema lo
+    // aplica a toda la app (ver main.dart). Este build corre cada vez que
+    // cambia el perfil; cambiar() ignora el mismo tema y, si se llama en
+    // pleno build, espera al final del cuadro para notificar.
+    if (perfil != null) ControladorTema.instancia.cambiar(perfil.tema);
     final asistente = ref.watch(controladorAsistenteProvider);
     _asistente = asistente;
     final navigationShell = widget.navigationShell;
+
+    if (esEscritorio(context)) {
+      final usuario = ref.watch(authStateChangesProvider).value;
+      final saludo = datosDeSaludo(usuario, perfil?.apodo);
+      return ListenableBuilder(
+        listenable: asistente,
+        builder: (context, _) =>
+            _escritorio(context, asistente, perfil, navigationShell, saludo),
+      );
+    }
 
     return ListenableBuilder(
       listenable: asistente,
@@ -123,43 +153,7 @@ class _AppShellState extends ConsumerState<AppShell>
               // conserva la misma key, así que NO se reinicia la animación
               // en cada notifyListeners() — solo cruza cuando de verdad
               // aparece o desaparece.
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 220),
-                switchInCurve: Curves.easeOut,
-                switchOutCurve: Curves.easeIn,
-                transitionBuilder: (child, animacion) => FadeTransition(
-                  opacity: animacion,
-                  child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0, 0.08),
-                      end: Offset.zero,
-                    ).animate(animacion),
-                    child: child,
-                  ),
-                ),
-                // En el chat, "escuchando/enviando/respuesta" ya se ven en
-                // el propio campo de texto y en los mensajes (ver
-                // assistant_chat_screen.dart) — el mic ahí es el propio del
-                // chat (_BarraDeEntrada), pero comparte el mismo
-                // ControladorAsistente que el de la barra de navegación, así
-                // que también disparaba este panel flotante, encimándose
-                // con la barra de escribir (reportado por el usuario). Pero
-                // OJO: "revisión" (hay que editar y confirmar el texto) y
-                // los avisos de error/silencio NO tienen ningún otro lugar
-                // donde mostrarse dentro del chat — esos SÍ deben seguir
-                // apareciendo ahí, o esa función se perdería por completo.
-                child: asistente.mostrarPanel &&
-                        (navigationShell.currentIndex != 2 ||
-                            asistente.estado == EstadoDictado.error ||
-                            asistente.estado == EstadoDictado.sinVoz ||
-                            asistente.estado == EstadoDictado.revision)
-                    ? PanelVozAsistente(
-                        key: const ValueKey('panel-visible'),
-                        controlador: asistente,
-                        nombre: perfil?.nombreAsistente ?? 'Lucy',
-                      )
-                    : const SizedBox.shrink(key: ValueKey('panel-oculto')),
-              ),
+              child: _panelVoz(asistente, perfil, navigationShell.currentIndex),
             ),
           ],
         ),
@@ -186,6 +180,123 @@ class _AppShellState extends ConsumerState<AppShell>
           coloresAnillo: _coloresAnillo(perfil),
           nombreAsistente: perfil?.nombreAsistente ?? 'Lucy',
         ),
+      ),
+    );
+  }
+
+  /// Panel flotante con la transcripción/respuesta del asistente. Igual en
+  /// teléfono y escritorio; solo cambia dónde se coloca.
+  Widget _panelVoz(
+    ControladorAsistente asistente,
+    PerfilUsuario? perfil,
+    int indice,
+  ) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 220),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeIn,
+      transitionBuilder: (child, animacion) => FadeTransition(
+        opacity: animacion,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 0.08),
+            end: Offset.zero,
+          ).animate(animacion),
+          child: child,
+        ),
+      ),
+      // En el chat, "escuchando/enviando/respuesta" ya se ven en
+      // el propio campo de texto y en los mensajes (ver
+      // assistant_chat_screen.dart) — el mic ahí es el propio del
+      // chat (_BarraDeEntrada), pero comparte el mismo
+      // ControladorAsistente que el de la barra de navegación, así
+      // que también disparaba este panel flotante, encimándose
+      // con la barra de escribir (reportado por el usuario). Pero
+      // OJO: "revisión" (hay que editar y confirmar el texto) y
+      // los avisos de error/silencio NO tienen ningún otro lugar
+      // donde mostrarse dentro del chat — esos SÍ deben seguir
+      // apareciendo ahí, o esa función se perdería por completo.
+      child:
+          asistente.mostrarPanel &&
+              (indice != 2 ||
+                  asistente.estado == EstadoDictado.error ||
+                  asistente.estado == EstadoDictado.sinVoz ||
+                  asistente.estado == EstadoDictado.revision)
+          ? PanelVozAsistente(
+              key: const ValueKey('panel-visible'),
+              controlador: asistente,
+              nombre: perfil?.nombreAsistente ?? 'Lucy',
+            )
+          : const SizedBox.shrink(key: ValueKey('panel-oculto')),
+    );
+  }
+
+  /// Escritorio (ventana ancha): menú lateral a la izquierda y el botón
+  /// "Hablar con…" flotando abajo a la derecha, como en el diseño que pidió
+  /// el usuario. Las pestañas son las mismas (navigationShell); el chat
+  /// (índice 2) se abre con un clic en ese botón.
+  Widget _escritorio(
+    BuildContext context,
+    ControladorAsistente asistente,
+    PerfilUsuario? perfil,
+    StatefulNavigationShell navigationShell,
+    ({String nombre, String inicial}) saludo,
+  ) {
+    final indice = navigationShell.currentIndex;
+    void irA(int i) => navigationShell.goBranch(
+      i,
+      // Si ya estás en esa sección, regresa a su raíz en vez de apilar.
+      initialLocation: i == indice,
+    );
+    return Scaffold(
+      resizeToAvoidBottomInset: false,
+      body: Row(
+        children: [
+          MenuLateral(
+            indiceActual: indice,
+            onSeleccionar: irA,
+            onReportes: () => context.push('/reports'),
+            nombreUsuario: saludo.nombre,
+            inicialUsuario: saludo.inicial,
+          ),
+          Expanded(
+            child: Stack(
+              children: [
+                Positioned.fill(child: navigationShell),
+                // En el chat no: ahí está su propio micrófono y el botón
+                // taparía la barra de escribir.
+                if (indice != 2)
+                  Positioned(
+                    right: 28,
+                    bottom: 24,
+                    child: BotonHablar(
+                      nombreAsistente: (perfil?.asistenteNombrado ?? true)
+                          ? perfil?.nombreAsistente
+                          : null,
+                      avatarBase64: perfil?.avatarAsistenteBase64,
+                      coloresAnillo: _coloresAnillo(perfil),
+                      escuchando: asistente.pulsado,
+                      enviando: asistente.enviando,
+                      onAbrirChat: () => irA(2),
+                      onPrepararGesto: asistente.descartarAviso,
+                      onMantener: () {
+                        FocusManager.instance.primaryFocus?.unfocus();
+                        asistente.iniciar();
+                      },
+                      onSoltar: asistente.soltar,
+                      onCancelar: asistente.cancelar,
+                    ),
+                  ),
+                Positioned(
+                  right: 28,
+                  bottom: indice == 2 ? 110 : 112,
+                  width: 420,
+                  child: _panelVoz(asistente, perfil, indice),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

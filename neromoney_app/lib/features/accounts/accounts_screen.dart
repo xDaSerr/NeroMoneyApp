@@ -42,8 +42,8 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
       floatingActionButton: Padding(
         padding: EdgeInsets.only(bottom: espacioParaBarraFlotante(context)),
         child: FloatingActionButton(
-          backgroundColor: AppColors.primaryCyan,
-          foregroundColor: AppColors.canvas,
+          backgroundColor: AppColors.acento,
+          foregroundColor: AppColors.sobreAcento,
           onPressed: () => mostrarFormularioNuevaCuenta(
             context: context,
             onAgregar: (cuenta) =>
@@ -152,9 +152,8 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> {
             ],
           );
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.primaryCyan),
-        ),
+        loading: () =>
+            Center(child: CircularProgressIndicator(color: AppColors.acento)),
         error: (e, _) => Center(
           child: Text(
             'No se pudieron cargar tus cuentas: $e',
@@ -184,10 +183,10 @@ class _ChipFiltro extends StatelessWidget {
       label: Text(label),
       selected: seleccionado,
       onSelected: (_) => onTap(),
-      selectedColor: AppColors.primaryCyan.withValues(alpha: 0.2),
+      selectedColor: AppColors.acento.withValues(alpha: 0.2),
       backgroundColor: AppColors.surface3ActiveGlass,
       labelStyle: AppTextStyles.bodySm.copyWith(
-        color: seleccionado ? AppColors.primaryCyan : AppColors.textSecondary,
+        color: seleccionado ? AppColors.acento : AppColors.textSecondary,
       ),
       side: BorderSide.none,
     );

@@ -125,10 +125,7 @@ class RecordatoriosService {
         _canalId,
         _canalNombre,
         channelDescription: _canalDescripcion,
-        styleInformation: BigTextStyleInformation(
-          cuerpo,
-          contentTitle: titulo,
-        ),
+        styleInformation: BigTextStyleInformation(cuerpo, contentTitle: titulo),
       ),
     );
   }

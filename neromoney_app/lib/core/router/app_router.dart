@@ -26,6 +26,18 @@ const _authRoutes = {'/login', '/register', '/forgot-password'};
 /// Las pantallas de acceso (portada + formularios) tienen su propio diseño
 /// de pantalla completa; main.dart las excluye de la columna de teléfono.
 bool esRutaDeAcceso(String ruta) => _authRoutes.contains(ruta);
+
+/// Rutas de las 5 pestañas (y lo que cuelga de ellas, ej. /accounts/detalle):
+/// en escritorio usan el diseño con menú lateral de AppShell.
+const _pestanas = [
+  '/home',
+  '/movements',
+  '/assistant',
+  '/accounts',
+  '/profile',
+];
+bool esRutaDePestana(String ruta) =>
+    _pestanas.any((p) => ruta == p || ruta.startsWith('$p/'));
 const _onboardingRoute = '/onboarding';
 
 // Una vez que confirmamos que un usuario ya completó el onboarding, no tiene

@@ -115,9 +115,8 @@ class _RecordatoriosScreenState extends ConsumerState<RecordatoriosScreen> {
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('No se pudo guardar: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('No se pudo guardar: $e')));
       }
     } finally {
       if (mounted) setState(() => _guardando = false);
@@ -149,7 +148,10 @@ class _RecordatoriosScreenState extends ConsumerState<RecordatoriosScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Activar recordatorios', style: AppTextStyles.bodyLg),
+                          Text(
+                            'Activar recordatorios',
+                            style: AppTextStyles.bodyLg,
+                          ),
                           const SizedBox(height: 4),
                           Text(
                             'Dos avisos al día para no olvidar registrar tus '
@@ -161,7 +163,7 @@ class _RecordatoriosScreenState extends ConsumerState<RecordatoriosScreen> {
                     ),
                     Switch(
                       value: _activado,
-                      activeThumbColor: AppColors.primaryCyan,
+                      activeThumbColor: AppColors.acento,
                       onChanged: _alternar,
                     ),
                   ],
@@ -176,7 +178,10 @@ class _RecordatoriosScreenState extends ConsumerState<RecordatoriosScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('RECORDATORIO DE MEDIODÍA', style: AppTextStyles.labelCode),
+                      Text(
+                        'RECORDATORIO DE MEDIODÍA',
+                        style: AppTextStyles.labelCode,
+                      ),
                       const SizedBox(height: 8),
                       _FilaHora(
                         hora: _comoHora(_horaMediodia),
@@ -189,7 +194,10 @@ class _RecordatoriosScreenState extends ConsumerState<RecordatoriosScreen> {
                         style: AppTextStyles.bodySm,
                       ),
                       const SizedBox(height: 24),
-                      Text('RECORDATORIO DE LA NOCHE', style: AppTextStyles.labelCode),
+                      Text(
+                        'RECORDATORIO DE LA NOCHE',
+                        style: AppTextStyles.labelCode,
+                      ),
                       const SizedBox(height: 8),
                       _FilaHora(
                         hora: _comoHora(_horaNoche),
@@ -208,15 +216,18 @@ class _RecordatoriosScreenState extends ConsumerState<RecordatoriosScreen> {
               ),
               const SizedBox(height: 32),
               _guardando
-                  ? const Padding(
+                  ? Padding(
                       padding: EdgeInsets.symmetric(vertical: 18),
                       child: Center(
                         child: CircularProgressIndicator(
-                          color: AppColors.primaryCyan,
+                          color: AppColors.acento,
                         ),
                       ),
                     )
-                  : GradientButton(label: 'Guardar cambios', onPressed: _guardar),
+                  : GradientButton(
+                      label: 'Guardar cambios',
+                      onPressed: _guardar,
+                    ),
             ],
           ),
         ),
@@ -238,12 +249,19 @@ class _FilaHora extends StatelessWidget {
       child: GlassCard(
         child: Row(
           children: [
-            const Icon(Icons.schedule_rounded, color: AppColors.primaryCyan, size: 20),
+            Icon(Icons.schedule_rounded, color: AppColors.acento, size: 20),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(hora.format(context), style: AppTextStyles.headlineSm),
+              child: Text(
+                hora.format(context),
+                style: AppTextStyles.headlineSm,
+              ),
             ),
-            const Icon(Icons.edit_rounded, color: AppColors.textPlaceholder, size: 18),
+            Icon(
+              Icons.edit_rounded,
+              color: AppColors.textPlaceholder,
+              size: 18,
+            ),
           ],
         ),
       ),

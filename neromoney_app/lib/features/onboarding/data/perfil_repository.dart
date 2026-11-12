@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'perfil_usuario.dart';
 
 class PerfilRepository {
@@ -34,6 +35,7 @@ class PerfilRepository {
     }
     return _doc.set({'avatarAsistenteBase64': base64}, SetOptions(merge: true));
   }
+
   /// Actualiza la foto del perfil. Lo mismo que la de la Asistente
   Future<void> actualizarFotoUsuario(String? base64) {
     if (base64 == null) {

@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/theme/controlador_tema.dart';
+import '../../core/theme/tema_app.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/gradient_button.dart';
 import '../auth/providers/auth_providers.dart';
 import 'data/perfil_usuario.dart';
 import 'providers/perfil_providers.dart';
 import 'widgets/currency_picker.dart';
+import 'widgets/muestra_tema.dart';
 
-/// Los 2 pasos de configuración inicial: moneda → nombre del asistente.
+/// Los 2 pasos de configuración inicial: moneda → color de la app.
+/// El nombre del asistente ya no se pide aquí (decisión del usuario): el
+/// asistente lo pregunta él mismo la primera vez que se abre (ver
+/// PreguntaNombreAsistente).
 /// Deliberadamente NO se pide crear una cuenta aquí — eso queda para
 /// cuando el usuario quiera, desde la pantalla de Cuentas (o cuando la IA
 /// se lo recuerde). Menos fricción para empezar a ver la app.
@@ -18,7 +25,8 @@ class OnboardingFlowScreen extends ConsumerStatefulWidget {
   const OnboardingFlowScreen({super.key});
 
   @override
-  ConsumerState<OnboardingFlowScreen> createState() => _OnboardingFlowScreenState();
+  ConsumerState<OnboardingFlowScreen> createState() =>
+      _OnboardingFlowScreenState();
 }
 
 class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen> {
@@ -26,14 +34,14 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen> {
   int _paso = 0;
 
   String _monedaElegida = monedasDisponibles.first.codigo;
-  final _nombreAsistenteCtrl = TextEditingController(text: 'Lucy');
+  // Arranca en el que ya esté aplicado (normalmente Negro).
+  TemaApp _temaElegido = ControladorTema.instancia.tema;
 
   bool _guardando = false;
 
   @override
   void dispose() {
     _pageController.dispose();
-    _nombreAsistenteCtrl.dispose();
     super.dispose();
   }
 
@@ -49,10 +57,6 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen> {
   Future<void> _finalizar() async {
     setState(() => _guardando = true);
     try {
-      final nombreAsistente = _nombreAsistenteCtrl.text.trim().isEmpty
-          ? 'Lucy'
-          : _nombreAsistenteCtrl.text.trim();
-
       // A esta pantalla se llega justo después de registrarte o iniciar
       // sesión — el mismo instante en el que, alguna vez, se vio un
       // parpadeo de "sin uid" mientras Firebase terminaba de asentar la
@@ -68,11 +72,15 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen> {
         throw StateError('Tu sesión se cerró. Vuelve a iniciar sesión.');
       }
 
-      await ref.read(perfilRepositoryProvider).guardarPerfil(
+      await ref
+          .read(perfilRepositoryProvider)
+          .guardarPerfil(
             PerfilUsuario(
               moneda: _monedaElegida,
-              nombreAsistente: nombreAsistente,
+              nombreAsistente: 'Lucy',
               onboardingCompletado: true,
+              tema: _temaElegido,
+              asistenteNombrado: false,
             ),
           );
 
@@ -92,7 +100,7 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen> {
               e is StateError
                   ? e.message
                   : 'No se pudo guardar la configuración. Revisa tu '
-                      'conexión e inténtalo de nuevo.',
+                        'conexión e inténtalo de nuevo.',
             ),
           ),
         );
@@ -116,11 +124,18 @@ class _OnboardingFlowScreenState extends ConsumerState<OnboardingFlowScreen> {
                 children: [
                   _PasoMoneda(
                     monedaElegida: _monedaElegida,
-                    onCambiar: (codigo) => setState(() => _monedaElegida = codigo),
+                    onCambiar: (codigo) =>
+                        setState(() => _monedaElegida = codigo),
                     onContinuar: () => _irAlPaso(1),
                   ),
-                  _PasoAsistente(
-                    controller: _nombreAsistenteCtrl,
+                  _PasoColor(
+                    temaElegido: _temaElegido,
+                    onCambiar: (tema) {
+                      setState(() => _temaElegido = tema);
+                      // La app entera cambia de color al instante: la mejor
+                      // vista previa es la propia pantalla.
+                      ControladorTema.instancia.cambiar(tema);
+                    },
                     onContinuar: _finalizar,
                     onAtras: () => _irAlPaso(0),
                     guardando: _guardando,
@@ -151,7 +166,9 @@ class _BarraProgreso extends StatelessWidget {
               margin: EdgeInsets.only(right: i < 1 ? 8 : 0),
               height: 4,
               decoration: BoxDecoration(
-                color: activo ? AppColors.primaryCyan : AppColors.glassStrokeStandard,
+                color: activo
+                    ? AppColors.acento
+                    : AppColors.glassStrokeStandard,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -183,7 +200,10 @@ class _PasoMoneda extends StatelessWidget {
           const SizedBox(height: 12),
           Text('Paso 1 de 2', style: AppTextStyles.labelCode),
           const SizedBox(height: 8),
-          Text('¿En qué moneda manejas tu dinero?', style: AppTextStyles.headlineLg),
+          Text(
+            '¿En qué moneda manejas tu dinero?',
+            style: AppTextStyles.headlineLg,
+          ),
           const SizedBox(height: 6),
           Text(
             'Toda la app trabajará en esta moneda. Puedes cambiarla después en Ajustes.',
@@ -202,11 +222,14 @@ class _PasoMoneda extends StatelessWidget {
                   onTap: () => onCambiar(opcion.codigo),
                   child: GlassCard(
                     color: seleccionada
-                        ? AppColors.primaryCyan.withValues(alpha: 0.12)
+                        ? AppColors.acento.withValues(alpha: 0.12)
                         : AppColors.surface2Glass,
                     child: Row(
                       children: [
-                        Text(opcion.bandera, style: const TextStyle(fontSize: 24)),
+                        Text(
+                          opcion.bandera,
+                          style: const TextStyle(fontSize: 24),
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
@@ -218,7 +241,10 @@ class _PasoMoneda extends StatelessWidget {
                           ),
                         ),
                         if (seleccionada)
-                          const Icon(Icons.check_circle_rounded, color: AppColors.primaryCyan),
+                          Icon(
+                            Icons.check_circle_rounded,
+                            color: AppColors.acento,
+                          ),
                       ],
                     ),
                   ),
@@ -236,24 +262,23 @@ class _PasoMoneda extends StatelessWidget {
   }
 }
 
-class _PasoAsistente extends StatelessWidget {
-  const _PasoAsistente({
-    required this.controller,
+class _PasoColor extends StatelessWidget {
+  const _PasoColor({
+    required this.temaElegido,
+    required this.onCambiar,
     required this.onContinuar,
     required this.onAtras,
     required this.guardando,
   });
 
-  final TextEditingController controller;
+  final TemaApp temaElegido;
+  final ValueChanged<TemaApp> onCambiar;
   final VoidCallback onContinuar;
   final VoidCallback onAtras;
   final bool guardando;
 
   @override
   Widget build(BuildContext context) {
-    // SingleChildScrollView (en vez de Spacer) para que cuando el teclado
-    // reduzca el espacio disponible, el contenido se desplace en lugar de
-    // desbordarse ("bottom overflowed").
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -262,45 +287,46 @@ class _PasoAsistente extends StatelessWidget {
           const SizedBox(height: 12),
           Text('Paso 2 de 2', style: AppTextStyles.labelCode),
           const SizedBox(height: 8),
-          Text('Ponle nombre a tu asistente', style: AppTextStyles.headlineLg),
+          Text('Elige el color de tu app', style: AppTextStyles.headlineLg),
           const SizedBox(height: 6),
           Text(
-            'Así le hablarás para registrar tus gastos, ej. "Lucy, gasté 200 en un café".',
+            'Cambia el fondo y los acentos de toda la app. Puedes cambiarlo '
+            'después en Perfil.',
             style: AppTextStyles.bodyMd,
           ),
+          const SizedBox(height: 24),
+          // --- Cuadrícula de 8 colores: tocar uno lo aplica al instante ---
+          GridView.count(
+            crossAxisCount: 4,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 14,
+            crossAxisSpacing: 14,
+            childAspectRatio: 0.78,
+            children: [
+              for (final tema in TemaApp.values)
+                MuestraTema(
+                  tema: tema,
+                  seleccionado: tema == temaElegido,
+                  onTap: () => onCambiar(tema),
+                ),
+            ],
+          ),
           const SizedBox(height: 32),
-          Center(
-            child: Container(
-              width: 88,
-              height: 88,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const LinearGradient(colors: AppColors.userBubbleGradient),
-                boxShadow: [
-                  BoxShadow(color: AppColors.primaryCyan.withValues(alpha: 0.3), blurRadius: 30),
-                ],
-              ),
-              child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 36),
-            ),
-          ),
-          const SizedBox(height: 28),
-          TextField(
-            controller: controller,
-            textAlign: TextAlign.center,
-            textCapitalization: TextCapitalization.words,
-            style: AppTextStyles.headlineMd,
-            decoration: const InputDecoration(hintText: 'Lucy'),
-          ),
-          const SizedBox(height: 28),
           // --- Botón "Finalizar": guarda el perfil en Firestore y navega a /home ---
           // (la lógica real está en _finalizar(), arriba en el State)
           guardando
-              ? const Center(child: CircularProgressIndicator(color: AppColors.primaryCyan))
+              ? Center(
+                  child: CircularProgressIndicator(color: AppColors.acento),
+                )
               : GradientButton(label: 'Finalizar', onPressed: onContinuar),
           const SizedBox(height: 8),
           // --- Botón "Atrás": regresa al paso 1 sin guardar nada ---
           Center(
-            child: TextButton(onPressed: guardando ? null : onAtras, child: const Text('Atrás')),
+            child: TextButton(
+              onPressed: guardando ? null : onAtras,
+              child: const Text('Atrás'),
+            ),
           ),
           const SizedBox(height: 12),
         ],

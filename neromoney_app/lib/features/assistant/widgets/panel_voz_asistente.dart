@@ -46,7 +46,7 @@ class PanelVozAsistente extends ConsumerWidget {
       shadowColor: Colors.black54,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),
-        side: const BorderSide(color: AppColors.glassStrokeHighlight),
+        side: BorderSide(color: AppColors.glassStrokeHighlight),
       ),
       clipBehavior: Clip.antiAlias,
       child: ConstrainedBox(
@@ -71,7 +71,7 @@ class PanelVozAsistente extends ConsumerWidget {
                         : Icons.mic_rounded,
                     color: respuesta?.registrado == true
                         ? AppColors.inflowEmerald
-                        : AppColors.primaryCyan,
+                        : AppColors.acento,
                     size: 20,
                   ),
                   const SizedBox(width: 8),

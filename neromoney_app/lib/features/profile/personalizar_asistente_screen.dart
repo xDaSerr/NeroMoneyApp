@@ -177,10 +177,10 @@ class _PersonalizarAsistenteScreenState
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: AppColors.primaryCyan,
+                          color: AppColors.acento,
                           border: Border.all(color: AppColors.canvas, width: 3),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.photo_camera_rounded,
                           size: 16,
                           color: AppColors.canvas,
@@ -290,11 +290,9 @@ class _PersonalizarAsistenteScreenState
               const SizedBox(height: 24),
               // --- Botón "Guardar cambios" ---
               _guardando
-                  ? const Padding(
+                  ? Padding(
                       padding: EdgeInsets.symmetric(vertical: 18),
-                      child: CircularProgressIndicator(
-                        color: AppColors.primaryCyan,
-                      ),
+                      child: CircularProgressIndicator(color: AppColors.acento),
                     )
                   : GradientButton(
                       label: 'Guardar cambios',
