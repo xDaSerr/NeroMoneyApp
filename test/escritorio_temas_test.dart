@@ -326,51 +326,55 @@ void main() {
     expect(find.text('Cuentas y bolsillos'), findsOneWidget);
   });
 
-  testWidgets('Portada: los botones se transforman en la tarjeta', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(1600, 1000);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    final llave = GlobalKey();
-    await tester.pumpWidget(
-      ProviderScope(
-        child: RepaintBoundary(
-          key: llave,
-          child: MaterialApp(
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.actual,
-            home: const BienvenidaScreen(),
+  for (final (nombre, tamano) in [
+    ('escritorio', const Size(1600, 1000)),
+    ('teléfono', const Size(400, 860)),
+  ])
+    testWidgets('Portada ($nombre): los botones se transforman en la tarjeta', (
+      tester,
+    ) async {
+      tester.view.physicalSize = tamano;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final llave = GlobalKey();
+      await tester.pumpWidget(
+        ProviderScope(
+          child: RepaintBoundary(
+            key: llave,
+            child: MaterialApp(
+              debugShowCheckedModeBanner: false,
+              theme: AppTheme.actual,
+              home: const BienvenidaScreen(),
+            ),
           ),
         ),
-      ),
-    );
-    await _avanzar(tester);
-    await _avanzar(tester);
+      );
+      await _avanzar(tester);
+      await _avanzar(tester);
 
-    await tester.tap(find.text('Iniciar sesión'));
-    await tester.pump();
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 160));
-    await _capturar(tester, llave, 'acceso_abriendo');
-    await _avanzar(tester);
-    expect(find.text('Bienvenido de nuevo'), findsOneWidget);
-    await _capturar(tester, llave, 'acceso_login');
+      await tester.tap(find.text('Iniciar sesión'));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 160));
+      await _capturar(tester, llave, 'acceso_abriendo_${tamano.width.round()}');
+      await _avanzar(tester);
+      expect(find.text('Bienvenido de nuevo'), findsOneWidget);
+      await _capturar(tester, llave, 'acceso_login_${tamano.width.round()}');
 
-    // La flecha regresa: la tarjeta se encoge de vuelta al botón.
-    await tester.tap(find.byTooltip('Regresar'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 150));
-    await _capturar(tester, llave, 'acceso_cerrando');
-    await _avanzar(tester);
-    expect(find.text('Registrarme'), findsOneWidget);
-    expect(find.text('Bienvenido de nuevo'), findsNothing);
+      // La flecha regresa: la tarjeta se encoge de vuelta al botón.
+      await tester.tap(find.byTooltip('Regresar'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 150));
+      await _capturar(tester, llave, 'acceso_cerrando_${tamano.width.round()}');
+      await _avanzar(tester);
+      expect(find.text('Registrarme'), findsOneWidget);
+      expect(find.text('Bienvenido de nuevo'), findsNothing);
 
-    await tester.tap(find.text('Registrarme'));
-    await _avanzar(tester);
-    expect(find.text('Crea tu cuenta'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
+      await tester.tap(find.text('Registrarme'));
+      await _avanzar(tester);
+      expect(find.text('Crea tu cuenta'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
 
   testWidgets('Inicio de teléfono en tema Blanco', (tester) async {
     final llave = await _montarInicio(
