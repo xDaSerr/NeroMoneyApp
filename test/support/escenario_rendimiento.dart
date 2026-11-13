@@ -10,7 +10,7 @@ import 'package:neromoney_app/core/theme/app_theme.dart';
 import 'package:neromoney_app/features/accounts/accounts_screen.dart';
 import 'package:neromoney_app/features/accounts/data/cuenta.dart';
 import 'package:neromoney_app/features/accounts/providers/cuentas_providers.dart';
-import 'package:neromoney_app/features/accounts/widgets/cuenta_tile.dart';
+import 'package:neromoney_app/features/accounts/widgets/cuenta_movil.dart';
 import 'package:neromoney_app/features/assistant/assistant_chat_screen.dart';
 import 'package:neromoney_app/features/assistant/data/controlador_asistente.dart';
 import 'package:neromoney_app/features/assistant/data/mensaje_chat.dart';
@@ -123,7 +123,7 @@ void registrarPruebaRendimiento({
     );
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
-    final tarjetasIniciales = find.byType(CuentaTile).evaluate().length;
+    final tarjetasIniciales = find.byType(CuentaMovil).evaluate().length;
     final scrollCuentas = find
         .descendant(
           of: find.byType(AccountsScreen),

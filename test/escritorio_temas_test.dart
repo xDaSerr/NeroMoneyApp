@@ -403,6 +403,42 @@ void main() {
     await _capturar(tester, llave, 'panel_telefono');
   });
 
+  testWidgets('Secciones de teléfono con el diseño móvil', (tester) async {
+    final llave = await _montarInicio(
+      tester,
+      TemaApp.negro,
+      const Size(400, 860),
+    );
+    await _capturar(tester, llave, 'movil_inicio');
+    for (final (ruta, titulo) in [
+      ('/movements', 'Movimientos'),
+      ('/accounts', 'Tus bolsillos, organizados.'),
+      ('/reports', 'Entiende tu dinero.'),
+      ('/profile', 'Haz NeroMoney tuyo.'),
+    ]) {
+      _router.go(ruta);
+      await _avanzar(tester);
+      expect(tester.takeException(), isNull, reason: ruta);
+      expect(find.text(titulo), findsWidgets, reason: ruta);
+      await _capturar(tester, llave, 'movil${ruta.replaceAll('/', '_')}');
+    }
+
+    // "+ Nuevo" de Movimientos se transforma en el panel.
+    _router.go('/movements');
+    await _avanzar(tester);
+    await tester.tap(find.text('Nuevo'));
+    await _avanzar(tester);
+    expect(
+      find.text(
+        'Crear'
+        '\n'
+        'movimiento',
+      ),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Onboarding: el paso 2 muestra los 8 colores', (tester) async {
     SharedPreferences.setMockInitialValues({});
     ControladorTema.instancia.cambiar(TemaApp.morado);

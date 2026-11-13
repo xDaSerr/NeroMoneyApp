@@ -35,6 +35,7 @@ class _BienvenidaScreenState extends State<BienvenidaScreen>
   // ver BotonConPanel; pedido explícito del usuario) ---
   final _llaveFondo = GlobalKey();
   final _llaveArea = GlobalKey();
+  final _llavePortada = GlobalKey();
   final _llaveLogin = GlobalKey();
   final _llaveRegistro = GlobalKey();
 
@@ -132,34 +133,28 @@ class _BienvenidaScreenState extends State<BienvenidaScreen>
     setState(() {
       _tarjeta = tarjeta;
       _transformando = true;
+      // La portada reaparece (desvaneciéndose de regreso) mientras la forma
+      // se encoge; su entrada escalonada no se repite.
+      _animarPortada = false;
     });
     await _morph.reverse();
     if (!mounted) return;
+    // Todo en un mismo cambio: se va la tarjeta, se quita la forma y la
+    // portada queda sola, ya opaca, con el botón donde terminó la forma.
+    // (Antes, restablecer la animación con la tarjeta todavía en pantalla
+    // la volvía a mostrar completa por un instante.)
     setState(() {
       _modo = ModoAcceso.portada;
-      _animarPortada = false;
+      _transformando = false;
+      _morph.value = 1;
     });
-    // Un cuadro con la portada ya dibujada antes de quitar la forma, para
-    // que no parpadee el hueco del botón.
-    await WidgetsBinding.instance.endOfFrame;
-    if (mounted) {
-      setState(() {
-        _transformando = false;
-        _morph.value = 1;
-      });
-    }
   }
 
   Widget _contenido() {
     switch (_modo) {
+      // La portada vive en su propia capa (ver build).
       case ModoAcceso.portada:
-        return _Portada(
-          llaveLogin: _llaveLogin,
-          llaveRegistro: _llaveRegistro,
-          animar: _animarPortada,
-          onIniciarSesion: () => _abrir(ModoAcceso.login),
-          onRegistrarme: () => _abrir(ModoAcceso.registro),
-        );
+        return const SizedBox.shrink();
       case ModoAcceso.login:
         return _ConVolver(
           onVolver: _volverAPortada,
@@ -184,14 +179,11 @@ class _BienvenidaScreenState extends State<BienvenidaScreen>
   @override
   Widget build(BuildContext context) {
     final sinMovimiento = MediaQuery.disableAnimationsOf(context);
-    // Durante la transformación, la portada sale rápido (se desvanece
-    // detrás de la forma) y la tarjeta no usa la transición genérica: la
-    // muestra la propia forma.
-    final instantaneo = sinMovimiento || _transformando;
+    final enPortada = _modo == ModoAcceso.portada;
     return PopScope(
       // El botón "atrás" de Android (o del navegador) regresa del
       // formulario a la portada en vez de salirse de la app.
-      canPop: _modo == ModoAcceso.portada,
+      canPop: enPortada,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop || _transformando) return;
         if (_modo == ModoAcceso.recuperar) {
@@ -202,6 +194,12 @@ class _BienvenidaScreenState extends State<BienvenidaScreen>
       },
       child: Scaffold(
         backgroundColor: AppColors.canvas,
+        // La portada y la tarjeta van en capas separadas, cada una centrada
+        // por su cuenta. Cuando compartían un AnimatedSwitcher, por un
+        // cuadro convivían en el mismo contenedor: la portada se centraba
+        // en el alto de la tarjeta (aparecía más abajo y brincaba) y la
+        // tarjeta que salía se veía como un "fantasma" encima (lo reportó
+        // el usuario con video).
         body: Stack(
           key: _llaveFondo,
           fit: StackFit.expand,
@@ -212,59 +210,94 @@ class _BienvenidaScreenState extends State<BienvenidaScreen>
               animation: _morph,
               builder: (context, _) => _forma(),
             ),
-            SafeArea(
-              child: Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 32,
-                  ),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: _modo == ModoAcceso.portada ? 620 : 520,
+            // --- Portada: se desvanece al abrir y reaparece al cerrar ---
+            if (enPortada || _transformando)
+              _capa(
+                llave: const ValueKey('capa-portada'),
+                anchoMaximo: 620,
+                child: AnimatedBuilder(
+                  animation: _morph,
+                  child: KeyedSubtree(
+                    key: _llavePortada,
+                    child: _Portada(
+                      llaveLogin: _llaveLogin,
+                      llaveRegistro: _llaveRegistro,
+                      animar: _animarPortada,
+                      onIniciarSesion: () => _abrir(ModoAcceso.login),
+                      onRegistrarme: () => _abrir(ModoAcceso.registro),
                     ),
-                    // AnimatedSize: entre formularios (login ↔ registro) la
-                    // tarjeta cambia de alto con suavidad.
-                    child: AnimatedSize(
-                      key: _llaveArea,
-                      // 1 ms y no cero: con cero, AnimatedSize termina su
-                      // animación dentro de su propio layout y Flutter lo
-                      // marca como error.
-                      duration: instantaneo
-                          ? const Duration(milliseconds: 1)
-                          : const Duration(milliseconds: 450),
-                      curve: Curves.easeOutCubic,
-                      child: AnimatedSwitcher(
-                        duration: instantaneo
-                            ? Duration.zero
-                            : const Duration(milliseconds: 520),
-                        reverseDuration: sinMovimiento
-                            ? Duration.zero
-                            : _transformando
-                            ? (_modo == ModoAcceso.portada
-                                  ? Duration.zero
-                                  : const Duration(milliseconds: 220))
-                            : const Duration(milliseconds: 260),
-                        switchInCurve: Curves.easeOutCubic,
-                        switchOutCurve: Curves.easeIn,
-                        transitionBuilder: _transicion,
-                        layoutBuilder: (actual, anteriores) => Stack(
-                          alignment: Alignment.center,
-                          children: [...anteriores, ?actual],
-                        ),
-                        child: KeyedSubtree(
-                          key: ValueKey(_modo),
-                          child: _modo == ModoAcceso.portada
-                              ? _contenido()
-                              : _apareciendo(_contenido()),
-                        ),
-                      ),
+                  ),
+                  builder: (context, hijo) => IgnorePointer(
+                    ignoring: !enPortada,
+                    child: Opacity(
+                      opacity: enPortada
+                          ? 1
+                          : 1 - const Interval(0, 0.5).transform(_morph.value),
+                      child: hijo,
                     ),
                   ),
                 ),
               ),
-            ),
+            // --- Tarjeta con el formulario ---
+            if (!enPortada)
+              _capa(
+                llave: const ValueKey('capa-tarjeta'),
+                anchoMaximo: 520,
+                // AnimatedSize: entre formularios (login ↔ registro) la
+                // tarjeta cambia de alto con suavidad.
+                child: AnimatedSize(
+                  key: _llaveArea,
+                  // 1 ms y no cero: con cero, AnimatedSize termina su
+                  // animación dentro de su propio layout y Flutter lo marca
+                  // como error.
+                  duration: sinMovimiento || _transformando
+                      ? const Duration(milliseconds: 1)
+                      : const Duration(milliseconds: 450),
+                  curve: Curves.easeOutCubic,
+                  child: AnimatedSwitcher(
+                    duration: sinMovimiento
+                        ? Duration.zero
+                        : const Duration(milliseconds: 520),
+                    reverseDuration: sinMovimiento
+                        ? Duration.zero
+                        : const Duration(milliseconds: 260),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeIn,
+                    transitionBuilder: _transicion,
+                    layoutBuilder: (actual, anteriores) => Stack(
+                      alignment: Alignment.center,
+                      children: [...anteriores, ?actual],
+                    ),
+                    child: KeyedSubtree(
+                      key: ValueKey(_modo),
+                      child: _apareciendo(_contenido()),
+                    ),
+                  ),
+                ),
+              ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// Una capa centrada con scroll (para pantallas bajas o el teclado).
+  /// Con llave: así Flutter no confunde la capa de la portada con la de la
+  /// tarjeta cuando una aparece o desaparece.
+  Widget _capa({
+    required Key llave,
+    required double anchoMaximo,
+    required Widget child,
+  }) {
+    return SafeArea(
+      key: llave,
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: anchoMaximo),
+            child: child,
+          ),
         ),
       ),
     );

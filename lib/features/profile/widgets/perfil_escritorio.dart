@@ -25,7 +25,7 @@ class PerfilEscritorio extends ConsumerWidget {
 
   /// "daserr1025@gmail.com" → "d••••@gmail.com": se muestra a quién
   /// pertenece la sesión sin dejar el correo completo a la vista.
-  static String _correoOculto(String? correo) {
+  static String correoOculto(String? correo) {
     if (correo == null || !correo.contains('@')) return 'Sin correo';
     final partes = correo.split('@');
     return '${partes.first.substring(0, 1)}••••@${partes.last}';
@@ -93,7 +93,7 @@ class PerfilEscritorio extends ConsumerWidget {
                                     ),
                                   ),
                                 Text(
-                                  _correoOculto(usuario?.email),
+                                  correoOculto(usuario?.email),
                                   style: AppTextStyles.bodyLg.copyWith(
                                     color: AppColors.textSecondary,
                                   ),

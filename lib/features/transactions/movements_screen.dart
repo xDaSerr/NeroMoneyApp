@@ -4,123 +4,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/router/app_shell.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
-import '../../core/widgets/boton_con_panel.dart';
-import '../accounts/data/cuenta.dart';
-import '../accounts/providers/cuentas_providers.dart';
 import 'data/transaccion.dart';
 import 'providers/transacciones_providers.dart';
-import 'widgets/movimiento_tile.dart';
 import 'widgets/movimientos_escritorio.dart';
-import 'widgets/panel_nuevo_movimiento.dart';
+import 'widgets/movimientos_movil.dart';
 
-class MovementsScreen extends ConsumerWidget {
+class MovementsScreen extends StatelessWidget {
   const MovementsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Ventana ancha: tabla con buscador, filtros y paginación.
-    if (esEscritorio(context)) return const MovimientosEscritorio();
-    final transaccionesAsync = ref.watch(transaccionesProvider);
-    final cuentasAsync = ref.watch(cuentasProvider);
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Movimientos')),
-      // --- Botón flotante "+": abre la pantalla de alta manual (add_transaction_screen.dart) ---
-      // Envuelto en Padding (en vez de solo el FAB) para subirlo por
-      // encima de la píldora flotante de navegación (ver AppShell,
-      // extendBody:true) — si no, quedaría tapado detrás de ella.
-      floatingActionButton: Padding(
-        padding: EdgeInsets.only(bottom: espacioParaBarraFlotante(context)),
-        // (se transforma en el panel "Crear movimiento")
-        child: BotonConPanel(
-          colorBoton: AppColors.acento,
-          boton: (context, abrir) => FloatingActionButton(
-            backgroundColor: AppColors.acento,
-            foregroundColor: AppColors.sobreAcento,
-            onPressed: abrir,
-            child: const Icon(Icons.add_rounded),
-          ),
-          panel: (context, cerrar) => PanelNuevoMovimiento(onCerrar: cerrar),
-        ),
-      ),
-      body: transaccionesAsync.when(
-        data: (transacciones) {
-          if (transacciones.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Text(
-                  'Aún no tienes movimientos. Toca "+" para registrar el primero.',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.bodyMd,
-                ),
-              ),
-            );
-          }
-          final cuentas = cuentasAsync.value ?? const <Cuenta>[];
-          final cuentasPorId = {for (final c in cuentas) c.id: c};
-          return ListView.separated(
-            // El extra abajo es para que la píldora flotante de navegación
-            // (ver AppShell, extendBody:true) nunca tape el último
-            // movimiento de la lista.
-            padding: EdgeInsets.fromLTRB(
-              20,
-              20,
-              20,
-              20 + espacioParaBarraFlotante(context),
-            ),
-            itemCount: transacciones.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 10),
-            itemBuilder: (context, i) {
-              final t = transacciones[i];
-              final nombreCuenta = cuentasPorId[t.cuentaId]?.nombre ?? '—';
-              // --- Deslizar hacia la izquierda para eliminar un movimiento ---
-              // (revierte también su efecto en el saldo de la cuenta, ver
-              // TransaccionesRepository.eliminarTransaccion).
-              return Dismissible(
-                key: ValueKey(t.id),
-                direction: DismissDirection.endToStart,
-                background: Container(
-                  alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  decoration: BoxDecoration(
-                    color: AppColors.outflowCrimson.withValues(alpha: 0.85),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Icon(
-                    Icons.delete_outline_rounded,
-                    color: Colors.white,
-                  ),
-                ),
-                // El borrado real se hace AQUÍ (no en onDismissed): si se
-                // hace después de que la animación ya quitó el widget de la
-                // pantalla, Firestore tarda un poco en confirmar y Flutter
-                // se queja de que "un Dismissible ya descartado sigue en el
-                // árbol". Al esperar el borrado antes de devolver `true`,
-                // el widget solo desaparece cuando el dato ya se borró de verdad.
-                confirmDismiss: (_) => eliminarMovimiento(context, ref, t),
-                child: MovimientoTile(
-                  transaccion: t,
-                  nombreCuenta: nombreCuenta,
-                  nombreContraparte:
-                      cuentasPorId[t.cuentaContraparteId]?.nombre,
-                ),
-              );
-            },
-          );
-        },
-        loading: () =>
-            Center(child: CircularProgressIndicator(color: AppColors.acento)),
-        error: (e, _) => Center(
-          child: Text(
-            'No se pudieron cargar tus movimientos: $e',
-            style: AppTextStyles.bodyMd.copyWith(
-              color: AppColors.outflowCrimson,
-            ),
-          ),
-        ),
-      ),
-    );
+  Widget build(BuildContext context) {
+    // Ventana ancha: tabla con buscador, filtros y paginación; teléfono:
+    // tarjetas agrupadas por día (diseño móvil del usuario).
+    return esEscritorio(context)
+        ? const MovimientosEscritorio()
+        : const MovimientosMovil();
   }
 }
 

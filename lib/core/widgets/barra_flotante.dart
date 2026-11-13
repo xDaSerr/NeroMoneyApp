@@ -283,16 +283,41 @@ class _BarraFlotanteState extends State<BarraFlotante>
             if (widget.pulsado) widget.onCancelar();
             widget.onSeleccionar(indice);
           },
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icono, color: color, size: 22),
-              const SizedBox(height: 3),
-              Text(
-                etiqueta,
-                style: AppTextStyles.labelSm.copyWith(color: color),
+          // La pestaña activa lleva un fondo resaltado (diseño del usuario).
+          child: Center(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+              decoration: BoxDecoration(
+                color: seleccionado
+                    ? AppColors.acento.withValues(alpha: 0.14)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: seleccionado
+                      ? AppColors.acento.withValues(alpha: 0.35)
+                      : Colors.transparent,
+                ),
               ),
-            ],
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icono, color: color, size: 22),
+                  const SizedBox(height: 3),
+                  // Nunca partir la etiqueta ("Cuenta/s"): se encoge si no cabe.
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      etiqueta,
+                      maxLines: 1,
+                      softWrap: false,
+                      style: AppTextStyles.labelSm.copyWith(color: color),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),

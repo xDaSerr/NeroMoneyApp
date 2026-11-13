@@ -11,42 +11,11 @@ import '../../../core/widgets/piezas_escritorio.dart';
 import '../../accounts/data/cuenta.dart';
 import '../../accounts/providers/cuentas_providers.dart';
 import '../data/categoria.dart';
+import '../data/periodo_movimientos.dart';
 import '../data/transaccion.dart';
 import '../movements_screen.dart';
 import '../providers/transacciones_providers.dart';
 import 'panel_nuevo_movimiento.dart';
-
-enum _Periodo { todo, esteMes, mesPasado, ultimos3Meses, esteAnio }
-
-const _nombresPeriodo = {
-  _Periodo.todo: 'Todo el historial',
-  _Periodo.esteMes: 'Este mes',
-  _Periodo.mesPasado: 'Mes pasado',
-  _Periodo.ultimos3Meses: 'Últimos 3 meses',
-  _Periodo.esteAnio: 'Este año',
-};
-
-(DateTime, DateTime) _rango(_Periodo periodo) {
-  final hoy = DateTime.now();
-  return switch (periodo) {
-    _Periodo.todo => (DateTime(2000), DateTime(2100)),
-    _Periodo.esteMes => (
-      DateTime(hoy.year, hoy.month),
-      DateTime(hoy.year, hoy.month + 1),
-    ),
-    _Periodo.mesPasado => (
-      DateTime(hoy.year, hoy.month - 1),
-      DateTime(hoy.year, hoy.month),
-    ),
-    _Periodo.ultimos3Meses => (
-      DateTime(hoy.year, hoy.month - 2),
-      DateTime(hoy.year, hoy.month + 1),
-    ),
-    _Periodo.esteAnio => (DateTime(hoy.year), DateTime(hoy.year + 1)),
-  };
-}
-
-enum _Tipo { todos, ingresos, gastos }
 
 /// Movimientos en ventana ancha: buscador, filtros por cuenta, periodo y
 /// tipo, y una tabla paginada (ver referencia de diseño del usuario). En
@@ -64,8 +33,8 @@ class _MovimientosEscritorioState extends ConsumerState<MovimientosEscritorio> {
 
   final _busqueda = TextEditingController();
   String? _cuentaId; // null = todas
-  _Periodo _periodo = _Periodo.todo;
-  _Tipo _tipo = _Tipo.todos;
+  PeriodoMovimientos _periodo = PeriodoMovimientos.todo;
+  TipoFiltroMovimientos _tipo = TipoFiltroMovimientos.todos;
   bool _recientesPrimero = true;
   int _pagina = 0;
 
@@ -89,10 +58,12 @@ class _MovimientosEscritorioState extends ConsumerState<MovimientosEscritorio> {
           t.cuentaContraparteId != _cuentaId) {
         return false;
       }
-      if (_tipo == _Tipo.ingresos && t.tipo != TipoTransaccion.ingreso) {
+      if (_tipo == TipoFiltroMovimientos.ingresos &&
+          t.tipo != TipoTransaccion.ingreso) {
         return false;
       }
-      if (_tipo == _Tipo.gastos && t.tipo != TipoTransaccion.gasto) {
+      if (_tipo == TipoFiltroMovimientos.gastos &&
+          t.tipo != TipoTransaccion.gasto) {
         return false;
       }
       if (texto.isNotEmpty &&
@@ -114,7 +85,7 @@ class _MovimientosEscritorioState extends ConsumerState<MovimientosEscritorio> {
   Widget build(BuildContext context) {
     final cuentas = ref.watch(cuentasProvider).value ?? const <Cuenta>[];
     final movimientosAsync = ref.watch(
-      transaccionesPorRangoProvider(_rango(_periodo)),
+      transaccionesPorRangoProvider(_periodo.rango),
     );
 
     return Scaffold(
@@ -204,18 +175,18 @@ class _MovimientosEscritorioState extends ConsumerState<MovimientosEscritorio> {
           onCambiar: (id) => _filtrar(() => _cuentaId = id),
         ),
         // --- Filtro por periodo ---
-        MenuDesplegable<_Periodo>(
+        MenuDesplegable<PeriodoMovimientos>(
           icono: Icons.calendar_today_rounded,
           valor: _periodo,
-          opciones: _nombresPeriodo,
+          opciones: {for (final p in PeriodoMovimientos.values) p: p.nombre},
           onCambiar: (p) => _filtrar(() => _periodo = p),
         ),
         // --- Todos / Ingresos / Gastos ---
-        ControlSegmentado<_Tipo>(
+        ControlSegmentado<TipoFiltroMovimientos>(
           opciones: const {
-            _Tipo.todos: 'Todos',
-            _Tipo.ingresos: 'Ingresos',
-            _Tipo.gastos: 'Gastos',
+            TipoFiltroMovimientos.todos: 'Todos',
+            TipoFiltroMovimientos.ingresos: 'Ingresos',
+            TipoFiltroMovimientos.gastos: 'Gastos',
           },
           seleccionado: _tipo,
           onCambiar: (t) => _filtrar(() => _tipo = t),

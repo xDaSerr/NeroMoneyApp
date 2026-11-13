@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -7,48 +8,41 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/paleta_categorias.dart';
 import '../../core/utils/fecha_es.dart';
+import '../../core/utils/formato_monto.dart';
 import '../../core/widgets/boton_con_panel.dart';
-import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/gradient_button.dart';
+import '../../core/widgets/piezas_movil.dart';
 import '../accounts/data/cuenta.dart';
-import '../auth/providers/auth_providers.dart';
 import '../accounts/providers/cuentas_providers.dart';
-import '../accounts/widgets/cuenta_tile.dart';
+import '../accounts/widgets/cuenta_movil.dart';
+import '../auth/providers/auth_providers.dart';
 import '../onboarding/providers/perfil_providers.dart';
 import '../profile/data/saludo_usuario.dart';
 import '../transactions/data/resumen_gastos.dart';
 import '../transactions/data/transaccion.dart';
 import '../transactions/providers/transacciones_providers.dart';
+import '../transactions/widgets/fila_movimiento_movil.dart';
 import '../transactions/widgets/panel_nuevo_movimiento.dart';
-import '../transactions/widgets/movimiento_tile.dart';
 import 'providers/privacidad_inicio_provider.dart';
 import 'widgets/inicio_escritorio.dart';
 
-// "Gastos de Septiembre" — mesCapitalizado (core/utils/fecha_es.dart) es
-// compartido con Reportes, para no tener dos listas de nombres de mes.
-String _nombreMes(int mes) => 'Gastos de ${mesCapitalizado(mes)}';
-
-/// Dashboard principal. Sigue la estructura de la pantalla de Inicio del
-/// Stitch (saludo, patrimonio, accesos rápidos, cuentas, gastos del mes,
-/// últimos movimientos) pero solo con datos reales: se omiten a propósito
-/// el estado de "Lucy conectada", la alerta de Lucy y el botón de voz,
-/// porque el asistente de IA todavía no existe — agregarlos ahora sería
-/// simular una función que no funciona. Se van sumando conforme se
-/// construyan de verdad (ver CLAUDE.md → regla de fidelidad al Stitch).
+/// Inicio. En teléfono sigue el diseño móvil del usuario: patrimonio con
+/// accesos rápidos, carrusel de cuentas, gastos del mes y últimos
+/// movimientos, todo con datos reales. En ventana ancha usa
+/// InicioEscritorio.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Ventana ancha (web en PC): mismo contenido en dos columnas.
     if (esEscritorio(context)) return const InicioEscritorio();
+
     final cuentasAsync = ref.watch(cuentasProvider);
-    final transaccionesAsync = ref.watch(transaccionesProvider);
+    final transacciones = ref.watch(transaccionesProvider).value ?? const [];
     final privacidad = ref.watch(privacidadInicioProvider);
     // No mostrar cifras durante la lectura de la preferencia guardada.
-    final ocultarImportes = privacidad.value ?? true;
+    final ocultar = privacidad.value ?? true;
     final perfil = ref.watch(perfilProvider).value;
-    final nombreAsistente = perfil?.nombreAsistente ?? 'tu asistente';
     final saludo = datosDeSaludo(
       ref.watch(authStateChangesProvider).value,
       perfil?.apodo,
@@ -57,332 +51,45 @@ class HomeScreen extends ConsumerWidget {
     return Scaffold(
       body: SafeArea(
         // El margen inferior va dentro del scroll para que las tarjetas
-        // puedan pasar detrás de la navegación flotante.
+        // pasen detrás de la barra flotante.
         bottom: false,
         child: SingleChildScrollView(
-          // El extra abajo (espacioParaBarraFlotante) es para que la
-          // píldora flotante de navegación (ver AppShell, extendBody:true)
-          // nunca tape el último movimiento de la lista.
           padding: EdgeInsets.fromLTRB(
-            20,
-            20,
-            20,
+            18,
+            14,
+            18,
             20 + espacioParaBarraFlotante(context),
           ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // --- Encabezado: marca "NeroMoney" + avatar (atajo a Perfil) ---
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('NeroMoney', style: AppTextStyles.headlineSm),
-                      Text(
-                        'INICIO',
-                        style: AppTextStyles.labelCode.copyWith(
-                          color: AppColors.acento,
-                        ),
-                      ),
-                    ],
-                  ),
-                  GestureDetector(
-                    onTap: () => context.go('/profile'),
-                    child: CircleAvatar(
-                      radius: 18,
-                      backgroundColor: AppColors.secundario.withValues(
-                        alpha: 0.3,
-                      ),
-                      child: Text(saludo.inicial, style: AppTextStyles.bodyLg),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              // --- Saludo: usa el apodo elegido en Perfil → Editar perfil;
-              // si no lo puso, cae al nombre de Google o al correo (ver
-              // datosDeSaludo, features/profile/data/saludo_usuario.dart) ---
+              const EncabezadoMovil(),
+              const SizedBox(height: 18),
+              // --- Saludo: apodo > Google > correo (ver datosDeSaludo) ---
               Text(
                 'Hola, ${saludo.nombre} 👋',
-                style: AppTextStyles.headlineLg,
+                style: AppTextStyles.display.copyWith(fontSize: 30),
               ),
-              const SizedBox(height: 20),
-
+              Text(
+                'Tu dinero, en orden.',
+                style: AppTextStyles.bodyLg.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 18),
               cuentasAsync.when(
-                data: (cuentas) {
-                  if (cuentas.isEmpty) {
-                    // --- Banner que recuerda agregar una cuenta (ver _AvisoSinCuentas abajo) ---
-                    return _AvisoSinCuentas(nombreAsistente: nombreAsistente);
-                  }
-
-                  // Patrimonio total = solo dinero real (efectivo/débito/vale/
-                  // otro). Las tarjetas de crédito nunca entran aquí, ni
-                  // sumando ni restando — ver Cuenta.efectoEnPatrimonio.
-                  final total = cuentas.fold<double>(
-                    0,
-                    (acc, c) => acc + c.efectoEnPatrimonio,
-                  );
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // --- Tarjeta de patrimonio total + accesos rápidos ---
-                      // Una sola tarjeta (no dos bloques separados): así se
-                      // ve igual que en el Stitch, en vez de que los botones
-                      // queden pegados sueltos justo debajo del número.
-                      GlassCard(
-                        color: AppColors.secundario.withValues(alpha: 0.10),
-                        // padding: cero a propósito. GlassCard normalmente le pone
-                        // 16px de relleno a su `child` — si el reflejo fuera el
-                        // `child` con ese relleno ya puesto, se quedaría metido 16px
-                        // hacia adentro por cada lado (justo el "marco" sin efecto
-                        // que se veía). Al poner el relleno cero aquí y meterlo a
-                        // mano solo alrededor del texto (ver Padding abajo), el
-                        // reflejo (Positioned.fill) sí llega hasta el borde real de
-                        // la tarjeta completa.
-                        padding: EdgeInsets.zero,
-                        child: Stack(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          'PATRIMONIO TOTAL',
-                                          style: AppTextStyles.labelCode,
-                                        ),
-                                      ),
-                                      // --- Ojo: oculta patrimonio e importes del carrusel ---
-                                      IconButton(
-                                        tooltip: ocultarImportes
-                                            ? 'Mostrar patrimonio y saldos'
-                                            : 'Ocultar patrimonio y saldos',
-                                        color: AppColors.acento,
-                                        icon: Icon(
-                                          ocultarImportes
-                                              ? Icons.visibility_off_outlined
-                                              : Icons.visibility_outlined,
-                                        ),
-                                        onPressed: privacidad.isLoading
-                                            ? null
-                                            : () async {
-                                                try {
-                                                  await ref
-                                                      .read(
-                                                        privacidadInicioProvider
-                                                            .notifier,
-                                                      )
-                                                      .alternar();
-                                                } catch (_) {
-                                                  if (!context.mounted) return;
-                                                  ScaffoldMessenger.of(context)
-                                                      .showSnackBar(
-                                                        const SnackBar(
-                                                          content: Text(
-                                                            'No se pudo guardar la preferencia para la próxima vez.',
-                                                          ),
-                                                        ),
-                                                      );
-                                                }
-                                              },
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    ocultarImportes
-                                        ? '••••'
-                                        : '\$${total.toStringAsFixed(2)}',
-                                    semanticsLabel: ocultarImportes
-                                        ? 'Patrimonio oculto'
-                                        : null,
-                                    style: AppTextStyles.numericHero,
-                                  ),
-                                  const SizedBox(height: 20),
-                                  // --- Accesos rápidos: Ingreso / Gasto / Transferir / Analizar ---
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        // (se transforma en el panel "Crear movimiento")
-                                        child: BotonConPanel(
-                                          colorBoton:
-                                              AppColors.surface3ActiveGlass,
-                                          radioBoton: 24,
-                                          boton: (context, abrir) =>
-                                              _AccionRapida(
-                                                icon: Icons.add_rounded,
-                                                label: 'Ingreso',
-                                                onTap: abrir,
-                                              ),
-                                          panel: (context, cerrar) =>
-                                              PanelNuevoMovimiento(
-                                                tipoInicial:
-                                                    TipoTransaccion.ingreso,
-                                                onCerrar: cerrar,
-                                              ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        // (se transforma en el panel "Crear movimiento")
-                                        child: BotonConPanel(
-                                          colorBoton:
-                                              AppColors.surface3ActiveGlass,
-                                          radioBoton: 24,
-                                          boton: (context, abrir) =>
-                                              _AccionRapida(
-                                                icon: Icons.remove_rounded,
-                                                label: 'Gasto',
-                                                onTap: abrir,
-                                              ),
-                                          panel: (context, cerrar) =>
-                                              PanelNuevoMovimiento(
-                                                tipoInicial:
-                                                    TipoTransaccion.gasto,
-                                                onCerrar: cerrar,
-                                              ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: _AccionRapida(
-                                          icon: Icons.swap_horiz_rounded,
-                                          label: 'Transferir',
-                                          onTap: () =>
-                                              context.push('/transfer'),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: _AccionRapida(
-                                          icon: Icons.insights_rounded,
-                                          label: 'Analizar',
-                                          onTap: () => context.go('/reports'),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            // --- Reflejo de vidrio/plástico, estático (no animado) ---
-                            // Se eligió la versión estática y no el "barrido" de luz
-                            // en loop que también trae el Stitch: una animación
-                            // repitiéndose sola para siempre contradice la regla del
-                            // proyecto de animaciones sutiles ("sin exagerar"). Es
-                            // puramente decorativo — IgnorePointer para que nunca le
-                            // robe el toque a los botones de abajo.
-                            Positioned.fill(
-                              child: IgnorePointer(
-                                child: DecoratedBox(
-                                  decoration: BoxDecoration(
-                                    // La franja de brillo (la que sube y baja de
-                                    // intensidad) es lo que hace que se sienta como un
-                                    // reflejo de verdad y no solo un tinte parejo — se
-                                    // regresa al patrón original del Stitch. Lo que de
-                                    // verdad causaba que "no cubriera todo" era el
-                                    // relleno de la tarjeta (ya arreglado arriba), no
-                                    // este degradado — por eso ahora sí debería llegar
-                                    // hasta las esquinas reales.
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      stops: const [0.0, 0.35, 0.45, 0.55, 1.0],
-                                      colors: [
-                                        Colors.white.withValues(alpha: 0.12),
-                                        Colors.white.withValues(alpha: 0.02),
-                                        Colors.white.withValues(alpha: 0.20),
-                                        Colors.white.withValues(alpha: 0.04),
-                                        Colors.transparent,
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // --- Encabezado "Tus cuentas y bolsillos" + "Ver todas (N)" ---
-                      // Ahora "Cuentas" es su propia pestaña (ver app_shell.dart),
-                      // por eso este enlace usa .go() (cambia de pestaña) en vez
-                      // de .push() (apilar una pantalla encima).
-                      Row(
-                        children: [
-                          // Expanded + ellipsis: si el título no cabe junto al botón
-                          // (nombres largos, pantallas angostas), se trunca con "…" en
-                          // vez de desbordarse fuera de la pantalla.
-                          Expanded(
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    'Tus cuentas y bolsillos',
-                                    style: AppTextStyles.headlineSm,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                // --- Insignia con el conteo, como en el Stitch ---
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.surface3ActiveGlass,
-                                    borderRadius: BorderRadius.circular(999),
-                                  ),
-                                  child: Text(
-                                    '${cuentas.length}',
-                                    style: AppTextStyles.labelCode,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () => context.go('/accounts'),
-                            child: Text('Ver todas (${cuentas.length})'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      // --- Cuentas deslizantes: carrusel horizontal, igual que en el Stitch ---
-                      _CuentasCarrusel(
-                        cuentas: cuentas,
-                        ocultarImportes: ocultarImportes,
-                      ),
-                      const SizedBox(height: 24),
-
-                      // --- Gastos del mes por categoría (se omite si no hay ninguno) ---
-                      transaccionesAsync.maybeWhen(
-                        data: (transacciones) =>
-                            _GastosDelMes(transacciones: transacciones),
-                        orElse: () => const SizedBox.shrink(),
-                      ),
-
-                      // --- Vista previa de los últimos movimientos ---
-                      transaccionesAsync.maybeWhen(
-                        data: (transacciones) => _UltimosMovimientos(
-                          transacciones: transacciones,
-                          cuentas: cuentas,
-                        ),
-                        orElse: () => const SizedBox.shrink(),
-                      ),
-                    ],
-                  );
-                },
-                loading: () => Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 40),
+                data: (cuentas) => _contenido(
+                  context,
+                  ref,
+                  cuentas,
+                  transacciones,
+                  ocultar,
+                  privacidad.isLoading,
+                  perfil?.moneda ?? 'MXN',
+                ),
+                loading: () => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 40),
+                  child: Center(
                     child: CircularProgressIndicator(color: AppColors.acento),
                   ),
                 ),
@@ -399,122 +106,155 @@ class HomeScreen extends ConsumerWidget {
       ),
     );
   }
-}
 
-class _AvisoSinCuentas extends StatelessWidget {
-  const _AvisoSinCuentas({required this.nombreAsistente});
-  final String nombreAsistente;
+  Widget _contenido(
+    BuildContext context,
+    WidgetRef ref,
+    List<Cuenta> cuentas,
+    List<Transaccion> transacciones,
+    bool ocultar,
+    bool cargandoPrivacidad,
+    String moneda,
+  ) {
+    if (cuentas.isEmpty) return const _AvisoSinCuentas();
+    // Patrimonio = solo dinero real; las tarjetas de crédito no entran
+    // (ver Cuenta.efectoEnPatrimonio).
+    final total = cuentas.fold<double>(0, (a, c) => a + c.efectoEnPatrimonio);
 
-  @override
-  Widget build(BuildContext context) {
-    return GlassCard(
-      color: AppColors.secundario.withValues(alpha: 0.12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.auto_awesome_rounded, color: AppColors.secundarioClaro),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Oye, aún no tienes cuentas — agrega una para que pueda ayudarte con tus finanzas.',
-                  style: AppTextStyles.bodyMd.copyWith(
-                    color: AppColors.textPrimary,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TarjetaPatrimonioMovil(
+          total: total,
+          moneda: moneda,
+          ocultar: ocultar,
+          onAlternar: cargandoPrivacidad
+              ? null
+              : () => ref
+                    .read(privacidadInicioProvider.notifier)
+                    .alternar()
+                    .catchError((Object _) {}),
+          // --- Accesos rápidos: Ingreso / Gasto / Transferir / Analizar ---
+          debajo: Row(
+            children: [
+              for (final (i, accion) in [
+                ('Ingreso', Icons.add_rounded, TipoTransaccion.ingreso),
+                ('Gasto', Icons.remove_rounded, TipoTransaccion.gasto),
+              ].indexed) ...[
+                if (i > 0) const SizedBox(width: 10),
+                Expanded(
+                  // (se transforma en el panel "Crear movimiento")
+                  child: BotonConPanel(
+                    colorBoton: AppColors.surface1,
+                    boton: (context, abrir) => _AccionRapida(
+                      icono: accion.$2,
+                      texto: accion.$1,
+                      onTap: abrir,
+                    ),
+                    panel: (context, cerrar) => PanelNuevoMovimiento(
+                      tipoInicial: accion.$3,
+                      onCerrar: cerrar,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                // --- Botón "Agregar cuenta" del banner → pestaña Cuentas ---
-                GradientButton(
-                  label: 'Agregar cuenta',
-                  expand: false,
-                  onPressed: () => context.go('/accounts'),
-                ),
               ],
+              const SizedBox(width: 10),
+              Expanded(
+                child: _AccionRapida(
+                  icono: Icons.swap_horiz_rounded,
+                  texto: 'Transferir',
+                  onTap: () => context.push('/transfer'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _AccionRapida(
+                  icono: Icons.insights_rounded,
+                  texto: 'Analizar',
+                  onTap: () => context.push('/reports'),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 22),
+        // --- "Tus cuentas" + "Ver todas (N) →" (cambia a la pestaña Cuentas) ---
+        Row(
+          children: [
+            Expanded(
+              child: Text('Tus cuentas', style: AppTextStyles.headlineMd),
+            ),
+            EnlaceVerTodo(
+              texto: 'Ver todas (${cuentas.length})',
+              onTap: () => context.go('/accounts'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // --- Carrusel de cuentas ---
+        SizedBox(
+          height: 124,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            itemCount: cuentas.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 12),
+            itemBuilder: (context, i) => SizedBox(
+              width: 290,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () =>
+                    context.push('/accounts/detalle', extra: cuentas[i].id),
+                child: CuentaMovil(cuenta: cuentas[i], ocultar: ocultar),
+              ),
             ),
           ),
-        ],
-      ),
-    );
+        ),
+        const SizedBox(height: 22),
+        _GastosDelMes(transacciones: transacciones),
+        _UltimosMovimientos(transacciones: transacciones, cuentas: cuentas),
+      ],
+    ).animate().fadeIn(duration: 300.ms);
   }
 }
 
-/// Un botón circular de la fila de accesos rápidos (Ingreso/Gasto/
-/// Transferir/Analizar).
 class _AccionRapida extends StatelessWidget {
   const _AccionRapida({
-    required this.icon,
-    required this.label,
+    required this.icono,
+    required this.texto,
     required this.onTap,
   });
 
-  final IconData icon;
-  final String label;
+  final IconData icono;
+  final String texto;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Column(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppColors.surface3ActiveGlass,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: AppColors.acento),
-            ),
-            const SizedBox(height: 6),
-            Text(label, style: AppTextStyles.bodySm),
-          ],
-        ),
+    return Material(
+      color: AppColors.surface3ActiveGlass,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: AppColors.glassStrokeHighlight),
       ),
-    );
-  }
-}
-
-/// Carrusel horizontal de cuentas — deslizable con el dedo, tal como en el
-/// Stitch (en vez de una cuadrícula fija que solo cabe en pantalla). Cada
-/// tarjeta tiene un ancho fijo para que se vea la siguiente "asomando" al
-/// borde, invitando a deslizar.
-class _CuentasCarrusel extends StatelessWidget {
-  const _CuentasCarrusel({
-    required this.cuentas,
-    required this.ocultarImportes,
-  });
-  final List<Cuenta> cuentas;
-  final bool ocultarImportes;
-
-  static const _anchoTarjeta = 260.0;
-  // CuentaTile ahora tiene proporción real de tarjeta (1.586) — el alto se
-  // calcula a partir del ancho para que no le sobre ni le falte espacio.
-  static const _altoCarrusel = _anchoTarjeta / 1.586;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: _altoCarrusel,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: cuentas.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 10),
-        itemBuilder: (context, i) => SizedBox(
-          width: _anchoTarjeta,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(20),
-            onTap: () =>
-                context.push('/accounts/detalle', extra: cuentas[i].id),
-            child: CuentaTile(
-              cuenta: cuentas[i],
-              ocultarImportes: ocultarImportes,
-            ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Column(
+            children: [
+              Icon(icono, color: AppColors.acento, size: 26),
+              const SizedBox(height: 4),
+              Text(
+                texto,
+                style: AppTextStyles.bodyMd.copyWith(
+                  color: AppColors.textPrimary,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
         ),
       ),
@@ -522,114 +262,103 @@ class _CuentasCarrusel extends StatelessWidget {
   }
 }
 
-/// Resumen de gastos del mes en curso, agrupados por categoría — construido
-/// con transacciones reales (no hace falta el asistente de IA ni la
-/// pantalla de Reportes para esto, los datos ya existen).
+/// Gastos del mes: total, barra de proporción con porcentajes y leyenda con
+/// montos. Mismo cálculo (neteando reembolsos) que Reportes y el asistente.
 class _GastosDelMes extends StatelessWidget {
   const _GastosDelMes({required this.transacciones});
+
   final List<Transaccion> transacciones;
 
   @override
   Widget build(BuildContext context) {
     final hoy = DateTime.now();
-    final desde = DateTime(hoy.year, hoy.month, 1);
-    final hasta = DateTime(hoy.year, hoy.month + 1, 1);
-    // Mismo cálculo (neteando reembolsos por categoría) que usa Lucy al
-    // responder "¿cuánto llevo gastado?" — ver ResumenGastos.
     final resumen = ResumenGastos.calcular(
       transacciones,
-      desde: desde,
-      hasta: hasta,
+      desde: DateTime(hoy.year, hoy.month),
+      hasta: DateTime(hoy.year, hoy.month + 1),
     );
     if (resumen.porCategoria.isEmpty) return const SizedBox.shrink();
     final total = resumen.total;
     final entradas = resumen.porCategoria.entries.toList();
-
-    // Top 4 categorías; el resto se agrupa en "Otros" para no saturar.
     final visibles = entradas.take(4).toList();
-    final restoTotal = entradas
-        .skip(4)
-        .fold<double>(0, (acc, e) => acc + e.value);
-    if (restoTotal > 0) visibles.add(MapEntry('Otros', restoTotal));
+    final resto = entradas.skip(4).fold<double>(0, (a, e) => a + e.value);
+    if (resto > 0) visibles.add(MapEntry('Otros', resto));
+    final colores = paletaCategorias;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
-      // Se me había olvidado meterlo en una tarjeta — sin esto se veía
-      // "suelto" contra el fondo, a diferencia del Stitch.
-      child: GlassCard(
+      padding: const EdgeInsets.only(bottom: 22),
+      child: TarjetaMovil(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // El nombre del mes va en SU PROPIO renglón, a todo lo ancho de
-            // la tarjeta — antes competía por espacio con el monto en la
-            // misma fila y se truncaba con "…" en meses largos (ej.
-            // "septiembre"). Así siempre se ve completo, sin importar el mes.
-            Text(_nombreMes(hoy.month), style: AppTextStyles.headlineSm),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Total del periodo', style: AppTextStyles.bodySm),
-                Text(
-                  '\$${total.toStringAsFixed(2)}',
-                  style: AppTextStyles.headlineSm,
-                ),
-              ],
+            Text(
+              'Gastos de ${mesesEs[hoy.month - 1]}',
+              style: AppTextStyles.headlineSm,
             ),
-            const SizedBox(height: 16),
-            // --- Barra apilada: proporción de cada categoría sobre el total del mes ---
+            Text(
+              formatoMonto(total),
+              style: AppTextStyles.numericHero.copyWith(fontSize: 32),
+            ),
+            const SizedBox(height: 12),
+            // --- Barra de proporción, con el porcentaje dentro ---
             ClipRRect(
               borderRadius: BorderRadius.circular(999),
               child: SizedBox(
-                height: 8,
+                height: 26,
                 child: Row(
                   children: [
-                    for (var i = 0; i < visibles.length; i++)
+                    for (final (i, e) in visibles.indexed)
                       Expanded(
-                        flex: (visibles[i].value * 1000 / total).round().clamp(
-                          1,
-                          1000,
-                        ),
+                        flex: (e.value * 1000 / total).round().clamp(1, 1000),
                         child: Container(
-                          color: paletaCategorias[i % paletaCategorias.length],
+                          color: colores[i % colores.length],
+                          alignment: Alignment.center,
+                          child: e.value / total >= 0.08
+                              ? Text(
+                                  '${(e.value / total * 100).round()}%',
+                                  style: AppTextStyles.labelSm.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                )
+                              : null,
                         ),
                       ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            // --- Leyenda en cuadrícula de 2 columnas, como en el Stitch ---
-            for (var i = 0; i < visibles.length; i += 2)
-              Padding(
-                padding: EdgeInsets.only(
-                  bottom: i + 2 < visibles.length ? 10 : 0,
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: _LeyendaCategoria(
-                        color: paletaCategorias[i % paletaCategorias.length],
-                        entrada: visibles[i],
-                        total: total,
+            const SizedBox(height: 14),
+            // --- Leyenda: categoría y monto ---
+            Wrap(
+              spacing: 18,
+              runSpacing: 8,
+              children: [
+                for (final (i, e) in visibles.indexed)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: colores[i % colores.length],
+                          shape: BoxShape.circle,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: i + 1 < visibles.length
-                          ? _LeyendaCategoria(
-                              color:
-                                  paletaCategorias[(i + 1) %
-                                      paletaCategorias.length],
-                              entrada: visibles[i + 1],
-                              total: total,
-                            )
-                          : const SizedBox(),
-                    ),
-                  ],
-                ),
-              ),
+                      const SizedBox(width: 8),
+                      Text(e.key, style: AppTextStyles.bodyLg),
+                      const SizedBox(width: 8),
+                      Text(
+                        formatoMonto(e.value).replaceAll('.00', ''),
+                        style: AppTextStyles.bodyLg.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
           ],
         ),
       ),
@@ -637,96 +366,87 @@ class _GastosDelMes extends StatelessWidget {
   }
 }
 
-/// Un renglón de la leyenda de "Gastos del mes": punto de color + nombre de
-/// categoría + porcentaje y monto.
-class _LeyendaCategoria extends StatelessWidget {
-  const _LeyendaCategoria({
-    required this.color,
-    required this.entrada,
-    required this.total,
-  });
-
-  final Color color;
-  final MapEntry<String, double> entrada;
-  final double total;
-
-  @override
-  Widget build(BuildContext context) {
-    final porcentaje = (entrada.value / total * 100).round();
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 5),
-          child: Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-        ),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            '${entrada.key} $porcentaje% (\$${entrada.value.toStringAsFixed(0)})',
-            style: AppTextStyles.bodySm,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Vista previa de los últimos movimientos, con enlace al historial
-/// completo (/movements). Reutiliza MovimientoTile — la misma fila que se
-/// usa en la pantalla de Movimientos.
 class _UltimosMovimientos extends StatelessWidget {
   const _UltimosMovimientos({
     required this.transacciones,
     required this.cuentas,
   });
+
   final List<Transaccion> transacciones;
   final List<Cuenta> cuentas;
 
   @override
   Widget build(BuildContext context) {
     if (transacciones.isEmpty) return const SizedBox.shrink();
-    final cuentasPorId = {for (final c in cuentas) c.id: c};
+    final nombres = {for (final c in cuentas) c.id: c.nombre};
     final ultimos = transacciones.take(4).toList();
-
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // --- "Últimos movimientos" + "Ver todos →" (pestaña Movimientos) ---
         Row(
           children: [
-            // Mismo motivo que en el encabezado de Cuentas: Expanded + ellipsis
-            // evita que el título empuje al botón fuera de la pantalla.
             Expanded(
               child: Text(
                 'Últimos movimientos',
-                style: AppTextStyles.headlineSm,
+                style: AppTextStyles.headlineMd,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            TextButton(
-              onPressed: () => context.go('/movements'),
-              child: const Text('Historial completo'),
+            EnlaceVerTodo(
+              texto: 'Ver todos',
+              onTap: () => context.go('/movements'),
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        for (final t in ultimos)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: MovimientoTile(
-              transaccion: t,
-              nombreCuenta: cuentasPorId[t.cuentaId]?.nombre ?? '—',
-              nombreContraparte: cuentasPorId[t.cuentaContraparteId]?.nombre,
-            ),
+        const SizedBox(height: 8),
+        TarjetaMovil(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          child: Column(
+            children: [
+              for (final (i, t) in ultimos.indexed) ...[
+                if (i > 0)
+                  Divider(height: 1, color: AppColors.glassStrokeStandard),
+                FilaMovimientoMovil(
+                  transaccion: t,
+                  detalle:
+                      '${t.fecha.day} ${mesesEs[t.fecha.month - 1].substring(0, 3)} • ${nombres[t.cuentaId] ?? '—'}',
+                ),
+              ],
+            ],
           ),
+        ),
       ],
+    );
+  }
+}
+
+class _AvisoSinCuentas extends StatelessWidget {
+  const _AvisoSinCuentas();
+
+  @override
+  Widget build(BuildContext context) {
+    return TarjetaMovil(
+      color: AppColors.secundario.withValues(alpha: 0.14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.auto_awesome_rounded, color: AppColors.secundarioClaro),
+          const SizedBox(height: 10),
+          Text(
+            'Aún no tienes cuentas — agrega una para empezar a ver tu '
+            'patrimonio y tus gastos aquí.',
+            style: AppTextStyles.bodyLg,
+          ),
+          const SizedBox(height: 14),
+          // --- Botón "Agregar cuenta" → pestaña Cuentas ---
+          GradientButton(
+            label: 'Agregar cuenta',
+            onPressed: () => context.go('/accounts'),
+          ),
+        ],
+      ),
     );
   }
 }

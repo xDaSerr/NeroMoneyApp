@@ -58,7 +58,7 @@
     #nm-instalar.visible { transform: translate(-50%, 0); opacity: 1; }
     #nm-instalar .fila { display: flex; gap: 14px; align-items: center; }
     #nm-instalar img { width: 52px; height: 52px; border-radius: 14px; flex: none; }
-    #nm-instalar h2 { margin: 0; font-size: 17px; font-weight: 600; line-height: 1.3; }
+    #nm-instalar h2, #nm-instalar h3 { margin: 0; font-size: 17px; font-weight: 600; line-height: 1.3; }
     #nm-instalar p { margin: 4px 0 0; font-size: 14px; color: #94a3b8; line-height: 1.4; }
     #nm-instalar .botones { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
     #nm-instalar button, #nm-instalar a.boton {
@@ -69,6 +69,40 @@
     #nm-instalar .principal { background: #00f0ff; border-color: #00f0ff; color: #0a0d14; }
     #nm-instalar .apk { display: none; margin-top: 12px; font-size: 14px; color: #94a3b8; text-align: center; }
     #nm-instalar .apk a { color: #00f0ff; font-weight: 600; text-decoration: none; }
+    #nm-instalar .asa, #nm-instalar .cerrar, #nm-instalar .marca, #nm-instalar .lema { display: none; }
+    #nm-instalar .principal svg { width: 20px; height: 20px; vertical-align: -4px; margin-right: 8px; }
+
+    /* Teléfono: hoja inferior a todo lo ancho (diseño móvil del usuario). */
+    @media (max-width: 600px) {
+      #nm-instalar {
+        left: 0; bottom: 0; width: 100vw;
+        transform: translate(0, 110%);
+        border-radius: 28px 28px 0 0; border-bottom: none;
+        padding: 10px 22px calc(22px + env(safe-area-inset-bottom));
+        text-align: center;
+      }
+      #nm-instalar.visible { transform: translate(0, 0); }
+      #nm-instalar .asa {
+        display: block; width: 44px; height: 5px; margin: 0 auto 14px;
+        border-radius: 999px; background: rgba(255, 255, 255, .25);
+      }
+      #nm-instalar .cerrar {
+        display: grid; place-items: center; position: absolute; top: 16px; right: 16px;
+        width: 40px; height: 40px; padding: 0; font-size: 22px; line-height: 1;
+        border-radius: 50%; background: rgba(255, 255, 255, .06);
+      }
+      #nm-instalar .fila { flex-direction: column; gap: 10px; }
+      #nm-instalar img {
+        width: 76px; height: 76px; border-radius: 22px; margin-top: 8px;
+        box-shadow: 0 0 28px rgba(0, 240, 255, .25);
+      }
+      #nm-instalar .marca { display: block; margin: 0; font-size: 26px; font-weight: 700; }
+      #nm-instalar .lema { display: block; margin-top: 2px; font-size: 15px; color: #00f0ff; }
+      #nm-instalar h3 { margin: 14px 0 0; font-size: 19px; font-weight: 600; line-height: 1.35; }
+      #nm-instalar p { font-size: 15px; margin-top: 6px; }
+      #nm-instalar .botones { flex-direction: column-reverse; gap: 10px; margin-top: 20px; }
+      #nm-instalar button.principal, #nm-instalar button.secundario { width: 100%; padding: 15px 20px; font-size: 16px; border-radius: 18px; }
+    }
   </style>
   <script>
     (function () {
@@ -105,7 +139,13 @@
         if (!aviso) return;
         mostrado = true;
         var p = aviso.querySelector('p');
+        var pregunta = aviso.querySelector('h3');
         var instalar = aviso.querySelector('.principal');
+        var telefono = window.matchMedia('(max-width: 600px)').matches;
+        if (telefono) {
+          pregunta.textContent = '¿Quieres añadir NeroMoney a la pantalla de inicio de tu teléfono?';
+          p.textContent = 'Ábrelo directamente desde su icono.';
+        }
         if (modo === 'ios') {
           p.textContent = 'Toca el botón Compartir de Safari y luego «Agregar a inicio».';
           instalar.textContent = 'Entendido';
@@ -115,6 +155,11 @@
           instalar.textContent = 'Descargar APK';
           instalar.onclick = function () { window.location.href = APK; ocultar(); };
         } else {
+          if (telefono) {
+            instalar.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+              'stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/>' +
+              '<path d="M12 8v8M8 12h8"/></svg>Añadir a inicio';
+          }
           instalar.onclick = function () {
             ocultar();
             if (!evento) return;
@@ -124,6 +169,7 @@
         }
         if (esAndroid && modo !== 'apk') aviso.querySelector('.apk').style.display = 'block';
         aviso.querySelector('.secundario').onclick = function () { recordarDescarte(); ocultar(); };
+        aviso.querySelector('.cerrar').onclick = function () { recordarDescarte(); ocultar(); };
         setTimeout(function () { aviso.classList.add('visible'); }, 50);
       }
 
@@ -152,10 +198,14 @@
 </head>
 <body>
   <div id="nm-instalar" role="dialog" aria-live="polite" aria-label="Instalar NeroMoney">
+    <div class="asa"></div>
+    <button type="button" class="cerrar" aria-label="Cerrar">&times;</button>
     <div class="fila">
       <img src="icons/Icon-192.png" alt="">
       <div>
-        <h2>¿Quieres instalar NeroMoney como acceso rápido?</h2>
+        <h2 class="marca">NeroMoney</h2>
+        <div class="lema">Tu dinero, a un toque</div>
+        <h3>¿Quieres instalar NeroMoney como acceso rápido?</h3>
         <p>Ábrela desde tu pantalla de inicio, como una app.</p>
       </div>
     </div>
