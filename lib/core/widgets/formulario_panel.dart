@@ -166,7 +166,7 @@ class CampoPanel extends StatelessWidget {
               ],
             ),
           ),
-          if (alFinal != null) alFinal!,
+          ?alFinal,
         ],
       ),
     );

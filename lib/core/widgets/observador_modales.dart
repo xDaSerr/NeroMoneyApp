@@ -20,16 +20,16 @@ class ObservadorModales extends NavigatorObserver {
   }
 
   @override
-  void didPush(Route<dynamic> ruta, Route<dynamic>? anterior) =>
-      _sumar(ruta, 1);
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _sumar(route, 1);
 
   @override
-  void didPop(Route<dynamic> ruta, Route<dynamic>? anterior) =>
-      _sumar(ruta, -1);
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _sumar(route, -1);
 
   @override
-  void didRemove(Route<dynamic> ruta, Route<dynamic>? anterior) =>
-      _sumar(ruta, -1);
+  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _sumar(route, -1);
 
   @override
   void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
