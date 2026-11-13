@@ -11,7 +11,7 @@ Este documento es el mapa del proyecto: para qué sirve cada carpeta, cómo est�
 - **Riverpod** (`flutter_riverpod`) — manejo de estado.
 - **go_router** — navegación, con `StatefulShellRoute` para las 5 pestañas y redirecciones automáticas según sesión/onboarding.
 - **DeepSeek API** — pendiente de integrar, para el asistente de IA (function calling / JSON mode).
-- Diseño visual: sistema **"Obsidian Cyber-Glass"** (ver `stitch_neromoney_ai_finance_app/obsidian_cyber_glass/DESIGN.md` en la raíz del repo, generado con Google Stitch).
+- Diseño visual: sistema **"Obsidian Cyber-Glass"** (generado con Google Stitch).
 
 
 **Patrón dentro de cada feature:** `data/` (modelos + repositorio que habla con Firestore), `providers/` (los Provider de Riverpod que exponen ese repositorio y sus streams a la UI), y los archivos de pantalla sueltos en la raíz del feature. Si agregas una función nueva, sigue este mismo patrón.

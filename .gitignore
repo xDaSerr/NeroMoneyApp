@@ -56,3 +56,6 @@ recursos_diseno/
 # Notas de trabajo locales (se borraron del repo público a propósito)
 CLAUDE.md
 .claude/
+
+# Pantallas de referencia de Google Stitch (solo locales)
+stitch_neromoney_ai_finance_app/
