@@ -1,2 +1,6 @@
 # Originales de diseño pesados (el más grande pasa los 100 MB que permite GitHub)
 recursos_diseno/
+
+# Notas de trabajo locales (se borraron del repo público a propósito)
+CLAUDE.md
+.claude/

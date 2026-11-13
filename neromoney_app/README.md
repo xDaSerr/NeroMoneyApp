@@ -13,30 +13,6 @@ Este documento es el mapa del proyecto: para qué sirve cada carpeta, cómo est�
 - **DeepSeek API** — pendiente de integrar, para el asistente de IA (function calling / JSON mode).
 - Diseño visual: sistema **"Obsidian Cyber-Glass"** (ver `stitch_neromoney_ai_finance_app/obsidian_cyber_glass/DESIGN.md` en la raíz del repo, generado con Google Stitch).
 
-## Estructura de carpetas
-
-```
-lib/
-  core/
-    theme/            → app_colors.dart, app_text_styles.dart, app_theme.dart
-                         (tokens exactos del sistema de diseño Obsidian Cyber-Glass)
-    widgets/           → GradientButton (botón con micro-animación al presionar),
-                         GlassCard (vidrio esmerilado), PlaceholderScreen
-    router/            → app_router.dart (todas las rutas + lógica de redirección),
-                         app_shell.dart (barra de navegación de 5 pestañas),
-                         go_router_refresh_stream.dart (conecta el stream de auth con go_router)
-
-  features/
-    auth/              → login, registro, recuperar contraseña, AuthRepository (Firebase Auth + Google)
-    onboarding/        → flujo de 2 pasos (moneda + nombre del asistente), PerfilUsuario/PerfilRepository
-    accounts/          → modelo Cuenta, CuentasRepository, pantalla de gestión de cuentas
-    transactions/      → modelo Transaccion, TransaccionesRepository, Movimientos, alta manual
-    home/              → Dashboard (Inicio)
-    profile/           → Perfil (por ahora solo cierre de sesión)
-
-  main.dart            → inicializa Firebase y arranca la app
-  firebase_options.dart → generado por FlutterFire CLI, no editar a mano
-```
 
 **Patrón dentro de cada feature:** `data/` (modelos + repositorio que habla con Firestore), `providers/` (los Provider de Riverpod que exponen ese repositorio y sus streams a la UI), y los archivos de pantalla sueltos en la raíz del feature. Si agregas una función nueva, sigue este mismo patrón.
 
@@ -53,22 +29,6 @@ usuarios/{uid}/transacciones/{id}      → Transaccion: monto, tipo (gasto/ingre
 **Reglas de seguridad** (`firestore.rules`): cada usuario solo puede leer/escribir su propio subárbol `usuarios/{uid}/...`; todo lo demás está bloqueado por defecto.
 
 **Detalle importante:** registrar una transacción actualiza el `saldoActual` de su cuenta de forma atómica (`TransaccionesRepository.registrarTransaccion` usa `runTransaction` de Firestore) — nunca se escribe la transacción sin ajustar el saldo, o viceversa.
-
-## Cómo correr el proyecto
-
-Entorno ya configurado en esta máquina: Flutter en `C:\src\flutter`, Android SDK en `%LOCALAPPDATA%\Android\sdk`, JDK del propio Android Studio (`C:\Program Files\Android\Android Studio\jbr`). Si es una máquina nueva, hay que instalar esos tres antes de nada.
-
-```powershell
-$env:Path += ";C:\src\flutter\bin;$env:LOCALAPPDATA\Android\sdk\platform-tools"
-$env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\sdk"
-$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
-
-flutter build apk --debug
-adb install -r build\app\outputs\flutter-apk\app-debug.apk
-adb shell am start -n com.neromoney.neromoney_app/.MainActivity
-```
-
-Proyecto de Firebase: `neromoneyapp` (consola: https://console.firebase.google.com/project/neromoneyapp).
 
 ## Qué está hecho (funcional, probado en dispositivo real)
 
