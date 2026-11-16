@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'selector_periodo.dart';
+import '../../../core/moneda/monedas_providers.dart';
+import '../../analisis/analisis_screen.dart' show AccesoAnalisis;
+import 'reportes_avanzados.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/paleta_categorias.dart';
@@ -29,13 +33,15 @@ class ReportesEscritorio extends ConsumerStatefulWidget {
 }
 
 class _ReportesEscritorioState extends ConsumerState<ReportesEscritorio> {
-  TipoPeriodo _tipo = TipoPeriodo.mes;
-  int _offset = 0;
+  SeleccionPeriodo _sel = const SeleccionPeriodo(TipoPeriodo.mes);
+
   TipoTransaccion _desglose = TipoTransaccion.gasto;
 
   @override
   Widget build(BuildContext context) {
-    final rango = calcularRangoPeriodo(_tipo, _offset);
+    // Multimoneda: recalcular cuando cambian las cuentas o los tipos de cambio.
+    ref.watch(conversorMonedaProvider);
+    final rango = _sel.rango;
     final todas = ref.watch(
       transaccionesPorRangoProvider((rango.desde, rango.hasta)),
     );
@@ -55,31 +61,36 @@ class _ReportesEscritorioState extends ConsumerState<ReportesEscritorio> {
                   subtitulo: 'Entiende en qué se va tu dinero.',
                   acciones: [
                     // --- Semana / Mes / Año ---
-                    ControlSegmentado<TipoPeriodo>(
+                    // Con un rango personalizado no queda marcado ninguno.
+                    ControlSegmentado<TipoPeriodo?>(
                       opciones: const {
+                        TipoPeriodo.dia: 'Día',
                         TipoPeriodo.semana: 'Semana',
                         TipoPeriodo.mes: 'Mes',
                         TipoPeriodo.anio: 'Año',
                       },
-                      seleccionado: _tipo,
-                      onCambiar: (t) => setState(() {
-                        _tipo = t;
-                        _offset = 0;
-                      }),
+                      seleccionado: _sel.esPersonalizado ? null : _sel.tipo,
+                      onCambiar: (t) =>
+                          setState(() => _sel = SeleccionPeriodo(t!)),
                     ),
                     // --- "< Noviembre 2026 >" + EN CURSO ---
                     _NavegadorPeriodo(
                       etiqueta: rango.etiqueta,
                       esActual: rango.esActual,
-                      onAnterior: () => setState(() => _offset--),
+                      onAnterior: () => setState(() => _sel = _sel.previa),
                       // Nunca se navega al futuro: no tiene movimientos.
-                      onSiguiente: rango.esActual
-                          ? null
-                          : () => setState(() => _offset++),
+                      onSiguiente: _sel.puedeAvanzar
+                          ? () => setState(() => _sel = _sel.siguiente)
+                          : null,
+                      seleccion: _sel,
+                      onAplicar: (s) => setState(() => _sel = s),
                     ),
                   ],
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 24),
+                // --- Análisis inteligente (cargos fijos, gastos hormiga) ---
+                const AccesoAnalisis(),
+                const SizedBox(height: 24),
                 todas.when(
                   data: (lista) => _contenido(lista, rango),
                   loading: () => Padding(
@@ -124,7 +135,7 @@ class _ReportesEscritorioState extends ConsumerState<ReportesEscritorio> {
       hasta: rango.hasta,
     );
     final balance = ingresos - gastos.total;
-    final buckets = calcularBuckets(_tipo, rango, todas);
+    final buckets = calcularBuckets(_sel, todas);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -171,11 +182,7 @@ class _ReportesEscritorioState extends ConsumerState<ReportesEscritorio> {
                     Text('Flujo de efectivo', style: AppTextStyles.headlineMd),
                     const SizedBox(height: 4),
                     Text(
-                      switch (_tipo) {
-                        TipoPeriodo.semana => 'Ingresos y gastos por día',
-                        TipoPeriodo.mes => 'Ingresos y gastos por semana',
-                        TipoPeriodo.anio => 'Ingresos y gastos por mes',
-                      },
+                      _sel.tramo.descripcion,
                       style: AppTextStyles.bodyLg.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -211,6 +218,9 @@ class _ReportesEscritorioState extends ConsumerState<ReportesEscritorio> {
             ),
           ],
         ).animate().fadeIn(delay: 80.ms, duration: 350.ms),
+        const SizedBox(height: 32),
+        // --- Comparación, tendencia de 12 meses (Plus) y tu año (Pro) ---
+        ReportesAvanzados(seleccion: _sel, enColumnas: true),
       ],
     );
   }
@@ -222,12 +232,16 @@ class _NavegadorPeriodo extends StatelessWidget {
     required this.esActual,
     required this.onAnterior,
     required this.onSiguiente,
+    required this.seleccion,
+    required this.onAplicar,
   });
 
   final String etiqueta;
   final bool esActual;
   final VoidCallback onAnterior;
   final VoidCallback? onSiguiente;
+  final SeleccionPeriodo seleccion;
+  final ValueChanged<SeleccionPeriodo> onAplicar;
 
   @override
   Widget build(BuildContext context) {
@@ -248,12 +262,41 @@ class _NavegadorPeriodo extends StatelessWidget {
                 onPressed: onAnterior,
                 icon: const Icon(Icons.chevron_left_rounded),
               ),
-              SizedBox(
-                width: 170,
-                child: Text(
-                  etiqueta,
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.bodyLg,
+              // --- La fecha: se estira hasta "Elegir periodo" ---
+              BotonPeriodo(
+                seleccion: seleccion,
+                tipoBase: seleccion.tipo,
+                onAplicar: onAplicar,
+                boton: (context, abrir) => Tooltip(
+                  message: 'Elegir fecha',
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: abrir,
+                    child: Container(
+                      constraints: const BoxConstraints(minWidth: 190),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.calendar_today_rounded,
+                            size: 18,
+                            color: AppColors.acento,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(etiqueta, style: AppTextStyles.bodyLg),
+                          Icon(
+                            Icons.arrow_drop_down_rounded,
+                            color: AppColors.textSecondary,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
               IconButton(

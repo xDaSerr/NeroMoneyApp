@@ -4,11 +4,15 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/accounts/account_detail_screen.dart';
 import '../../features/accounts/accounts_screen.dart';
+import '../../features/analisis/analisis_screen.dart';
 import '../../features/assistant/assistant_chat_screen.dart';
 import '../../features/auth/bienvenida_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/onboarding/data/perfil_repository.dart';
 import '../../features/onboarding/onboarding_flow_screen.dart';
+import '../../features/planes/planes_screen.dart';
+import '../../features/presupuestos/presupuestos_screen.dart';
+import '../../features/respaldos/respaldos_screen.dart';
 import '../../features/profile/editar_perfil_screen.dart';
 import '../../features/profile/personalizar_asistente_screen.dart';
 import '../../features/profile/profile_screen.dart';
@@ -135,6 +139,27 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/editar-perfil',
       builder: (context, state) => const EditarPerfilScreen(),
+    ),
+    // Membresías (Gratis / Plus / Pro). Polar regresa aquí con ?pago=ok.
+    GoRoute(
+      path: '/planes',
+      builder: (context, state) =>
+          PlanesScreen(vieneDePago: state.uri.queryParameters['pago'] == 'ok'),
+    ),
+    // Cargos fijos y gastos hormiga (Plus), desde Reportes.
+    GoRoute(
+      path: '/analisis',
+      builder: (context, state) => const AnalisisScreen(),
+    ),
+    // Respaldos mensuales (Pro), desde Perfil.
+    GoRoute(
+      path: '/respaldos',
+      builder: (context, state) => const RespaldosScreen(),
+    ),
+    // Presupuestos por categoría y metas de ahorro (desde Inicio).
+    GoRoute(
+      path: '/presupuestos',
+      builder: (context, state) => const PresupuestosScreen(),
     ),
     GoRoute(
       path: '/recordatorios',

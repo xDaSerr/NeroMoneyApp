@@ -162,6 +162,14 @@ class TransaccionesRepository {
           'Solo puedes transferir entre cuentas de débito y efectivo.',
         );
       }
+      // Multimoneda: la transferencia mueve el MISMO monto de un lado al
+      // otro; entre monedas distintas eso descuadraría los saldos.
+      if (origen.moneda != destino.moneda) {
+        throw StateError(
+          'Solo puedes transferir entre cuentas de la misma moneda. Registra '
+          'un gasto en una y un ingreso en la otra.',
+        );
+      }
       final saldoOrigen = (origen.saldoActual * 100).round();
       final saldoDestino = (destino.saldoActual * 100).round();
       if (centavos > saldoOrigen) {

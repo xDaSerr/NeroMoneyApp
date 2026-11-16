@@ -3,6 +3,10 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'selector_periodo.dart';
+import '../../../core/moneda/monedas_providers.dart';
+import '../../analisis/analisis_screen.dart' show AccesoAnalisis;
+import 'reportes_avanzados.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/paleta_categorias.dart';
@@ -29,13 +33,15 @@ class ReportesMovil extends ConsumerStatefulWidget {
 }
 
 class _ReportesMovilState extends ConsumerState<ReportesMovil> {
-  TipoPeriodo _tipo = TipoPeriodo.mes;
-  int _offset = 0;
+  SeleccionPeriodo _sel = const SeleccionPeriodo(TipoPeriodo.mes);
+
   TipoTransaccion _desglose = TipoTransaccion.gasto;
 
   @override
   Widget build(BuildContext context) {
-    final rango = calcularRangoPeriodo(_tipo, _offset);
+    // Multimoneda: recalcular cuando cambian las cuentas o los tipos de cambio.
+    ref.watch(conversorMonedaProvider);
+    final rango = _sel.rango;
     final todas = ref.watch(
       transaccionesPorRangoProvider((rango.desde, rango.hasta)),
     );
@@ -71,28 +77,33 @@ class _ReportesMovilState extends ConsumerState<ReportesMovil> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // --- Análisis inteligente (cargos fijos, gastos hormiga) ---
+                    const AccesoAnalisis(),
+                    const SizedBox(height: 16),
                     // --- Semana / Mes / Año ---
-                    SegmentadoMovil<TipoPeriodo>(
+                    // Con un rango personalizado no queda marcado ninguno.
+                    SegmentadoMovil<TipoPeriodo?>(
                       opciones: const {
+                        TipoPeriodo.dia: 'Día',
                         TipoPeriodo.semana: 'Semana',
                         TipoPeriodo.mes: 'Mes',
                         TipoPeriodo.anio: 'Año',
                       },
-                      valor: _tipo,
-                      onCambiar: (t) => setState(() {
-                        _tipo = t;
-                        _offset = 0;
-                      }),
+                      valor: _sel.esPersonalizado ? null : _sel.tipo,
+                      onCambiar: (t) =>
+                          setState(() => _sel = SeleccionPeriodo(t!)),
                     ),
                     const SizedBox(height: 12),
                     // --- "< Noviembre 2026 >  EN CURSO" ---
                     _Navegador(
                       rango: rango,
-                      onAnterior: () => setState(() => _offset--),
+                      onAnterior: () => setState(() => _sel = _sel.previa),
                       // Nunca se navega al futuro: no tiene movimientos.
-                      onSiguiente: rango.esActual
-                          ? null
-                          : () => setState(() => _offset++),
+                      onSiguiente: _sel.puedeAvanzar
+                          ? () => setState(() => _sel = _sel.siguiente)
+                          : null,
+                      seleccion: _sel,
+                      onAplicar: (s) => setState(() => _sel = s),
                     ),
                     const SizedBox(height: 16),
                     todas.when(
@@ -143,7 +154,7 @@ class _ReportesMovilState extends ConsumerState<ReportesMovil> {
       hasta: rango.hasta,
     );
     final balance = ingresos - gastos.total;
-    final buckets = calcularBuckets(_tipo, rango, todas);
+    final buckets = calcularBuckets(_sel, todas);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -209,11 +220,7 @@ class _ReportesMovilState extends ConsumerState<ReportesMovil> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Flujo de efectivo', style: AppTextStyles.headlineSm),
-              Text(switch (_tipo) {
-                TipoPeriodo.semana => 'Ingresos y gastos por día',
-                TipoPeriodo.mes => 'Ingresos y gastos por semana',
-                TipoPeriodo.anio => 'Ingresos y gastos por mes',
-              }, style: AppTextStyles.bodyMd),
+              Text(_sel.tramo.descripcion, style: AppTextStyles.bodyMd),
               const SizedBox(height: 16),
               GraficaFlujo(buckets: buckets, altura: 200),
               const SizedBox(height: 12),
@@ -236,6 +243,9 @@ class _ReportesMovilState extends ConsumerState<ReportesMovil> {
           ingresos: porIngreso,
           onCambiar: (t) => setState(() => _desglose = t),
         ),
+        const SizedBox(height: 24),
+        // --- Comparación, tendencia de 12 meses (Plus) y tu año (Pro) ---
+        ReportesAvanzados(seleccion: _sel),
       ],
     ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.03, end: 0);
   }
@@ -246,11 +256,15 @@ class _Navegador extends StatelessWidget {
     required this.rango,
     required this.onAnterior,
     required this.onSiguiente,
+    required this.seleccion,
+    required this.onAplicar,
   });
 
   final RangoPeriodo rango;
   final VoidCallback onAnterior;
   final VoidCallback? onSiguiente;
+  final SeleccionPeriodo seleccion;
+  final ValueChanged<SeleccionPeriodo> onAplicar;
 
   @override
   Widget build(BuildContext context) {
@@ -267,40 +281,59 @@ class _Navegador extends StatelessWidget {
             onPressed: onAnterior,
             icon: const Icon(Icons.chevron_left_rounded),
           ),
+          // --- La fecha: se estira hasta "Elegir periodo" ---
           Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Flexible(
-                  child: Text(
-                    rango.etiqueta,
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.bodyLg.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                if (rango.esActual) ...[
-                  const SizedBox(width: 10),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.acento.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      'EN CURSO',
-                      style: AppTextStyles.labelCode.copyWith(
+            child: BotonPeriodo(
+              seleccion: seleccion,
+              tipoBase: seleccion.tipo,
+              onAplicar: onAplicar,
+              boton: (context, abrir) => InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: abrir,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.calendar_today_rounded,
+                        size: 16,
                         color: AppColors.acento,
                       ),
-                    ),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          rango.etiqueta,
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.bodyLg.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      if (rango.esActual) ...[
+                        const SizedBox(width: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.acento.withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            'EN CURSO',
+                            style: AppTextStyles.labelCode.copyWith(
+                              color: AppColors.acento,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                ],
-              ],
+                ),
+              ),
             ),
           ),
           IconButton(

@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../../core/moneda/conversor_moneda.dart';
+
 enum TipoTransaccion { gasto, ingreso }
 
 enum OrigenTransaccion { manual, iaTexto, iaVoz }
@@ -32,6 +34,11 @@ class Transaccion {
   final String? transferenciaId;
   final String? cuentaContraparteId;
   bool get esTransferencia => transferenciaId != null;
+
+  /// El monto en la moneda principal del perfil (multimoneda, Pro). Todo lo
+  /// que SUMA movimientos (gastos del mes, reportes, presupuestos) usa este
+  /// valor; lo que muestra UN movimiento usa [monto] con su moneda.
+  double get montoPrincipal => ConversorMoneda.deCuenta(monto, cuentaId);
 
   factory Transaccion.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> doc,

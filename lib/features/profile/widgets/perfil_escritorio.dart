@@ -12,10 +12,13 @@ import '../../../core/widgets/piezas_escritorio.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../onboarding/data/perfil_usuario.dart';
 import '../../onboarding/providers/perfil_providers.dart';
+import '../../planes/data/membresia.dart';
+import '../../planes/providers/planes_providers.dart';
 import '../../onboarding/widgets/currency_picker.dart';
 import '../../reminders/data/recordatorios_service.dart';
 import '../data/saludo_usuario.dart';
 import 'selector_moneda_dialog.dart';
+import 'selector_tema_dialog.dart';
 
 /// Perfil en ventana ancha (ver referencia de diseño del usuario): la
 /// tarjeta del usuario y la sesión a la izquierda; preferencias y el
@@ -193,6 +196,31 @@ class PerfilEscritorio extends ConsumerWidget {
                                   style: AppTextStyles.headlineMd,
                                 ),
                                 const SizedBox(height: 14),
+                                // --- Membresía: Gratis / Plus / Pro ---
+                                _Preferencia(
+                                  icono: Icons.workspace_premium_outlined,
+                                  titulo: 'Tu plan',
+                                  subtitulo: 'Gratis, Plus o Pro',
+                                  control: TextButton(
+                                    onPressed: () => context.push('/planes'),
+                                    child: Text(
+                                      'NeroMoney ${(ref.watch(membresiaProvider).value?.plan ?? PlanNero.gratis).nombre}',
+                                    ),
+                                  ),
+                                ),
+                                Divider(color: AppColors.glassStrokeStandard),
+                                // --- Respaldos mensuales (Pro) ---
+                                _Preferencia(
+                                  icono: Icons.cloud_done_outlined,
+                                  titulo: 'Respaldos',
+                                  subtitulo:
+                                      'Una copia de tus movimientos cada mes',
+                                  control: TextButton(
+                                    onPressed: () => context.push('/respaldos'),
+                                    child: const Text('Ver respaldos'),
+                                  ),
+                                ),
+                                Divider(color: AppColors.glassStrokeStandard),
                                 // --- Apariencia: los 8 colores de la app ---
                                 _Preferencia(
                                   icono: Icons.palette_outlined,
@@ -208,10 +236,58 @@ class PerfilEscritorio extends ConsumerWidget {
                                     onCambiar: (tema) {
                                       // Se aplica al instante; el perfil lo
                                       // guarda para los demás dispositivos.
+                                      // Elegir un color quita el fondo.
                                       ControladorTema.instancia.cambiar(tema);
-                                      guardar(perfil.copyWith(tema: tema));
+                                      ControladorTema.instancia.cambiarFondo(
+                                        null,
+                                      );
+                                      guardar(
+                                        perfil.copyWith(
+                                          tema: tema,
+                                          fondo: null,
+                                        ),
+                                      );
                                     },
                                   ),
+                                ),
+                                Divider(color: AppColors.glassStrokeStandard),
+                                // --- Fondo con imagen (Plus y Pro) ---
+                                Builder(
+                                  builder: (context) {
+                                    final plan =
+                                        ref
+                                            .watch(membresiaProvider)
+                                            .value
+                                            ?.plan ??
+                                        PlanNero.gratis;
+                                    final fondo = plan == PlanNero.gratis
+                                        ? null
+                                        : perfil.fondo;
+                                    return _Preferencia(
+                                      icono: Icons.wallpaper_rounded,
+                                      titulo: 'Fondo',
+                                      subtitulo: plan == PlanNero.gratis
+                                          ? 'Fondos exclusivos con Plus'
+                                          : 'Imagen de fondo de la app',
+                                      control: TextButton(
+                                        onPressed: () => mostrarSelectorTema(
+                                          context: context,
+                                          plan: plan,
+                                          onElegir: (tema) => guardar(
+                                            perfil.copyWith(tema: tema),
+                                          ),
+                                          onElegirFondo: (f) => guardar(
+                                            (ref.read(perfilProvider).value ??
+                                                    perfil)
+                                                .copyWith(fondo: f),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          fondo?.etiqueta ?? 'Elegir fondo',
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 ),
                                 Divider(color: AppColors.glassStrokeStandard),
                                 // --- Recordatorios: solo existen en el teléfono ---

@@ -33,8 +33,8 @@ class ResumenGastos {
       final signo = t.tipo == TipoTransaccion.gasto ? 1.0 : -1.0;
       netoPorCategoria.update(
         t.categoria,
-        (v) => v + signo * t.monto,
-        ifAbsent: () => signo * t.monto,
+        (v) => v + signo * t.montoPrincipal,
+        ifAbsent: () => signo * t.montoPrincipal,
       );
     }
 

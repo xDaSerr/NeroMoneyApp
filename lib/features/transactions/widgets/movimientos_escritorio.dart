@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/moneda/monedas_providers.dart';
+import '../../../core/moneda/conversor_moneda.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/fecha_es.dart';
-import '../../../core/utils/formato_monto.dart';
 import '../../../core/widgets/boton_con_panel.dart';
 import '../../../core/widgets/piezas_escritorio.dart';
 import '../../accounts/data/cuenta.dart';
+import '../../exportar/exportar_dialogo.dart';
 import '../../accounts/providers/cuentas_providers.dart';
 import '../data/categoria.dart';
 import '../data/periodo_movimientos.dart';
@@ -83,6 +85,8 @@ class _MovimientosEscritorioState extends ConsumerState<MovimientosEscritorio> {
 
   @override
   Widget build(BuildContext context) {
+    // Multimoneda: recalcular cuando cambian las cuentas o los tipos de cambio.
+    ref.watch(conversorMonedaProvider);
     final cuentas = ref.watch(cuentasProvider).value ?? const <Cuenta>[];
     final movimientosAsync = ref.watch(
       transaccionesPorRangoProvider(_periodo.rango),
@@ -101,6 +105,12 @@ class _MovimientosEscritorioState extends ConsumerState<MovimientosEscritorio> {
                   titulo: 'Movimientos',
                   subtitulo: 'Consulta y organiza tu actividad.',
                   acciones: [
+                    // --- Exportar a Excel/CSV (Plus) o PDF (Pro) ---
+                    BotonContorno(
+                      texto: 'Exportar',
+                      icono: Icons.download_rounded,
+                      onTap: () => mostrarDialogoExportar(context, ref),
+                    ),
                     // --- Botón "Nuevo movimiento" → alta manual ---
                     // (se transforma en el panel "Crear movimiento")
                     BotonConPanel(
@@ -357,7 +367,7 @@ class _MovimientosEscritorioState extends ConsumerState<MovimientosEscritorio> {
         ],
       ),
       importe: Text(
-        '${esIngreso ? '+' : '−'}${formatoMonto(t.monto)}',
+        '${esIngreso ? '+' : '−'}${ConversorMoneda.formato(t.monto, t.cuentaId)}',
         textAlign: TextAlign.right,
         style: AppTextStyles.bodyLg.copyWith(
           color: colorImporte,

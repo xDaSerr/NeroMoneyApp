@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/router/app_shell.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/utils/fecha_es.dart';
+import '../../core/widgets/anillo_asistente.dart';
 import '../../core/widgets/asistente_avatar.dart';
 import '../../core/widgets/barra_flotante.dart';
 import '../accounts/data/cuenta.dart';
@@ -194,52 +196,22 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
       extendBody: true,
       // El teclado se reserva en el dock; no reducir el cuerpo dos veces.
       resizeToAvoidBottomInset: false,
-      appBar: AppBar(
-        title: Row(
-          children: [
-            // --- Avatar del asistente en el encabezado (foto elegida por
-            // el usuario, o el ícono de la app por defecto) ---
-            AsistenteAvatar(avatarBase64: avatarAsistente, size: 36),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    nombreAsistente,
-                    style: AppTextStyles.headlineSm,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  // Esto sí es verdad, no es adorno: el backend (Cloud
-                  // Function + DeepSeek) ya está conectado de verdad.
-                  Text(
-                    'Conectada',
-                    style: AppTextStyles.bodySm.copyWith(
-                      color: AppColors.inflowEmerald,
-                    ),
-                  ),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(esEscritorio(context) ? 112 : 76),
+        child: _Encabezado(
+          nombre: nombreAsistente,
+          avatarBase64: avatarAsistente,
+          colores:
+              perfil?.colorAnilloInicio == null ||
+                  perfil?.colorAnilloFin == null
+              ? null
+              : [
+                  Color(perfil!.colorAnilloInicio!),
+                  Color(perfil.colorAnilloFin!),
                 ],
-              ),
-            ),
-          ],
+          onPersonalizar: () => context.push('/personalizar-asistente'),
+          onLimpiar: _enviando ? null : () => _confirmarLimpiar(context),
         ),
-        // --- Botones "Personalizar asistente" y "Limpiar conversación": el
-        // primero es el mismo destino que el menú de Perfil (ver
-        // ProfileScreen) — solo un atajo, no un lugar distinto — para no
-        // tener que salirse del chat a cambiarle la foto o el nombre ---
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.face_retouching_natural_rounded),
-            tooltip: 'Personalizar asistente',
-            onPressed: () => context.push('/personalizar-asistente'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.history_rounded),
-            tooltip: 'Limpiar conversación',
-            onPressed: _enviando ? null : () => _confirmarLimpiar(context),
-          ),
-        ],
       ),
       body: Builder(
         builder: (context) => mensajesAsync.when(
@@ -276,9 +248,9 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
               // Scaffold mide el dock real, incluso cuando el texto crece.
               // El viewport llega al fondo; solo el contenido deja margen.
               padding: EdgeInsets.fromLTRB(
+                esEscritorio(context) ? 40 : 16,
                 16,
-                16,
-                16,
+                esEscritorio(context) ? 40 : 16,
                 MediaQuery.paddingOf(context).bottom + 16,
               ),
               itemCount: mensajes.length,
@@ -290,42 +262,51 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
                 final mostrarChips =
                     esUltimo && hayBorrador && m.chipsCuentas.isNotEmpty;
 
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 14),
-                  child: Column(
-                    crossAxisAlignment: m.autor == AutorMensaje.usuario
-                        ? CrossAxisAlignment.end
-                        : CrossAxisAlignment.start,
-                    children: [
-                      BurbujaMensaje(mensaje: m),
-                      if (mostrarChips) ...[
-                        const SizedBox(height: 8),
-                        // --- Chips de selección rápida de cuenta (nunca pregunta abierta) ---
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            for (final id in m.chipsCuentas)
-                              if (cuentasPorId[id] != null)
-                                ActionChip(
-                                  avatar: Icon(
-                                    Icons.account_balance_wallet_outlined,
-                                    size: 16,
-                                    color: AppColors.acento,
-                                  ),
-                                  label: Text(cuentasPorId[id]!.nombre),
-                                  backgroundColor:
-                                      AppColors.surface3ActiveGlass,
-                                  labelStyle: AppTextStyles.bodySm,
-                                  side: BorderSide.none,
-                                  onPressed: _enviando
-                                      ? null
-                                      : () => _elegirCuenta(id),
-                                ),
+                // "Hoy", "Ayer", "12 nov": cuando cambia el día.
+                final nuevoDia =
+                    i == 0 || !_mismoDia(mensajes[i - 1].fecha, m.fecha);
+                return Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 980),
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Column(
+                        crossAxisAlignment: m.autor == AutorMensaje.usuario
+                            ? CrossAxisAlignment.end
+                            : CrossAxisAlignment.start,
+                        children: [
+                          if (nuevoDia) _SeparadorDia(fecha: m.fecha),
+                          BurbujaMensaje(mensaje: m),
+                          if (mostrarChips) ...[
+                            const SizedBox(height: 8),
+                            // --- Chips de selección rápida de cuenta (nunca pregunta abierta) ---
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                for (final id in m.chipsCuentas)
+                                  if (cuentasPorId[id] != null)
+                                    ActionChip(
+                                      avatar: Icon(
+                                        Icons.account_balance_wallet_outlined,
+                                        size: 16,
+                                        color: AppColors.acento,
+                                      ),
+                                      label: Text(cuentasPorId[id]!.nombre),
+                                      backgroundColor:
+                                          AppColors.surface3ActiveGlass,
+                                      labelStyle: AppTextStyles.bodySm,
+                                      side: BorderSide.none,
+                                      onPressed: _enviando
+                                          ? null
+                                          : () => _elegirCuenta(id),
+                                    ),
+                              ],
+                            ),
                           ],
-                        ),
-                      ],
-                    ],
+                        ],
+                      ),
+                    ),
                   ),
                 );
               },
@@ -350,6 +331,20 @@ class _AssistantChatScreenState extends ConsumerState<AssistantChatScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (!hayBorrador)
+              _Atajos(
+                activo: !_enviando,
+                onRegistrar: () {
+                  _inputCtrl.text = 'Gasté ';
+                  _inputCtrl.selection = TextSelection.collapsed(
+                    offset: _inputCtrl.text.length,
+                  );
+                },
+                onConsultar: () {
+                  _inputCtrl.text = '¿Cuánto llevo gastado este mes?';
+                  _enviar();
+                },
+              ),
             _BarraDeEntrada(
               controller: _inputCtrl,
               enviando: _enviando,
@@ -421,6 +416,210 @@ class _EstadoVacio extends StatelessWidget {
   }
 }
 
+bool _mismoDia(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month && a.day == b.day;
+
+/// Avatar con anillo, nombre, "● Conectada" y los botones de la derecha.
+class _Encabezado extends StatelessWidget {
+  const _Encabezado({
+    required this.nombre,
+    required this.avatarBase64,
+    required this.colores,
+    required this.onPersonalizar,
+    required this.onLimpiar,
+  });
+
+  final String nombre;
+  final String? avatarBase64;
+  final List<Color>? colores;
+  final VoidCallback onPersonalizar;
+  final VoidCallback? onLimpiar;
+
+  @override
+  Widget build(BuildContext context) {
+    final ancho = esEscritorio(context);
+    Widget boton(String texto, IconData icono, VoidCallback? onTap) => ancho
+        ? Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: OutlinedButton.icon(
+              onPressed: onTap,
+              icon: Icon(icono, size: 22),
+              label: Text(texto),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.textPrimary,
+                side: BorderSide(color: AppColors.glassStrokeHighlight),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                textStyle: AppTextStyles.bodyLg,
+              ),
+            ),
+          )
+        : IconButton(tooltip: texto, onPressed: onTap, icon: Icon(icono));
+
+    return SafeArea(
+      bottom: false,
+      child: Container(
+        padding: EdgeInsets.fromLTRB(
+          ancho ? 40 : 14,
+          ancho ? 18 : 8,
+          ancho ? 40 : 6,
+          0,
+        ),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: AppColors.glassStrokeStandard),
+          ),
+        ),
+        child: Row(
+          children: [
+            AnilloAsistente(
+              avatarBase64: avatarBase64,
+              colores: colores,
+              size: ancho ? 76 : 48,
+            ),
+            SizedBox(width: ancho ? 20 : 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    nombre,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: ancho
+                        ? AppTextStyles.display.copyWith(fontSize: 34)
+                        : AppTextStyles.headlineMd,
+                  ),
+                  // Es verdad, no adorno: el backend (Cloud Function +
+                  // DeepSeek) está conectado.
+                  Row(
+                    children: [
+                      Container(
+                        width: 9,
+                        height: 9,
+                        decoration: const BoxDecoration(
+                          color: AppColors.inflowEmerald,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Conectada',
+                        style: AppTextStyles.bodyLg.copyWith(
+                          color: AppColors.inflowEmerald,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            boton('Personalizar', Icons.tune_rounded, onPersonalizar),
+            boton('Limpiar chat', Icons.history_rounded, onLimpiar),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// "——  Hoy  ——".
+class _SeparadorDia extends StatelessWidget {
+  const _SeparadorDia({required this.fecha});
+
+  final DateTime fecha;
+
+  @override
+  Widget build(BuildContext context) {
+    final hoy = DateTime.now();
+    final ayer = hoy.subtract(const Duration(days: 1));
+    final texto = _mismoDia(fecha, hoy)
+        ? 'Hoy'
+        : _mismoDia(fecha, ayer)
+        ? 'Ayer'
+        : '${fecha.day} ${mesesEs[fecha.month - 1]}'
+              '${fecha.year == hoy.year ? '' : ' ${fecha.year}'}';
+    final linea = Expanded(
+      child: Divider(color: AppColors.glassStrokeHighlight, thickness: 1),
+    );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16, top: 4),
+      child: Row(
+        children: [
+          const Spacer(),
+          linea,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 22),
+            child: Text(
+              texto,
+              style: AppTextStyles.bodyLg.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          linea,
+          const Spacer(),
+        ],
+      ),
+    );
+  }
+}
+
+/// "+ Registrar un gasto" y "Consultar mis gastos".
+class _Atajos extends StatelessWidget {
+  const _Atajos({
+    required this.activo,
+    required this.onRegistrar,
+    required this.onConsultar,
+  });
+
+  final bool activo;
+  final VoidCallback onRegistrar;
+  final VoidCallback onConsultar;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget atajo(String texto, IconData icono, VoidCallback onTap) =>
+        OutlinedButton.icon(
+          onPressed: activo ? onTap : null,
+          icon: Icon(icono, color: AppColors.acento, size: 22),
+          label: Text(texto),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.textPrimary,
+            backgroundColor: AppColors.surface1.withValues(alpha: 0.6),
+            side: BorderSide(color: AppColors.glassStrokeHighlight),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            shape: const StadiumBorder(),
+            textStyle: AppTextStyles.bodyLg,
+          ),
+        );
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            atajo('Registrar un gasto', Icons.add_rounded, onRegistrar),
+            const SizedBox(width: 14),
+            atajo(
+              'Consultar mis gastos',
+              Icons.account_balance_wallet_outlined,
+              onConsultar,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _BarraDeEntrada extends StatelessWidget {
   const _BarraDeEntrada({
     required this.controller,
@@ -444,107 +643,160 @@ class _BarraDeEntrada extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ancho = esEscritorio(context);
     return SafeArea(
       top: false,
       // La separación de la navegación ya se añade debajo de esta barra.
       bottom: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Expanded(
-              child: Container(
-                constraints: const BoxConstraints(minHeight: 48),
-                padding: const EdgeInsets.symmetric(horizontal: 18),
-                decoration: BoxDecoration(
-                  color: AppColors.surface1,
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: AppColors.glassStrokeStandard),
-                ),
-                child: TextField(
-                  controller: controller,
-                  enabled: !enviando,
-                  minLines: 1,
-                  maxLines: 4,
-                  textCapitalization: TextCapitalization.sentences,
-                  style: AppTextStyles.bodyLg,
-                  decoration: InputDecoration(
-                    // El tema global (app_theme.dart) define su propio
-                    // "enabledBorder"/"focusedBorder" con relleno — si solo
-                    // se apaga `border`, esos dos igual se dibujan encima
-                    // del contenedor de afuera y se ve una píldora dentro
-                    // de otra. Hay que apagar los tres explícitamente.
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    filled: false,
-                    isCollapsed: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                    hintText: escuchando
-                        ? 'Escuchando...'
-                        : 'Escribe a $nombreAsistente...',
-                  ),
-                  onSubmitted: (_) => onEnviar(),
-                ),
-              ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1080),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              ancho ? 40 : 12,
+              8,
+              ancho ? 40 : 12,
+              12,
             ),
-            const SizedBox(width: 8),
-            // --- Botón de micrófono: mantener presionado para hablar, soltar para enviar ---
-            GestureDetector(
-              onTapDown: (_) => onMicPress(),
-              onTapUp: (_) => onMicRelease(),
-              onTapCancel: onMicCancel,
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: escuchando
-                      ? AppColors.outflowCrimson.withValues(alpha: 0.2)
-                      : AppColors.surface3ActiveGlass,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: escuchando
-                        ? AppColors.outflowCrimson
-                        : AppColors.glassStrokeStandard,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // --- Cápsula: texto, micrófono y enviar ---
+                Container(
+                  constraints: BoxConstraints(minHeight: ancho ? 64 : 54),
+                  padding: const EdgeInsets.fromLTRB(22, 6, 6, 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface1,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: escuchando
+                          ? AppColors.outflowCrimson
+                          : AppColors.glassStrokeHighlight,
+                    ),
                   ),
-                ),
-                child: Icon(
-                  escuchando ? Icons.mic_rounded : Icons.mic_none_rounded,
-                  color: escuchando
-                      ? AppColors.outflowCrimson
-                      : AppColors.textSecondary,
-                  size: 20,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            // --- Botón "Enviar" ---
-            GestureDetector(
-              onTap: enviando ? null : onEnviar,
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(colors: AppColors.degradadoAccion),
-                  shape: BoxShape.circle,
-                ),
-                child: enviando
-                    ? Padding(
-                        padding: EdgeInsets.all(14),
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.sobreAcento,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: controller,
+                          enabled: !enviando,
+                          minLines: 1,
+                          maxLines: 4,
+                          textCapitalization: TextCapitalization.sentences,
+                          style: AppTextStyles.bodyLg.copyWith(
+                            fontSize: ancho ? 18 : null,
+                          ),
+                          decoration: InputDecoration(
+                            // El tema global define bordes con relleno: hay
+                            // que apagar los tres o se ve una píldora dentro
+                            // de otra.
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            disabledBorder: InputBorder.none,
+                            filled: false,
+                            isCollapsed: true,
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                            ),
+                            hintText: escuchando
+                                ? 'Escuchando...'
+                                : 'Escribe a $nombreAsistente…',
+                          ),
+                          onSubmitted: (_) => onEnviar(),
                         ),
-                      )
-                    : Icon(
-                        Icons.send_rounded,
-                        color: AppColors.sobreAcento,
-                        size: 20,
                       ),
-              ),
+                      const SizedBox(width: 8),
+                      // --- Micrófono: mantener presionado, soltar envía ---
+                      Tooltip(
+                        message: 'Mantén pulsado para hablar',
+                        child: GestureDetector(
+                          onTapDown: (_) => onMicPress(),
+                          onTapUp: (_) => onMicRelease(),
+                          onTapCancel: onMicCancel,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            width: ancho ? 50 : 42,
+                            height: ancho ? 50 : 42,
+                            decoration: BoxDecoration(
+                              color: escuchando
+                                  ? AppColors.outflowCrimson.withValues(
+                                      alpha: 0.2,
+                                    )
+                                  : AppColors.surface3ActiveGlass,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: escuchando
+                                    ? AppColors.outflowCrimson
+                                    : AppColors.glassStrokeHighlight,
+                              ),
+                            ),
+                            child: Icon(
+                              escuchando
+                                  ? Icons.mic_rounded
+                                  : Icons.mic_none_rounded,
+                              color: escuchando
+                                  ? AppColors.outflowCrimson
+                                  : AppColors.textPrimary,
+                              size: 24,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      // --- Enviar ---
+                      Tooltip(
+                        message: 'Enviar',
+                        child: GestureDetector(
+                          onTap: enviando ? null : onEnviar,
+                          child: Container(
+                            width: ancho ? 56 : 46,
+                            height: ancho ? 56 : 46,
+                            decoration: BoxDecoration(
+                              color: AppColors.acento,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.acento.withValues(
+                                    alpha: 0.35,
+                                  ),
+                                  blurRadius: 16,
+                                ),
+                              ],
+                            ),
+                            child: enviando
+                                ? Padding(
+                                    padding: const EdgeInsets.all(15),
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.2,
+                                      color: AppColors.sobreAcento,
+                                    ),
+                                  )
+                                : Icon(
+                                    Icons.send_rounded,
+                                    color: AppColors.sobreAcento,
+                                    size: 24,
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // En teléfono no: ahí el teclado debe quedar pegado al campo.
+                if (ancho) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    'Mantén pulsado el micrófono para hablar',
+                    style: AppTextStyles.bodyMd.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/widgets/dialogo_formulario.dart' show decoracionCampo;
+import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../assistant/data/voz_asistente.dart';
@@ -85,16 +87,24 @@ class _ConfiguracionVozAsistenteState
 
   @override
   Widget build(BuildContext context) => GlassCard(
+    borderRadius: 24,
+    padding: const EdgeInsets.all(24),
     child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('VOZ Y DICTADO', style: AppTextStyles.labelCode),
-        const SizedBox(height: 12),
-        Text(
-          'Elige una voz y escúchala antes de guardar. Las opciones dependen de las voces disponibles en tu teléfono.',
-          style: AppTextStyles.bodySm,
+        Row(
+          children: [
+            Icon(Icons.volume_up_outlined, color: AppColors.acento, size: 30),
+            const SizedBox(width: 12),
+            Text('Voz y dictado', style: AppTextStyles.headlineMd),
+          ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 18),
+        Text(
+          'Voz del asistente',
+          style: AppTextStyles.bodyLg.copyWith(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
         FutureBuilder<List<VozDisponible>>(
           future: _voces,
           builder: (context, snap) {
@@ -115,27 +125,32 @@ class _ConfiguracionVozAsistenteState
                 : '${widget.vozIdioma}|${widget.vozNombre}';
             final falta = id.isNotEmpty && !voces.any((v) => v.id == id);
             return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // --- Selector de voces reales: no inferir género a partir de IDs del motor ---
                 DropdownButtonFormField<String>(
                   key: ValueKey(id),
                   initialValue: id,
                   isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Voz del asistente',
+                  dropdownColor: AppColors.surface1,
+                  borderRadius: BorderRadius.circular(14),
+                  icon: Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: AppColors.textPrimary,
                   ),
+                  style: AppTextStyles.bodyLg,
+                  decoration: decoracionCampo(),
                   items: [
                     const DropdownMenuItem(
                       value: '',
-                      child: Text('Predeterminada'),
+                      child: Text('Predeterminada del dispositivo'),
                     ),
                     if (falta)
                       DropdownMenuItem(
                         value: id,
                         enabled: false,
                         child: const Text(
-                          'Voz no disponible',
+                          'Voz no disponible en este dispositivo',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -160,57 +175,140 @@ class _ConfiguracionVozAsistenteState
                     );
                   },
                 ),
-                if (falta || voces.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      'Se usará la voz predeterminada. Puedes agregar voces en los ajustes de texto a voz del teléfono.',
-                      style: AppTextStyles.bodySm,
-                    ),
+                const SizedBox(height: 6),
+                Text(
+                  falta || voces.isEmpty
+                      ? 'Se usará la voz predeterminada. Puedes agregar voces en los ajustes de texto a voz de tu dispositivo.'
+                      : 'Las voces disponibles dependen de tu dispositivo.',
+                  style: AppTextStyles.bodyMd.copyWith(
+                    color: AppColors.textSecondary,
                   ),
+                ),
               ],
             );
           },
         ),
-        const SizedBox(height: 16),
-        Text('Tono de la voz', style: AppTextStyles.bodyMd),
+        const SizedBox(height: 18),
+        Text(
+          'Tono de voz',
+          style: AppTextStyles.bodyLg.copyWith(fontWeight: FontWeight.w600),
+        ),
         // --- Tono: cambia la altura de la voz elegida sin fingir otra voz instalada ---
-        Slider(
-          value: widget.tono.clamp(0.7, 1.3),
-          min: 0.7,
-          max: 1.3,
-          divisions: 12,
-          label: widget.tono.toStringAsFixed(2),
-          onChanged: widget.onTono,
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            trackHeight: 6,
+            activeTrackColor: AppColors.acento,
+            inactiveTrackColor: AppColors.surface3ActiveGlass,
+            thumbColor: AppColors.acento,
+            overlayColor: AppColors.acento.withValues(alpha: 0.15),
+            tickMarkShape: SliderTickMarkShape.noTickMark,
+          ),
+          child: Slider(
+            value: widget.tono.clamp(0.7, 1.3),
+            min: 0.7,
+            max: 1.3,
+            divisions: 12,
+            label: widget.tono.toStringAsFixed(2),
+            onChanged: widget.onTono,
+          ),
         ),
-        const Row(
+        Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [Text('Más grave'), Text('Más agudo')],
-        ),
-        const SizedBox(height: 8),
-        // --- Muestra de voz: solo reproduce una frase, no manda mensajes a la IA ---
-        Wrap(
-          spacing: 8,
           children: [
-            TextButton.icon(
-              onPressed: _probando ? null : _probar,
-              icon: const Icon(Icons.volume_up_outlined),
-              label: const Text('Escuchar muestra'),
+            Text(
+              'Más grave',
+              style: AppTextStyles.bodyMd.copyWith(
+                color: AppColors.textSecondary,
+              ),
             ),
-            TextButton(onPressed: _detener, child: const Text('Detener')),
+            Text(
+              'Más agudo',
+              style: AppTextStyles.bodyMd.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
           ],
         ),
-        if (_error != null) Text(_error!, style: AppTextStyles.bodySm),
-        const Divider(),
-        // --- Revisar dictado: evita enviar una transcripción equivocada automáticamente ---
-        SwitchListTile.adaptive(
-          contentPadding: EdgeInsets.zero,
-          title: const Text('Revisar antes de enviar'),
-          subtitle: const Text(
-            'Puedes corregir lo escuchado. Si lo desactivas, los dictados dudosos aún pedirán revisión.',
+        const SizedBox(height: 14),
+        // --- Muestra de voz: solo reproduce una frase, no manda mensajes a la IA ---
+        Wrap(
+          spacing: 12,
+          runSpacing: 10,
+          children: [
+            OutlinedButton.icon(
+              onPressed: _probando ? null : _probar,
+              icon: const Icon(Icons.play_arrow_rounded),
+              label: const Text('Escuchar muestra'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.textPrimary,
+                side: BorderSide(color: AppColors.acento),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 22,
+                  vertical: 14,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                textStyle: AppTextStyles.bodyLg,
+              ),
+            ),
+            OutlinedButton.icon(
+              onPressed: _probando ? _detener : null,
+              icon: const Icon(Icons.stop_rounded),
+              label: const Text('Detener'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.textPrimary,
+                side: BorderSide(color: AppColors.glassStrokeHighlight),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 22,
+                  vertical: 14,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                textStyle: AppTextStyles.bodyLg,
+              ),
+            ),
+          ],
+        ),
+        if (_error != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(_error!, style: AppTextStyles.bodySm),
           ),
-          value: widget.revisar,
-          onChanged: widget.onRevisar,
+        const SizedBox(height: 16),
+        Divider(height: 1, color: AppColors.glassStrokeStandard),
+        const SizedBox(height: 14),
+        // --- Revisar dictado: evita enviar una transcripción equivocada automáticamente ---
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Revisar antes de enviar',
+                    style: AppTextStyles.bodyLg.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Si lo desactivas, solo pediré revisión cuando el dictado sea dudoso.',
+                    style: AppTextStyles.bodyMd.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Switch.adaptive(
+              value: widget.revisar,
+              activeTrackColor: AppColors.acento,
+              onChanged: widget.onRevisar,
+            ),
+          ],
         ),
       ],
     ),

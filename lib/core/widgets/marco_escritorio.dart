@@ -202,6 +202,7 @@ class _Menu extends ConsumerWidget {
       llaves: llaves,
       nombreUsuario: saludo.nombre,
       inicialUsuario: saludo.inicial,
+      nombreAsistente: perfil?.nombreAsistente ?? 'Lucy',
     );
   }
 }

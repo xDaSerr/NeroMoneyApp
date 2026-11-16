@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -65,7 +66,8 @@ class _NeroMoneyAppState extends ConsumerState<NeroMoneyApp> {
   static const double _anchoTelefono = 480;
   static const double _anchoColumnaEscritorio = 640;
 
-  TemaApp? _temaAplicado;
+  /// Lo aplicado: el color y el fondo (si hay).
+  (TemaApp, FondoApp?)? _temaAplicado;
 
   @override
   void initState() {
@@ -81,9 +83,9 @@ class _NeroMoneyAppState extends ConsumerState<NeroMoneyApp> {
 
   /// El acceso (portada y formularios) siempre usa la paleta Negra: está
   /// diseñado sobre la imagen de fondo cian/violeta.
-  TemaApp get _temaEfectivo => ref.read(currentUidProvider) == null
-      ? TemaApp.negro
-      : ControladorTema.instancia.tema;
+  (TemaApp, FondoApp?) get _temaEfectivo => ref.read(currentUidProvider) == null
+      ? (TemaApp.negro, null)
+      : (ControladorTema.instancia.tema, ControladorTema.instancia.fondo);
 
   void _alCambiarTema() {
     if (_aplicar(_temaEfectivo)) {
@@ -92,10 +94,13 @@ class _NeroMoneyAppState extends ConsumerState<NeroMoneyApp> {
     }
   }
 
-  bool _aplicar(TemaApp tema) {
+  bool _aplicar((TemaApp, FondoApp?) tema) {
     if (tema == _temaAplicado) return false;
     _temaAplicado = tema;
-    final paleta = PaletaTema.de(tema);
+    final (color, fondo) = tema;
+    final paleta = fondo != null
+        ? PaletaTema.deFondo(fondo)
+        : PaletaTema.de(color);
     AppColors.aplicar(paleta);
     // Íconos de la barra de estado legibles sobre el fondo del tema.
     final iconos = paleta.esClaro ? Brightness.dark : Brightness.light;
@@ -143,6 +148,10 @@ class _NeroMoneyAppState extends ConsumerState<NeroMoneyApp> {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.actual,
       routerConfig: appRouter,
+      // Español en los textos de Flutter (calendarios, "Cancelar", etc.).
+      locale: const Locale('es', 'MX'),
+      supportedLocales: const [Locale('es', 'MX'), Locale('es'), Locale('en')],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
       // Se escucha al router porque la distribución depende de la ruta.
       builder: (context, child) => EscuchaSegura(
         escuchar: appRouter.routerDelegate,
@@ -165,10 +174,15 @@ class _NeroMoneyAppState extends ConsumerState<NeroMoneyApp> {
         !acceso &&
         ruta != '/onboarding';
     // Secciones con diseño propio de escritorio, a todo lo ancho del marco.
-    final seccionAncha = marco && (esRutaDePestana(ruta) || ruta == '/reports');
+    final seccionAncha =
+        marco &&
+        (esRutaDePestana(ruta) ||
+            ruta == '/reports' ||
+            ruta == '/personalizar-asistente');
     // Lo demás (formularios de un paso, onboarding; o todo en una tablet)
     // va en una columna centrada del ancho de un teléfono.
     final columna = !acceso && !seccionAncha && ventana > _anchoTelefono;
+    final hayFondo = !acceso && AppColors.paleta.fondo != null;
     final anchoColumna = escritorio ? _anchoColumnaEscritorio : _anchoTelefono;
     final tema = Theme.of(context);
 
@@ -192,7 +206,10 @@ class _NeroMoneyAppState extends ConsumerState<NeroMoneyApp> {
               child: ColoredBox(
                 // En el marco de escritorio se ve el FondoTema (con sus
                 // resplandores); la columna del teléfono usa el fondo liso.
-                color: marco || acceso ? Colors.transparent : AppColors.canvas,
+                // Con un fondo con imagen, también el teléfono la deja ver.
+                color: marco || acceso || hayFondo
+                    ? Colors.transparent
+                    : AppColors.canvas,
                 child: DecoratedBox(
                   position: DecorationPosition.foreground,
                   decoration: BoxDecoration(
@@ -213,7 +230,7 @@ class _NeroMoneyAppState extends ConsumerState<NeroMoneyApp> {
                         ? mq.copyWith(size: Size(anchoColumna, mq.size.height))
                         : mq,
                     child: Theme(
-                      data: marco
+                      data: marco || hayFondo
                           ? tema.copyWith(
                               scaffoldBackgroundColor: Colors.transparent,
                             )

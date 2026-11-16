@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/moneda/conversor_moneda.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/utils/formato_monto.dart';
 import '../data/cuenta.dart';
 
 /// Tarjeta de cuenta compacta del diseño móvil (según las pantallas del
@@ -73,9 +73,11 @@ class CuentaMovil extends StatelessWidget {
     child: Icon(_icono, color: color, size: 24),
   );
 
-  String get _monto => ocultar ? '••••' : formatoMonto(cuenta.saldoActual);
+  String get _monto =>
+      ocultar ? '••••' : ConversorMoneda.formato(cuenta.saldoActual, cuenta.id);
 
   Widget _carrusel(Color color) {
+    final digitos = cuenta.ultimos4Digitos;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -83,10 +85,25 @@ class CuentaMovil extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: Text(
-                cuenta.nombre,
-                style: AppTextStyles.headlineSm.copyWith(color: Colors.white),
-                overflow: TextOverflow.ellipsis,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    cuenta.nombre,
+                    style: AppTextStyles.headlineSm.copyWith(
+                      color: Colors.white,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (digitos != null && digitos.isNotEmpty)
+                    Text(
+                      '•••• $digitos',
+                      style: AppTextStyles.labelCode.copyWith(
+                        color: Colors.white.withValues(alpha: 0.7),
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                ],
               ),
             ),
             _insignia(color),
@@ -202,7 +219,7 @@ class CuentaMovil extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Deuda ${formatoMonto(cuenta.deudaActual ?? 0)}',
+            'Deuda ${ConversorMoneda.formato(cuenta.deudaActual ?? 0, cuenta.id)}',
             style: AppTextStyles.bodyMd.copyWith(
               color: Colors.white.withValues(alpha: 0.75),
             ),

@@ -9,8 +9,9 @@ import '../theme/app_colors.dart';
 /// usuario: el botón se estira con un pequeño rebote hasta el tamaño del
 /// panel, y el contenido aparece desenfocado y se enfoca al llegar.
 ///
-/// En pantallas anchas el panel queda a la derecha, de alto completo; en
-/// teléfono ocupa casi toda la pantalla.
+/// En pantallas anchas el panel es una ventana centrada de [tamanoPanel]
+/// (diseño del usuario de nov. 2026); en teléfono ocupa casi toda la
+/// pantalla.
 class BotonConPanel extends StatefulWidget {
   const BotonConPanel({
     super.key,
@@ -18,6 +19,7 @@ class BotonConPanel extends StatefulWidget {
     required this.panel,
     this.colorBoton,
     this.radioBoton = 16,
+    this.tamanoPanel = const Size(760, 800),
   });
 
   /// El botón visible. Recibe `abrir` para conectarlo a su onTap.
@@ -33,6 +35,9 @@ class BotonConPanel extends StatefulWidget {
 
   /// Radio de las esquinas del botón (un círculo de 56 = 28).
   final double radioBoton;
+
+  /// Tamaño de la ventana en pantallas anchas (se encoge si no cabe).
+  final Size tamanoPanel;
 
   @override
   State<BotonConPanel> createState() => _BotonConPanelState();
@@ -71,6 +76,7 @@ class _BotonConPanelState extends State<BotonConPanel> {
           origen: origen,
           colorBoton: widget.colorBoton ?? AppColors.acento,
           radioBoton: widget.radioBoton,
+          tamano: widget.tamanoPanel,
           contenido: (context) =>
               widget.panel(context, () => Navigator.of(context).maybePop()),
         ),
@@ -97,9 +103,11 @@ class _PanelTransformado extends StatelessWidget {
     required this.origen,
     required this.colorBoton,
     required this.radioBoton,
+    required this.tamano,
     required this.contenido,
   });
 
+  final Size tamano;
   final Animation<double> animacion;
   final Rect origen;
   final Color colorBoton;
@@ -113,12 +121,13 @@ class _PanelTransformado extends StatelessWidget {
 
   Rect _destino(Size area, EdgeInsets seguro) {
     if (area.width >= 720) {
-      const ancho = 460.0;
-      return Rect.fromLTRB(
-        area.width - ancho - 16,
-        16 + seguro.top,
-        area.width - 16,
-        area.height - 16 - seguro.bottom,
+      // Ventana centrada; si la pantalla es más chica, se encoge.
+      final ancho = tamano.width.clamp(0.0, area.width - 48);
+      final alto = tamano.height.clamp(0.0, area.height - 48 - seguro.vertical);
+      return Rect.fromCenter(
+        center: Offset(area.width / 2, (area.height + seguro.top) / 2),
+        width: ancho,
+        height: alto,
       );
     }
     return Rect.fromLTRB(

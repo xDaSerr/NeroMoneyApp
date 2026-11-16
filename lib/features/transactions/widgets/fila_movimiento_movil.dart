@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/moneda/conversor_moneda.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/utils/formato_monto.dart';
 import '../../../core/widgets/piezas_escritorio.dart' show colorDeCategoria;
 import '../data/categoria.dart';
 import '../data/transaccion.dart';
@@ -80,7 +80,7 @@ class FilaMovimientoMovil extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Text(
-            '${esIngreso ? '+' : '−'}${formatoMonto(t.monto)}',
+            '${esIngreso ? '+' : '−'}${ConversorMoneda.formato(t.monto, t.cuentaId)}',
             style: AppTextStyles.bodyLg.copyWith(
               color: colorMonto,
               fontWeight: FontWeight.w700,

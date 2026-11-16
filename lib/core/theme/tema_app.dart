@@ -24,6 +24,30 @@ extension TemaAppNombre on TemaApp {
   );
 }
 
+/// Fondos con imagen (Plus y Pro). Son aparte de los 8 colores, que siguen
+/// siendo para todos: con un fondo elegido, la app usa la imagen y una
+/// paleta hecha para ella; sin fondo (o sin Plus), el color de siempre.
+/// El nombre del enum es lo que se guarda en Firestore
+/// (`usuarios/{uid}.fondo`).
+enum FondoApp {
+  cristalOrbital('Cristal orbital', '01-cristal-orbital'),
+  horizonteLunar('Horizonte lunar', '02-horizonte-lunar'),
+  jardinZen('Jardín zen', '03-jardin-zen-futurista'),
+  topografiaLiquida('Topografía líquida', '04-topografia-liquida'),
+  arquitecturaLuz('Arquitectura de luz', '05-arquitectura-de-luz');
+
+  const FondoApp(this.etiqueta, this._archivo);
+
+  final String etiqueta;
+  final String _archivo;
+
+  String get imagen => 'assets/fondos/$_archivo.webp';
+  String get miniatura => 'assets/fondos/$_archivo-mini.webp';
+
+  static FondoApp? desdeTexto(String? texto) =>
+      FondoApp.values.where((f) => f.name == texto).firstOrNull;
+}
+
 /// Todos los colores de una paleta. Los nombres son por función (acento,
 /// secundario…), no por tono: el "acento" del tema Rojo es rojo, el del Negro
 /// es el cian original del diseño "Obsidian Cyber-Glass".
@@ -50,9 +74,13 @@ class PaletaTema {
     required this.degradadoAccion,
     required this.degradadoBurbuja,
     required this.resplandores,
+    this.fondo,
   });
 
   final TemaApp tema;
+
+  /// Si la paleta es de un fondo con imagen (ver FondoTema).
+  final FondoApp? fondo;
   final Brightness brillo;
 
   // Fondo y superficies
@@ -92,6 +120,10 @@ class PaletaTema {
 
   static PaletaTema de(TemaApp tema) => _paletas[tema]!;
 
+  /// La paleta hecha para cada fondo: todos son medianoche con luces cian
+  /// y amatista, cada uno con su propio tono.
+  static PaletaTema deFondo(FondoApp fondo) => _paletasFondo[fondo]!;
+
   // Las 7 oscuras comparten textos y bordes: el fondo cambia de tinte, la
   // legibilidad no.
   static const _textoOscuro = Color(0xFFFFFFFF);
@@ -113,7 +145,9 @@ class PaletaTema {
     required Color secundarioProfundo,
     required List<Color> burbuja,
     required List<Color> resplandores,
+    FondoApp? fondo,
   }) => PaletaTema(
+    fondo: fondo,
     tema: tema,
     brillo: Brightness.dark,
     canvas: canvas,
@@ -135,6 +169,79 @@ class PaletaTema {
     degradadoBurbuja: burbuja,
     resplandores: resplandores,
   );
+
+  static final Map<FondoApp, PaletaTema> _paletasFondo = {
+    FondoApp.cristalOrbital: _oscura(
+      tema: TemaApp.negro,
+      fondo: FondoApp.cristalOrbital,
+      canvas: const Color(0xFF05060D),
+      surface1: const Color(0xFF0F1322),
+      acento: const Color(0xFF22E6FF),
+      acentoPresionado: const Color(0xFF00CDEB),
+      finAccion: const Color(0xFF3B82F6),
+      secundario: const Color(0xFF9D4EDD),
+      secundarioClaro: const Color(0xFFC084FC),
+      secundarioProfundo: const Color(0xFF7B2CBF),
+      burbuja: const [Color(0xFF7B2CBF), Color(0xFF4C1D95)],
+      resplandores: const [Color(0xFF22E6FF), Color(0xFF9D4EDD)],
+    ),
+    FondoApp.horizonteLunar: _oscura(
+      tema: TemaApp.negro,
+      fondo: FondoApp.horizonteLunar,
+      canvas: const Color(0xFF05060B),
+      surface1: const Color(0xFF10121E),
+      acento: const Color(0xFF3EE6D6),
+      acentoPresionado: const Color(0xFF22CDBD),
+      finAccion: const Color(0xFF8B5CF6),
+      secundario: const Color(0xFF8B5CF6),
+      secundarioClaro: const Color(0xFFB794F6),
+      secundarioProfundo: const Color(0xFF6D28D9),
+      burbuja: const [Color(0xFF6D28D9), Color(0xFF3B1E78)],
+      resplandores: const [Color(0xFF3EE6D6), Color(0xFF8B5CF6)],
+    ),
+    FondoApp.jardinZen: _oscura(
+      tema: TemaApp.negro,
+      fondo: FondoApp.jardinZen,
+      canvas: const Color(0xFF040607),
+      surface1: const Color(0xFF0E1417),
+      acento: const Color(0xFF2DD4E8),
+      acentoPresionado: const Color(0xFF14B8CC),
+      finAccion: const Color(0xFFB45CE8),
+      secundario: const Color(0xFFB45CE8),
+      secundarioClaro: const Color(0xFFD69CF5),
+      secundarioProfundo: const Color(0xFF8E2DBF),
+      burbuja: const [Color(0xFF8E2DBF), Color(0xFF581C87)],
+      resplandores: const [Color(0xFF2DD4E8), Color(0xFFB45CE8)],
+    ),
+    FondoApp.topografiaLiquida: _oscura(
+      tema: TemaApp.negro,
+      fondo: FondoApp.topografiaLiquida,
+      canvas: const Color(0xFF06070F),
+      surface1: const Color(0xFF111324),
+      acento: const Color(0xFF19E3D3),
+      acentoPresionado: const Color(0xFF0CC7B8),
+      finAccion: const Color(0xFF7C6CF6),
+      secundario: const Color(0xFF7C6CF6),
+      secundarioClaro: const Color(0xFFA99CFA),
+      secundarioProfundo: const Color(0xFF5B48D9),
+      burbuja: const [Color(0xFF5B48D9), Color(0xFF34277F)],
+      resplandores: const [Color(0xFF19E3D3), Color(0xFF7C6CF6)],
+    ),
+    FondoApp.arquitecturaLuz: _oscura(
+      tema: TemaApp.negro,
+      fondo: FondoApp.arquitecturaLuz,
+      canvas: const Color(0xFF05050C),
+      surface1: const Color(0xFF10101F),
+      acento: const Color(0xFF00D9FF),
+      acentoPresionado: const Color(0xFF00BFE3),
+      finAccion: const Color(0xFFB26BFF),
+      secundario: const Color(0xFFB26BFF),
+      secundarioClaro: const Color(0xFFD0A2FF),
+      secundarioProfundo: const Color(0xFF8B3FE0),
+      burbuja: const [Color(0xFF8B3FE0), Color(0xFF52208C)],
+      resplandores: const [Color(0xFF00D9FF), Color(0xFFB26BFF)],
+    ),
+  };
 
   static final Map<TemaApp, PaletaTema> _paletas = {
     // El diseño original "Obsidian Cyber-Glass" (Stitch), sin cambios.

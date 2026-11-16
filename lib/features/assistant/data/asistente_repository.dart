@@ -81,6 +81,7 @@ class AsistenteRepository {
     String contenido, {
     List<String> chipsCuentas = const [],
     bool registrado = false,
+    Map<String, dynamic>? movimiento,
   }) async {
     final mensaje = MensajeChat(
       id: '',
@@ -89,6 +90,7 @@ class AsistenteRepository {
       fecha: DateTime.now(),
       chipsCuentas: chipsCuentas,
       registrado: registrado,
+      movimiento: movimiento,
     );
     await _mensajes.add(mensaje.toFirestore());
     // La barra rápida muestra el mismo mensaje confirmado que el chat.
@@ -661,6 +663,7 @@ class AsistenteRepository {
     required String mensajeExito,
   }) async {
     try {
+      final fecha = DateTime.now();
       await _transaccionesRepository.registrarTransaccion(
         Transaccion(
           id: '',
@@ -669,7 +672,7 @@ class AsistenteRepository {
           categoria: categoria,
           descripcion: descripcion,
           cuentaId: cuentaId,
-          fecha: DateTime.now(),
+          fecha: fecha,
           origen: _origenActual,
         ),
       );
@@ -677,6 +680,15 @@ class AsistenteRepository {
         AutorMensaje.asistente,
         mensajeExito,
         registrado: true,
+        // La tarjeta del chat (concepto, cuenta, monto) sale de aquí.
+        movimiento: {
+          'tipo': tipo.name,
+          'monto': monto,
+          'categoria': categoria,
+          'descripcion': descripcion,
+          'cuentaId': cuentaId,
+          'fecha': Timestamp.fromDate(fecha),
+        },
       );
     } on SaldoInsuficienteException catch (e) {
       await _guardarMensaje(
@@ -906,6 +918,11 @@ class AsistenteRepository {
   String _mensajeError(FirebaseFunctionsException e) {
     if (e.code == 'unauthenticated') {
       return 'Parece que tu sesión expiró — vuelve a iniciar sesión e intenta de nuevo.';
+    }
+    // Llegó al límite de su plan (Gratis: 15 al mes). El servidor ya
+    // redacta el mensaje con el plan y a dónde ir.
+    if (e.code == 'resource-exhausted' && e.message != null) {
+      return e.message!;
     }
     return 'No pude conectarme con mi cerebro (DeepSeek) en este momento. Intenta de nuevo en un momento.';
   }

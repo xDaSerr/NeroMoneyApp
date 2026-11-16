@@ -3,6 +3,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../account_detail_screen.dart' show heroDeCuenta;
+import '../../../core/moneda/monedas_providers.dart';
 import '../../../core/router/app_shell.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -31,6 +33,8 @@ class _CuentasMovilState extends ConsumerState<CuentasMovil> {
 
   @override
   Widget build(BuildContext context) {
+    // Multimoneda: recalcular cuando cambian las cuentas o los tipos de cambio.
+    ref.watch(conversorMonedaProvider);
     final cuentasAsync = ref.watch(cuentasProvider);
     final privacidad = ref.watch(privacidadInicioProvider);
     final ocultar = privacidad.value ?? true;
@@ -63,6 +67,7 @@ class _CuentasMovilState extends ConsumerState<CuentasMovil> {
                           subtitulo: 'Tus bolsillos, organizados.',
                           // --- "+ Agregar": se transforma en "Nueva cuenta" ---
                           accion: BotonConPanel(
+                            tamanoPanel: const Size(900, 860),
                             colorBoton: AppColors.acento,
                             boton: (context, abrir) => BotonAccionMovil(
                               texto: 'Agregar',
@@ -140,7 +145,10 @@ class _CuentasMovilState extends ConsumerState<CuentasMovil> {
     final visibles = _filtro == null
         ? cuentas
         : cuentas.where((c) => c.tipo == _filtro).toList();
-    final total = cuentas.fold<double>(0, (a, c) => a + c.efectoEnPatrimonio);
+    final total = cuentas.fold<double>(
+      0,
+      (a, c) => a + c.efectoEnPatrimonioPrincipal,
+    );
 
     return [
       SliverToBoxAdapter(
@@ -204,11 +212,19 @@ class _CuentasMovilState extends ConsumerState<CuentasMovil> {
                 borderRadius: BorderRadius.circular(20),
                 onTap: () =>
                     context.push('/accounts/detalle', extra: cuenta.id),
-                child: CuentaMovil(
-                  cuenta: cuenta,
-                  ocultar: ocultar,
-                  enCuadricula: true,
-                  accion: _menu(cuenta),
+                // La tarjeta "vuela" hasta el detalle de la cuenta.
+                child: Hero(
+                  tag: heroDeCuenta(cuenta.id),
+                  flightShuttleBuilder: (_, _, _, _, destino) => Material(
+                    type: MaterialType.transparency,
+                    child: destino.widget,
+                  ),
+                  child: CuentaMovil(
+                    cuenta: cuenta,
+                    ocultar: ocultar,
+                    enCuadricula: true,
+                    accion: _menu(cuenta),
+                  ),
                 ),
               )
               .animate()

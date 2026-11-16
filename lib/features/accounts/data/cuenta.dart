@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../../core/moneda/conversor_moneda.dart';
+
 enum TipoCuenta { efectivo, debito, credito, vale, otro }
 
 /// Una "cuenta" o bolsillo de dinero (Efectivo, TC de Nu, Vales, etc.).
@@ -16,6 +18,7 @@ class Cuenta {
     this.esPredeterminada = false,
     this.ultimos4Digitos,
     this.colorPersonalizado,
+    this.moneda,
   });
 
   final String id;
@@ -57,6 +60,15 @@ class Cuenta {
   /// Si es null, `CuentaTile` usa el color por defecto según el tipo
   /// (violeta para crédito, vidrio normal para el resto).
   final int? colorPersonalizado;
+
+  /// Moneda de esta cuenta (multimoneda, Pro). null = la moneda principal
+  /// del perfil. Sus saldos y movimientos están en esta moneda; los totales
+  /// los convierte ConversorMoneda.
+  final String? moneda;
+
+  /// Lo que aporta al patrimonio, ya en la moneda principal.
+  double get efectoEnPatrimonioPrincipal =>
+      ConversorMoneda.deCuenta(efectoEnPatrimonio, id);
 
   /// La deuda real de una tarjeta de crédito (límite menos lo disponible).
   /// Null si no es una cuenta de crédito. Este número NO se guarda en
@@ -105,6 +117,7 @@ class Cuenta {
       esPredeterminada: data['esPredeterminada'] as bool? ?? false,
       ultimos4Digitos: data['ultimos4Digitos'] as String?,
       colorPersonalizado: data['colorPersonalizado'] as int?,
+      moneda: data['moneda'] as String?,
     );
   }
 
@@ -119,6 +132,7 @@ class Cuenta {
       'esPredeterminada': esPredeterminada,
       if (ultimos4Digitos != null) 'ultimos4Digitos': ultimos4Digitos,
       if (colorPersonalizado != null) 'colorPersonalizado': colorPersonalizado,
+      if (moneda != null) 'moneda': moneda,
     };
   }
 
@@ -136,6 +150,7 @@ class Cuenta {
     // copyWith (`x ?? this.x`) sería imposible volver a poner algo en null.
     Object? ultimos4Digitos = _sinCambio,
     Object? colorPersonalizado = _sinCambio,
+    Object? moneda = _sinCambio,
   }) {
     return Cuenta(
       id: id,
@@ -152,6 +167,7 @@ class Cuenta {
       colorPersonalizado: identical(colorPersonalizado, _sinCambio)
           ? this.colorPersonalizado
           : colorPersonalizado as int?,
+      moneda: identical(moneda, _sinCambio) ? this.moneda : moneda as String?,
     );
   }
 }

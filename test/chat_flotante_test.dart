@@ -107,10 +107,12 @@ void main() {
       );
       tester.view.viewInsets = const FakeViewPadding(bottom: 300);
       await tester.pumpAndSettle();
+      // La cápsula queda a 12 del teclado; el texto va dentro de ella, con
+      // su propio relleno (diseño de nov. 2026).
       expect(
         tester.getBottomLeft(campo).dy,
-        closeTo(550 - 12, 1),
-        reason: 'Solo un margen de 12 sobre el teclado',
+        allOf(lessThanOrEqualTo(550 - 12), greaterThan(550 - 30)),
+        reason: 'La barra queda pegada al teclado',
       );
       await comprobarUltimoVisible();
       final altoInicial = tester.getSize(campo).height;

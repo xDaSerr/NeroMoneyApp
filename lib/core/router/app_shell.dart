@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/planes/data/membresia.dart';
+import '../../features/planes/providers/planes_providers.dart';
+import '../moneda/monedas_providers.dart';
 import '../theme/controlador_tema.dart';
 import '../widgets/barra_flotante.dart';
 import '../../features/assistant/data/controlador_asistente.dart';
@@ -78,6 +81,8 @@ class _AppShellState extends ConsumerState<AppShell>
 
   @override
   Widget build(BuildContext context) {
+    // Multimoneda: recalcular cuando cambian las cuentas o los tipos de cambio.
+    ref.watch(conversorMonedaProvider);
     // Justo al cerrar sesión, o mientras un inicio de sesión con Google
     // todavía no termina, hay un instante en el que este shell sigue
     // montado pero ya no hay uid — controladorAsistenteProvider (y todo lo
@@ -100,6 +105,14 @@ class _AppShellState extends ConsumerState<AppShell>
     // cambia el perfil; cambiar() ignora el mismo tema y, si se llama en
     // pleno build, espera al final del cuadro para notificar.
     if (perfil != null) ControladorTema.instancia.cambiar(perfil.tema);
+    // Los fondos con imagen son de Plus y Pro: si el plan baja a Gratis, se
+    // vuelve al color (el fondo elegido se queda guardado por si regresa).
+    final plan = ref.watch(membresiaProvider).value?.plan;
+    if (perfil != null && plan != null) {
+      ControladorTema.instancia.cambiarFondo(
+        plan == PlanNero.gratis ? null : perfil.fondo,
+      );
+    }
     final asistente = ref.watch(controladorAsistenteProvider);
     _asistente = asistente;
     final navigationShell = widget.navigationShell;

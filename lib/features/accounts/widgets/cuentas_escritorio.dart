@@ -3,6 +3,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../account_detail_screen.dart' show heroDeCuenta;
+import '../../../core/moneda/monedas_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/utils/formato_monto.dart';
@@ -30,6 +32,7 @@ class _CuentasEscritorioState extends ConsumerState<CuentasEscritorio> {
   TipoCuenta? _filtro; // null = todas
 
   Widget _botonAgregar({required bool relleno}) => BotonConPanel(
+    tamanoPanel: const Size(900, 860),
     colorBoton: relleno ? AppColors.acento : AppColors.surface1,
     boton: (context, abrir) => BotonContorno(
       texto: 'Agregar cuenta',
@@ -42,6 +45,8 @@ class _CuentasEscritorioState extends ConsumerState<CuentasEscritorio> {
 
   @override
   Widget build(BuildContext context) {
+    // Multimoneda: recalcular cuando cambian las cuentas o los tipos de cambio.
+    ref.watch(conversorMonedaProvider);
     final cuentasAsync = ref.watch(cuentasProvider);
     final privacidad = ref.watch(privacidadInicioProvider);
     final ocultar = privacidad.value ?? true;
@@ -115,7 +120,10 @@ class _CuentasEscritorioState extends ConsumerState<CuentasEscritorio> {
     final visibles = _filtro == null
         ? cuentas
         : cuentas.where((c) => c.tipo == _filtro).toList();
-    final total = cuentas.fold<double>(0, (a, c) => a + c.efectoEnPatrimonio);
+    final total = cuentas.fold<double>(
+      0,
+      (a, c) => a + c.efectoEnPatrimonioPrincipal,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -230,10 +238,19 @@ class _CuentasEscritorioState extends ConsumerState<CuentasEscritorio> {
                             '/accounts/detalle',
                             extra: cuenta.id,
                           ),
-                          child: CuentaTile(
-                            cuenta: cuenta,
-                            ocultarImportes: ocultar,
-                            accion: _menu(cuenta),
+                          // La tarjeta "vuela" hasta el detalle de la cuenta.
+                          child: Hero(
+                            tag: heroDeCuenta(cuenta.id),
+                            flightShuttleBuilder: (_, _, _, _, destino) =>
+                                Material(
+                                  type: MaterialType.transparency,
+                                  child: destino.widget,
+                                ),
+                            child: CuentaTile(
+                              cuenta: cuenta,
+                              ocultarImportes: ocultar,
+                              accion: _menu(cuenta),
+                            ),
                           ),
                         ),
                       )

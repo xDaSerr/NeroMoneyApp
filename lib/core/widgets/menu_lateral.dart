@@ -4,8 +4,8 @@ import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 
 /// Secciones del diseño de escritorio y la ruta a la que lleva cada una. El
-/// chat ("asistente") no está en el menú: se abre con el botón "Hablar
-/// con…".
+/// chat ("asistente") está en el menú con el nombre del asistente y también
+/// se abre con el botón "Hablar con…".
 enum SeccionEscritorio {
   inicio('/home'),
   movimientos('/movements'),
@@ -21,6 +21,8 @@ enum SeccionEscritorio {
   /// ej. /accounts/detalle → cuentas). null = pantalla de un solo paso
   /// (agregar movimiento, transferir, editar perfil...).
   static SeccionEscritorio? deRuta(String ruta) {
+    // La personalización del asistente se ve como parte de su sección.
+    if (ruta == '/personalizar-asistente') return asistente;
     for (final s in values) {
       if (ruta == s.ruta || ruta.startsWith('${s.ruta}/')) return s;
     }
@@ -38,6 +40,7 @@ class MenuLateral extends StatelessWidget {
     required this.llaves,
     required this.nombreUsuario,
     required this.inicialUsuario,
+    this.nombreAsistente = 'Lucy',
   });
 
   static const ancho = 240.0;
@@ -51,13 +54,18 @@ class MenuLateral extends StatelessWidget {
   final String nombreUsuario;
   final String inicialUsuario;
 
+  /// Texto del botón del chat (el nombre que el usuario le puso).
+  final String nombreAsistente;
+
   Widget _item(
     SeccionEscritorio seccion,
     String texto,
     IconData icono, [
     IconData? iconoActivo,
   ]) => _ItemMenu(
-    key: llaves[seccion],
+    // La llave del asistente ya la usa el botón "Hablar con…" (de ahí sale
+    // la animación del chat); una GlobalKey no puede estar en dos lugares.
+    key: seccion == SeccionEscritorio.asistente ? null : llaves[seccion],
     icono: icono,
     iconoActivo: iconoActivo,
     texto: texto,
@@ -123,6 +131,13 @@ class MenuLateral extends StatelessWidget {
             SeccionEscritorio.reportes,
             'Reportes',
             Icons.bar_chart_rounded,
+          ),
+          // --- El chat con el asistente (también se abre con "Hablar con…") ---
+          _item(
+            SeccionEscritorio.asistente,
+            nombreAsistente,
+            Icons.auto_awesome_outlined,
+            Icons.auto_awesome_rounded,
           ),
           const Spacer(),
           Divider(color: AppColors.glassStrokeStandard, height: 24),

@@ -1,57 +1,96 @@
+<div align="center">
+
 # NeroMoney
 
-App de finanzas personales para Android/iOS con un asistente de IA conversacional (nombre configurable, por defecto "Lucy") al que le puedes decir cosas como *"gasté 200 en un café"* y lo registra solo.
+**Finanzas personales con una asistente de IA a la que le hablas como a una persona.**
 
-Este documento es el mapa del proyecto: para qué sirve cada carpeta, cómo está guardada la información, y qué falta por construir. Se actualiza cada vez que se agrega algo importante — si vuelves después de un tiempo, empieza por aquí.
+Dile a Lucy *"gasté 200 en un café con la tarjeta"* y ella lo registra, actualiza el saldo y te avisa cómo vas.
 
-## Stack
+[**Abrir la app web →**](https://neromoneyapp.web.app)
 
-- **Flutter** (Dart) — Material 3, sin soporte de modo claro (el diseño es oscuro por decisión de marca, no accesibilidad).
-- **Firebase**: Authentication (email/contraseña + Google), Cloud Firestore (base de datos y sincronización).
-- **Riverpod** (`flutter_riverpod`) — manejo de estado.
-- **go_router** — navegación, con `StatefulShellRoute` para las 5 pestañas y redirecciones automáticas según sesión/onboarding.
-- **DeepSeek API** — pendiente de integrar, para el asistente de IA (function calling / JSON mode).
-- Diseño visual: sistema **"Obsidian Cyber-Glass"** (generado con Google Stitch).
+![Flutter](https://img.shields.io/badge/Flutter-Dart-02569B?logo=flutter&logoColor=white)
+![Firebase](https://img.shields.io/badge/Firebase-Auth%20·%20Firestore%20·%20Functions-FFCA28?logo=firebase&logoColor=black)
+![Riverpod](https://img.shields.io/badge/Estado-Riverpod%203-6C3BE4)
+![Plataformas](https://img.shields.io/badge/Plataformas-Web%20·%20Android-22E6FF)
 
+<img src="docs/capturas/inicio-escritorio.webp" alt="Inicio de NeroMoney en escritorio, con el fondo Jardín zen" width="100%">
 
-**Patrón dentro de cada feature:** `data/` (modelos + repositorio que habla con Firestore), `providers/` (los Provider de Riverpod que exponen ese repositorio y sus streams a la UI), y los archivos de pantalla sueltos en la raíz del feature. Si agregas una función nueva, sigue este mismo patrón.
+</div>
 
-## Modelo de datos (Firestore)
+## Qué hace
 
-Todo vive bajo el usuario autenticado — nunca hay una colección "global" de datos de usuarios distintos mezclados:
+- **Lucy, la asistente.** Registra gastos, ingresos, transferencias y pagos de tarjeta escribiéndole o hablándole. Si le falta un dato (la cuenta, la fecha) te lo pregunta sin trabar el chat. El nombre y la voz son configurables.
+- **Cuentas y tarjetas.** Efectivo, débito, crédito y vales, con los últimos 4 dígitos para distinguirlas, límite de crédito y lo que debes en cada una.
+- **Movimientos.** Historial en tiempo real, búsqueda y filtros. Cada movimiento ajusta el saldo de su cuenta en la misma operación, así nunca se desajustan.
+- **Reportes.** Por día, semana, mes, año o un rango libre, con calendario propio, flujo de efectivo y gastos por categoría.
+- **Presupuestos y metas de ahorro**, con una barra de avance que cambia de color cuando te acercas al límite o lo pasas.
+- **Análisis inteligente.** Detecta suscripciones, cargos fijos y gastos hormiga, y genera un resumen del mes.
+- **Foto del ticket.** Le tomas foto al ticket y la IA llena el movimiento.
+- **Multimoneda**, con tipos de cambio diarios y todo convertido a tu moneda principal.
+- **Exportar** a Excel/CSV y PDF, y **respaldo automático** cada mes.
+- **Apariencia.** 8 temas de color y 5 fondos ilustrados; la paleta de la app se adapta a cada fondo.
+- **Diseño adaptable.** En escritorio la app tiene menú lateral y paneles; en teléfono, una barra inferior y vistas a pantalla completa. Se instala como app desde el navegador.
+
+<p align="center">
+  <img src="docs/capturas/inicio-telefono.webp" alt="Inicio en teléfono" width="24%">
+  <img src="docs/capturas/lucy-telefono.webp" alt="Chat con Lucy" width="24%">
+  <img src="docs/capturas/reportes-telefono.webp" alt="Reportes en teléfono con fondo" width="24%">
+</p>
+
+<p align="center">
+  <img src="docs/capturas/periodo-escritorio.webp" alt="Elegir periodo en Reportes" width="49%">
+  <img src="docs/capturas/reportes-escritorio.webp" alt="Reportes avanzados" width="49%">
+</p>
+
+<p align="center">
+  <img src="docs/capturas/presupuestos-escritorio.webp" alt="Presupuestos y metas" width="49%">
+  <img src="docs/capturas/planes-escritorio.webp" alt="Planes Gratis, Plus y Pro" width="49%">
+</p>
+
+## Planes
+
+| | Gratis | Plus | Pro |
+|---|---|---|---|
+| Precio | $0 | $1.50/mes · $14.99/año | $2.99/mes · $29.99/año |
+| Cuentas, movimientos y reportes del mes | ✓ | ✓ | ✓ |
+| Mensajes con Lucy | 15 al mes | 100 al día | 300 al día |
+| Presupuestos y metas | 1 y 1 | Ilimitados | Ilimitados |
+| Temas de color | 8 | 8 + 5 fondos | 8 + 5 fondos |
+| Resumen mensual, suscripciones y gastos hormiga | | ✓ | ✓ |
+| Reportes avanzados y exportar a Excel/CSV | | ✓ | ✓ |
+| Foto del ticket, multimoneda, PDF, respaldo mensual, resumen del año | | | ✓ |
+
+Los pagos se procesan con [Polar](https://polar.sh), que funciona como *merchant of record* y se encarga de los impuestos de cada país.
+
+## Cómo está hecho
 
 ```
-usuarios/{uid}                         → PerfilUsuario: moneda, nombreAsistente, onboardingCompletado
-usuarios/{uid}/cuentas/{id}            → Cuenta: nombre, tipo, saldoActual, (opcional si es crédito: límite/fechas)
-usuarios/{uid}/transacciones/{id}      → Transaccion: monto, tipo (gasto/ingreso), categoría, cuentaId, fecha
+Flutter (web + Android)
+   │  Firebase Auth: correo/contraseña y Google
+   │  Cloud Firestore: datos de cada usuario, en tiempo real
+   ▼
+Cloud Functions (Node 22)
+   ├─ interpretarMensajeIA   → DeepSeek (function calling) para Lucy
+   ├─ resumenMensualIA       → resumen del mes, uno al día, con caché
+   ├─ leerTicketIA           → lectura de tickets con visión
+   ├─ tiposDeCambio          → tipos de cambio diarios, con caché
+   ├─ respaldoMensual / respaldoAhora
+   └─ crearCheckoutPolar · abrirPortalPolar · webhookPolar
 ```
 
-**Reglas de seguridad** (`firestore.rules`): cada usuario solo puede leer/escribir su propio subárbol `usuarios/{uid}/...`; todo lo demás está bloqueado por defecto.
+- **Frontend:** Flutter con Material 3, Riverpod 3 para el estado y go_router (`StatefulShellRoute`) para la navegación, con redirecciones según la sesión y el onboarding.
+- **Organización por funciones:** `lib/features/<función>/` con `data/` (modelos y repositorio de Firestore), `providers/` y `widgets/`. Lo compartido vive en `lib/core/` (tema, router, widgets base, moneda).
+- **Diseño:** sistema propio *Obsidian Cyber-Glass*: superficies de vidrio oscuro, acentos turquesa y amatista, tipografías Outfit y JetBrains Mono, y transiciones donde el botón se estira hasta convertirse en el panel.
+- **Pruebas:** pruebas de widgets y de lógica en Flutter (incluyendo capturas en escritorio y teléfono con cada tema) y pruebas de las Cloud Functions con Node.
 
-**Detalle importante:** registrar una transacción actualiza el `saldoActual` de su cuenta de forma atómica (`TransaccionesRepository.registrarTransaccion` usa `runTransaction` de Firestore) — nunca se escribe la transacción sin ajustar el saldo, o viceversa.
+## Seguridad
 
-## Qué está hecho (funcional, probado en dispositivo real)
+- **Ningún secreto vive en el código.** Las llaves de DeepSeek y de Polar están en Google Secret Manager y solo las leen las Cloud Functions en el servidor.
+- **Las claves de Firebase que ves en el repositorio son públicas por diseño:** identifican el proyecto, no dan acceso a los datos. Lo que protege la información son las reglas de Firestore (`firestore.rules`): cada usuario solo puede leer y escribir su propio espacio.
+- **Lo que se paga se valida en el servidor.** El plan de cada usuario y su consumo de IA solo los escribe el backend. El límite de mensajes se cuenta en la función antes de llamar a la IA, y el webhook de pagos verifica la firma de cada evento.
 
-- Login con email/contraseña y con Google (Firebase Auth).
-- Onboarding: elegir moneda + nombrar al asistente (2 pasos, sin fricción).
-- Cuentas: crear/eliminar cuentas (efectivo, débito, crédito, vale, otro), opcionalmente con límite de crédito.
-- Movimientos: historial en tiempo real + alta manual de gastos/ingresos (monto, categoría, cuenta, fecha, descripción).
-- Dashboard: patrimonio total y lista de cuentas; aviso si no tienes ninguna cuenta todavía.
-- Ícono de la app y tema visual completo aplicados.
+## Licencia
 
-## Qué falta (roadmap)
+© 2026 Daniel Serrano. Todos los derechos reservados.
 
-1. **Asistente de IA (DeepSeek)** — la función estrella. Incluye el flujo de "slot-filling" para preguntar el método de pago cuando falta, con borradores pendientes en Firestore para no bloquear el chat si el usuario no responde.
-2. **Reportes** — gráficas de gastos por categoría, comparativas mensuales.
-3. **Voz** (`speech_to_text` / `flutter_tts`) — ya está en `pubspec.yaml`, falta conectarlo a la UI del chat.
-4. **Suscripción** ($2.19/mes, $19.99/año) vía **Google Play Billing** (no Polar.sh — ver razón abajo) para desbloquear el asistente de IA.
-5. Perfil completo: editar cuentas existentes, configurar nombre/cuenta predeterminada del asistente, cambiar moneda.
-
-**Pospuesto para v2** (fuera del alcance actual, no construir todavía): vinculación bancaria real, escaneo de tickets por OCR, score crediticio, simulador de Meses Sin Intereses.
-
-## Decisiones importantes a recordar
-
-- **Nunca** usar Polar.sh (u otro procesador externo) para cobrar la suscripción dentro de la app — Google Play/Apple exigen su propio sistema de facturación para desbloquear contenido digital dentro de la app. Ambas tiendas bajan su comisión de 30% a 15% para el primer $1M USD anual por desarrollador (automático).
-- El onboarding **no** debe pedir crear una cuenta — es opcional a propósito, para reducir fricción. El Dashboard avisa si falta, no lo bloquea.
-- `go_router`'s `redirect` no reacciona solo a cambios en Firestore (solo a cambios de sesión de Firebase Auth o navegaciones explícitas) — cualquier pantalla que cambie algo que afecte una redirección (ej. completar el onboarding) debe navegar explícitamente después, no asumir que el redirect lo hará solo.
-- Los providers de Riverpod que dependen del uid del usuario usan `currentUidProvider` (en `auth_providers.dart`), no `authStateChangesProvider` directo — este último puede devolver `null` por una fracción de segundo al recién crearse (antes de su primer evento del stream) aunque Firebase ya tenga la sesión lista.
+El código está publicado para que se pueda ver como portafolio, pero no se puede copiar, modificar, redistribuir ni usar para publicar otra app. Consulta [LICENSE](LICENSE).

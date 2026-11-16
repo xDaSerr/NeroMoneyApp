@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/moneda/monedas_providers.dart';
 import '../../../core/router/app_shell.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -10,6 +11,7 @@ import '../../../core/widgets/boton_con_panel.dart';
 import '../../../core/widgets/piezas_escritorio.dart' show MenuDesplegable;
 import '../../../core/widgets/piezas_movil.dart';
 import '../../accounts/data/cuenta.dart';
+import '../../exportar/exportar_dialogo.dart';
 import '../../accounts/providers/cuentas_providers.dart';
 import '../data/periodo_movimientos.dart';
 import '../data/transaccion.dart';
@@ -64,6 +66,8 @@ class _MovimientosMovilState extends ConsumerState<MovimientosMovil> {
 
   @override
   Widget build(BuildContext context) {
+    // Multimoneda: recalcular cuando cambian las cuentas o los tipos de cambio.
+    ref.watch(conversorMonedaProvider);
     final cuentas = ref.watch(cuentasProvider).value ?? const <Cuenta>[];
     final movimientos = ref.watch(
       transaccionesPorRangoProvider(_periodo.rango),
@@ -83,13 +87,25 @@ class _MovimientosMovilState extends ConsumerState<MovimientosMovil> {
                   TituloMovil(
                     titulo: 'Movimientos',
                     subtitulo: 'Tu actividad, al día.',
-                    // --- "+ Nuevo": se transforma en "Crear movimiento" ---
-                    accion: BotonConPanel(
-                      colorBoton: AppColors.acento,
-                      boton: (context, abrir) =>
-                          BotonAccionMovil(texto: 'Nuevo', onTap: abrir),
-                      panel: (context, cerrar) =>
-                          PanelNuevoMovimiento(onCerrar: cerrar),
+                    accion: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // --- Exportar a Excel/CSV (Plus) o PDF (Pro) ---
+                        IconButton(
+                          tooltip: 'Exportar',
+                          color: AppColors.acento,
+                          onPressed: () => mostrarDialogoExportar(context, ref),
+                          icon: const Icon(Icons.download_rounded),
+                        ),
+                        // --- "+ Nuevo": se transforma en "Crear movimiento" ---
+                        BotonConPanel(
+                          colorBoton: AppColors.acento,
+                          boton: (context, abrir) =>
+                              BotonAccionMovil(texto: 'Nuevo', onTap: abrir),
+                          panel: (context, cerrar) =>
+                              PanelNuevoMovimiento(onCerrar: cerrar),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 16),

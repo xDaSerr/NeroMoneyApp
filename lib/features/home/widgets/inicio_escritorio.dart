@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/moneda/monedas_providers.dart';
 import '../../../core/router/app_shell.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -24,6 +25,7 @@ import '../../transactions/data/transaccion.dart';
 import '../../transactions/providers/transacciones_providers.dart';
 import '../../transactions/widgets/movimiento_tile.dart';
 import '../../transactions/widgets/panel_nuevo_movimiento.dart';
+import '../../presupuestos/widgets/tarjeta_planeacion_inicio.dart';
 import '../providers/privacidad_inicio_provider.dart';
 
 /// Inicio en ventanas anchas (ver HomeScreen): los mismos datos que el de
@@ -35,6 +37,8 @@ class InicioEscritorio extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Multimoneda: recalcular cuando cambian las cuentas o los tipos de cambio.
+    ref.watch(conversorMonedaProvider);
     final cuentasAsync = ref.watch(cuentasProvider);
     final transacciones = ref.watch(transaccionesProvider).value ?? const [];
     final privacidad = ref.watch(privacidadInicioProvider);
@@ -122,7 +126,8 @@ class InicioEscritorio extends ConsumerWidget {
                               _TarjetaPatrimonio(
                                 total: cuentas.fold<double>(
                                   0,
-                                  (acc, c) => acc + c.efectoEnPatrimonio,
+                                  (acc, c) =>
+                                      acc + c.efectoEnPatrimonioPrincipal,
                                 ),
                                 moneda: perfil?.moneda ?? 'MXN',
                                 ocultar: ocultar,
@@ -146,6 +151,12 @@ class InicioEscritorio extends ConsumerWidget {
                         child: Column(
                           children: [
                             _GastosDelMes(transacciones: transacciones),
+                            // --- Presupuestos y metas ---
+                            const TarjetaPlaneacionInicio(
+                              padding: EdgeInsets.all(24),
+                              radio: 24,
+                            ),
+                            const SizedBox(height: 22),
                             _UltimosMovimientos(
                               transacciones: transacciones,
                               cuentas: cuentas,

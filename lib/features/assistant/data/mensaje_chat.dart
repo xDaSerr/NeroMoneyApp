@@ -13,6 +13,7 @@ class MensajeChat {
     required this.fecha,
     this.chipsCuentas = const [],
     this.registrado = false,
+    this.movimiento,
   });
 
   final String id;
@@ -35,6 +36,11 @@ class MensajeChat {
   /// a la función que guarda el dato — ver CLAUDE.md → Backend de IA).
   final bool registrado;
 
+  /// Lo que se registró (tipo, monto, categoria, descripcion, cuentaId,
+  /// fecha) para mostrarlo como tarjeta en el chat. Los mensajes viejos no
+  /// lo traen: entonces solo se ve la marca "Registrado".
+  final Map<String, dynamic>? movimiento;
+
   factory MensajeChat.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> doc,
   ) {
@@ -47,6 +53,7 @@ class MensajeChat {
       chipsCuentas:
           (data['chipsCuentas'] as List<dynamic>?)?.cast<String>() ?? const [],
       registrado: data['registrado'] as bool? ?? false,
+      movimiento: (data['movimiento'] as Map?)?.cast<String, dynamic>(),
     );
   }
 
@@ -57,6 +64,7 @@ class MensajeChat {
       'fecha': Timestamp.fromDate(fecha),
       if (chipsCuentas.isNotEmpty) 'chipsCuentas': chipsCuentas,
       if (registrado) 'registrado': registrado,
+      if (movimiento != null) 'movimiento': movimiento,
     };
   }
 }

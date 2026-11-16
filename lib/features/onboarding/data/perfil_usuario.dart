@@ -25,6 +25,7 @@ class PerfilUsuario {
     this.horaRecordatorio1 = 14 * 60,
     this.horaRecordatorio2 = 20 * 60,
     this.tema = TemaApp.negro,
+    this.fondo,
     this.asistenteNombrado = true,
   });
 
@@ -39,6 +40,9 @@ class PerfilUsuario {
   // Color de la app elegido en el onboarding (y editable en Perfil). Ver
   // tema_app.dart: pinta el fondo completo, "Blanco" es modo claro.
   final TemaApp tema;
+
+  /// Fondo con imagen (Plus y Pro). null = solo el color.
+  final FondoApp? fondo;
 
   // El onboarding ya no pide el nombre del asistente: la primera vez que el
   // usuario lo abre, el asistente se presenta y le pregunta cómo quiere
@@ -126,6 +130,7 @@ class PerfilUsuario {
       horaRecordatorio1: data['horaRecordatorio1'] as int? ?? 14 * 60,
       horaRecordatorio2: data['horaRecordatorio2'] as int? ?? 20 * 60,
       tema: TemaAppNombre.desdeTexto(data['tema'] as String?),
+      fondo: FondoApp.desdeTexto(data['fondo'] as String?),
       asistenteNombrado: data['asistenteNombrado'] as bool? ?? true,
     );
   }
@@ -145,6 +150,8 @@ class PerfilUsuario {
       'horaRecordatorio1': horaRecordatorio1,
       'horaRecordatorio2': horaRecordatorio2,
       'tema': tema.name,
+      // null también se guarda: así quitar el fondo sí lo borra.
+      'fondo': fondo?.name,
       'asistenteNombrado': asistenteNombrado,
       // OJO: quitar la foto (volver al ícono por defecto) NO pasa por aquí
       // — este mapa solo sabe agregar/actualizar el campo, nunca borrarlo.
@@ -175,6 +182,8 @@ class PerfilUsuario {
     int? horaRecordatorio2,
     TemaApp? tema,
     bool? asistenteNombrado,
+    // Centinela: null es un valor válido ("sin fondo").
+    Object? fondo = _sinCambioFondo,
   }) {
     return PerfilUsuario(
       moneda: moneda ?? this.moneda,
@@ -195,7 +204,12 @@ class PerfilUsuario {
       horaRecordatorio1: horaRecordatorio1 ?? this.horaRecordatorio1,
       horaRecordatorio2: horaRecordatorio2 ?? this.horaRecordatorio2,
       tema: tema ?? this.tema,
+      fondo: identical(fondo, _sinCambioFondo)
+          ? this.fondo
+          : fondo as FondoApp?,
       asistenteNombrado: asistenteNombrado ?? this.asistenteNombrado,
     );
   }
 }
+
+const _sinCambioFondo = Object();

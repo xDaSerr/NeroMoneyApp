@@ -11,6 +11,28 @@ const {onCall, HttpsError} = require("firebase-functions/v2/https");
 const {defineSecret} = require("firebase-functions/params");
 const OpenAI = require("openai");
 const logger = require("firebase-functions/logger");
+const {consumirMensajeIA, devolverMensajeIA} = require("./limite_ia.js");
+const {mensajeDeLimite} = require("./planes.js");
+const pagos = require("./pagos.js");
+
+// Membresías (Polar): checkout, portal del cliente y webhook. Ver pagos.js.
+exports.crearCheckoutPolar = pagos.crearCheckoutPolar;
+exports.abrirPortalPolar = pagos.abrirPortalPolar;
+exports.webhookPolar = pagos.webhookPolar;
+
+// Resumen mensual inteligente (Plus y Pro). Ver resumen.js.
+exports.resumenMensualIA = require("./resumen.js").resumenMensualIA;
+
+// Tipos de cambio para la multimoneda (Pro). Ver monedas.js.
+exports.tiposDeCambio = require("./monedas.js").tiposDeCambio;
+
+// Foto del ticket (Pro). Ver ticket.js.
+exports.leerTicketIA = require("./ticket.js").leerTicketIA;
+
+// Respaldo automático mensual y "respaldo ahora" (Pro). Ver respaldo.js.
+const respaldo = require("./respaldo.js");
+exports.respaldoMensual = respaldo.respaldoMensual;
+exports.respaldoAhora = respaldo.respaldoAhora;
 
 // La API key vive en Google Secret Manager (se guarda una sola vez con
 // `firebase functions:secrets:set DEEPSEEK_API_KEY`), nunca en un archivo
@@ -358,6 +380,17 @@ exports.interpretarMensajeIA = onCall(
       throw new HttpsError("invalid-argument", "El mensaje no puede estar vacío.");
     }
 
+    // Límite de mensajes según la membresía (Gratis / Plus / Pro). Se
+    // cuenta ANTES de llamar a DeepSeek y se devuelve si DeepSeek falla.
+    const uso = await consumirMensajeIA(request.auth.uid);
+    if (!uso.permitido) {
+      throw new HttpsError("resource-exhausted", mensajeDeLimite(uso.plan, uso.limite), {
+        plan: uso.plan,
+        maximo: uso.limite.maximo,
+        periodo: uso.limite.periodo,
+      });
+    }
+
     // Historial de la conversación (sin incluir `mensaje`, que es el turno
     // actual) — solo para continuidad conversacional inmediata (ej.
     // responder a una pregunta de slot-filling). Se sanea por si acaso: solo
@@ -432,6 +465,9 @@ exports.interpretarMensajeIA = onCall(
         ],
         tool_choice: "auto",
       });
+    } catch (error) {
+      await devolverMensajeIA(request.auth.uid).catch(() => {});
+      throw error;
     } finally {
       // Solo métricas operativas: nunca mensajes, argumentos, saldos ni claves.
       logger.info("latencia_deepseek", {

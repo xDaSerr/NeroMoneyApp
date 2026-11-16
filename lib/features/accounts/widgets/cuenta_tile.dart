@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/moneda/conversor_moneda.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/utils/formato_monto.dart';
 import '../data/cuenta.dart';
 import 'chip_emv.dart';
 
@@ -221,7 +221,10 @@ class CuentaTile extends StatelessWidget {
                           child: Text(
                             ocultarImportes
                                 ? '••••'
-                                : formatoMonto(cuenta.saldoActual),
+                                : ConversorMoneda.formato(
+                                    cuenta.saldoActual,
+                                    cuenta.id,
+                                  ),
                             semanticsLabel: ocultarImportes
                                 ? 'Disponible oculto'
                                 : null,

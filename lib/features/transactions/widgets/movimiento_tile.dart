@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/moneda/conversor_moneda.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/widgets/glass_card.dart';
@@ -80,7 +81,7 @@ class MovimientoTile extends StatelessWidget {
             ),
           ),
           Text(
-            '$signo\$${transaccion.monto.toStringAsFixed(2)}',
+            '$signo${ConversorMoneda.formato(transaccion.monto, transaccion.cuentaId)}',
             style: AppTextStyles.bodyLg.copyWith(
               color: color,
               fontWeight: FontWeight.w600,

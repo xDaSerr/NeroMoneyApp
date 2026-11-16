@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/moneda/monedas_providers.dart';
 import '../../core/router/app_shell.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -17,6 +18,7 @@ import '../accounts/providers/cuentas_providers.dart';
 import '../accounts/widgets/cuenta_movil.dart';
 import '../auth/providers/auth_providers.dart';
 import '../onboarding/providers/perfil_providers.dart';
+import '../presupuestos/widgets/tarjeta_planeacion_inicio.dart';
 import '../profile/data/saludo_usuario.dart';
 import '../transactions/data/resumen_gastos.dart';
 import '../transactions/data/transaccion.dart';
@@ -35,6 +37,8 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Multimoneda: recalcular cuando cambian las cuentas o los tipos de cambio.
+    ref.watch(conversorMonedaProvider);
     if (esEscritorio(context)) return const InicioEscritorio();
 
     final cuentasAsync = ref.watch(cuentasProvider);
@@ -119,7 +123,10 @@ class HomeScreen extends ConsumerWidget {
     if (cuentas.isEmpty) return const _AvisoSinCuentas();
     // Patrimonio = solo dinero real; las tarjetas de crédito no entran
     // (ver Cuenta.efectoEnPatrimonio).
-    final total = cuentas.fold<double>(0, (a, c) => a + c.efectoEnPatrimonio);
+    final total = cuentas.fold<double>(
+      0,
+      (a, c) => a + c.efectoEnPatrimonioPrincipal,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -212,6 +219,9 @@ class HomeScreen extends ConsumerWidget {
         ),
         const SizedBox(height: 22),
         _GastosDelMes(transacciones: transacciones),
+        // --- Presupuestos y metas (avisa al pasar del 80%) ---
+        const TarjetaPlaneacionInicio(),
+        const SizedBox(height: 22),
         _UltimosMovimientos(transacciones: transacciones, cuentas: cuentas),
       ],
     ).animate().fadeIn(duration: 300.ms);
