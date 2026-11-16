@@ -6,6 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/animacion_ligera.dart';
 
 /// "NeroMoney." con el punto en cian, como en el diseño de la tarjeta.
 class LogoNeroMoney extends StatelessWidget {
@@ -60,7 +61,10 @@ class TarjetaAcceso extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: radio,
+        // En teléfono, el fondo animado obliga a re-desenfocar la tarjeta en
+        // cada cuadro: ahí se usa un vidrio más opaco y sin desenfoque.
         child: BackdropFilter(
+          enabled: !animacionLigera,
           filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
           child: Container(
             padding: EdgeInsets.symmetric(
@@ -69,10 +73,12 @@ class TarjetaAcceso extends StatelessWidget {
             ),
             decoration: BoxDecoration(
               borderRadius: radio,
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xB3141A28), Color(0x990C101A)],
+                colors: animacionLigera
+                    ? const [Color(0xE0141A28), Color(0xD20C101A)]
+                    : const [Color(0xB3141A28), Color(0x990C101A)],
               ),
               border: Border.all(color: AppColors.glassStrokeHighlight),
             ),

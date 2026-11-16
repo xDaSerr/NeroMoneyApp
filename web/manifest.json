@@ -7,7 +7,14 @@
     "theme_color": "#0A0D14",
     "description": "Finanzas personales con tu asistente de IA.",
     "orientation": "portrait-primary",
+    "id": "/",
     "prefer_related_applications": false,
+    "related_applications": [
+        {
+            "platform": "webapp",
+            "url": "https://neromoneyapp.web.app/manifest.json"
+        }
+    ],
     "icons": [
         {
             "src": "icons/Icon-192.png",

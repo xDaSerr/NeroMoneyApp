@@ -11,7 +11,7 @@ Dile a Lucy *"gasté 200 en un café con la tarjeta"* y ella lo registra, actual
 ![Flutter](https://img.shields.io/badge/Flutter-Dart-02569B?logo=flutter&logoColor=white)
 ![Firebase](https://img.shields.io/badge/Firebase-Auth%20·%20Firestore%20·%20Functions-FFCA28?logo=firebase&logoColor=black)
 ![Riverpod](https://img.shields.io/badge/Estado-Riverpod%203-6C3BE4)
-![Plataformas](https://img.shields.io/badge/Plataformas-Web%20·%20Android-22E6FF)
+![Plataforma](https://img.shields.io/badge/Plataforma-Web%20instalable%20(PWA)-22E6FF)
 
 <img src="docs/capturas/inicio-escritorio.webp" alt="Inicio de NeroMoney en escritorio, con el fondo Jardín zen" width="100%">
 
@@ -29,7 +29,7 @@ Dile a Lucy *"gasté 200 en un café con la tarjeta"* y ella lo registra, actual
 - **Multimoneda**, con tipos de cambio diarios y todo convertido a tu moneda principal.
 - **Exportar** a Excel/CSV y PDF, y **respaldo automático** cada mes.
 - **Apariencia.** 8 temas de color y 5 fondos ilustrados; la paleta de la app se adapta a cada fondo.
-- **Diseño adaptable.** En escritorio la app tiene menú lateral y paneles; en teléfono, una barra inferior y vistas a pantalla completa. Se instala como app desde el navegador.
+- **Diseño adaptable.** En escritorio la app tiene menú lateral y paneles; en teléfono, una barra inferior y vistas a pantalla completa. Se instala como app desde el navegador, en computadora o en el teléfono.
 
 <p align="center">
   <img src="docs/capturas/inicio-telefono.webp" alt="Inicio en teléfono" width="24%">
@@ -65,7 +65,7 @@ Los pagos se procesan con [Polar](https://polar.sh), que funciona como *merchant
 ## Cómo está hecho
 
 ```
-Flutter (web + Android)
+Flutter (web instalable)
    │  Firebase Auth: correo/contraseña y Google
    │  Cloud Firestore: datos de cada usuario, en tiempo real
    ▼

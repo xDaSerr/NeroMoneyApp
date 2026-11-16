@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/widgets/animacion_ligera.dart';
 import '../../core/widgets/gradient_button.dart';
 import 'widgets/fondo_acceso.dart';
 import 'widgets/formularios_acceso.dart';
@@ -363,7 +364,7 @@ class _BienvenidaScreenState extends State<BienvenidaScreen>
         return Opacity(
           opacity: v,
           child: ImageFiltered(
-            enabled: desenfoque > 0.05,
+            enabled: !animacionLigera && desenfoque > 0.05,
             imageFilter: ImageFilter.blur(
               sigmaX: desenfoque,
               sigmaY: desenfoque,
@@ -393,7 +394,7 @@ class _BienvenidaScreenState extends State<BienvenidaScreen>
             // portada.
             alignment: const Alignment(0, 0.35),
             child: ImageFiltered(
-              enabled: desenfoque > 0.05,
+              enabled: !animacionLigera && desenfoque > 0.05,
               imageFilter: ImageFilter.blur(
                 sigmaX: desenfoque,
                 sigmaY: desenfoque,
@@ -555,8 +556,9 @@ class _Portada extends StatelessWidget {
           : elementos
                 .animate(delay: 250.ms, interval: 110.ms)
                 .fadeIn(duration: 600.ms, curve: Curves.easeOut)
+                // En teléfono, sin desenfoque (ver animacionLigera).
                 .blurXY(
-                  begin: 12,
+                  begin: animacionLigera ? 0 : 12,
                   end: 0,
                   duration: 700.ms,
                   curve: Curves.easeOut,

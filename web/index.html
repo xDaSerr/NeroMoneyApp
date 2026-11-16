@@ -39,8 +39,10 @@
     usuario). Va en HTML, encima del lienzo de Flutter, para aparecer en
     cualquier pantalla de la app. Chrome/Edge: botón que abre la instalación
     real (beforeinstallprompt). iPhone: Safari no permite ese botón, así que
-    se explica cómo hacerlo a mano. Android: además, descargar el APK.
-    "Ahora no" no vuelve a preguntar en 7 días; instalada, no aparece.
+    se explica cómo hacerlo a mano.
+    "Ahora no" lo pospone un día (no para siempre); instalada, no aparece.
+    Si Chrome deja de ofrecer su instalación (pasa tras rechazar la ventana
+    del navegador), se explica cómo hacerlo desde su menú.
   -->
   <style>
     #nm-instalar {
@@ -67,8 +69,6 @@
       border: 1px solid rgba(255, 255, 255, .2); background: transparent; color: #cbd5e1;
     }
     #nm-instalar .principal { background: #00f0ff; border-color: #00f0ff; color: #0a0d14; }
-    #nm-instalar .apk { display: none; margin-top: 12px; font-size: 14px; color: #94a3b8; text-align: center; }
-    #nm-instalar .apk a { color: #00f0ff; font-weight: 600; text-decoration: none; }
     #nm-instalar .asa, #nm-instalar .cerrar, #nm-instalar .marca, #nm-instalar .lema { display: none; }
     #nm-instalar .principal svg { width: 20px; height: 20px; vertical-align: -4px; margin-right: 8px; }
 
@@ -107,8 +107,7 @@
   <script>
     (function () {
       var CLAVE = 'nm_instalar_descartado';
-      var SIETE_DIAS = 7 * 24 * 60 * 60 * 1000;
-      var APK = 'https://github.com/xDaSerr/NeroMoneyApp/releases/latest/download/NeroMoney.apk';
+      var UN_DIA = 24 * 60 * 60 * 1000;
       var ua = navigator.userAgent || '';
       var esIOS = /iphone|ipad|ipod/i.test(ua) ||
         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -121,7 +120,7 @@
       function descartadoHaceRato() {
         try {
           var cuando = Number(localStorage.getItem(CLAVE) || 0);
-          return Date.now() - cuando < SIETE_DIAS;
+          return Date.now() - cuando < UN_DIA;
         } catch (e) { return false; }
       }
       function recordarDescarte() {
@@ -132,7 +131,17 @@
         if (aviso) aviso.classList.remove('visible');
       }
 
-      // modo: 'instalar' (hay botón real), 'ios' (instrucciones), 'apk' (solo APK)
+      // Chrome dice si la app ya está instalada (manifest: related_applications).
+      function yaInstalada() {
+        if (instalada) return Promise.resolve(true);
+        if (!navigator.getInstalledRelatedApps) return Promise.resolve(false);
+        return navigator.getInstalledRelatedApps()
+          .then(function (apps) { return apps.length > 0; })
+          .catch(function () { return false; });
+      }
+
+      // modo: 'instalar' (hay botón real), 'ios' (instrucciones),
+      // 'menu' (instalar desde el menú del navegador)
       function mostrar(modo) {
         if (mostrado || instalada || descartadoHaceRato()) return;
         var aviso = document.getElementById('nm-instalar');
@@ -150,10 +159,12 @@
           p.textContent = 'Toca el botón Compartir de Safari y luego «Agregar a inicio».';
           instalar.textContent = 'Entendido';
           instalar.onclick = function () { recordarDescarte(); ocultar(); };
-        } else if (modo === 'apk') {
-          p.textContent = 'Descarga la app para Android y ábrela como cualquier otra.';
-          instalar.textContent = 'Descargar APK';
-          instalar.onclick = function () { window.location.href = APK; ocultar(); };
+        } else if (modo === 'menu') {
+          p.textContent = esAndroid
+            ? 'Toca el menú ⋮ del navegador y luego «Agregar a la pantalla de inicio».'
+            : 'Usa el botón de instalar en la barra de direcciones o el menú ⋮ → «Instalar NeroMoney».';
+          instalar.textContent = 'Entendido';
+          instalar.onclick = function () { recordarDescarte(); ocultar(); };
         } else {
           if (telefono) {
             instalar.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
@@ -164,10 +175,13 @@
             ocultar();
             if (!evento) return;
             evento.prompt();
-            evento.userChoice.finally(function () { evento = null; });
+            evento.userChoice.then(function (r) {
+              // Si se rechaza la ventana del navegador, se vuelve a ofrecer
+              // mañana (desde el menú si Chrome ya no lanza la suya).
+              if (r && r.outcome === 'dismissed') recordarDescarte();
+            }).finally(function () { evento = null; });
           };
         }
-        if (esAndroid && modo !== 'apk') aviso.querySelector('.apk').style.display = 'block';
         aviso.querySelector('.secundario').onclick = function () { recordarDescarte(); ocultar(); };
         aviso.querySelector('.cerrar').onclick = function () { recordarDescarte(); ocultar(); };
         setTimeout(function () { aviso.classList.add('visible'); }, 50);
@@ -188,10 +202,19 @@
       window.addEventListener('DOMContentLoaded', function () {
         if (esIOS) {
           setTimeout(function () { mostrar('ios'); }, 2500);
-        } else if (esAndroid) {
-          // Navegadores de Android sin instalación (ej. Firefox): al menos el APK.
-          setTimeout(function () { if (!evento) mostrar('apk'); }, 5000);
+          return;
         }
+        var chromium = 'onbeforeinstallprompt' in window;
+        setTimeout(function () {
+          if (evento || mostrado) return;
+          yaInstalada().then(function (si) {
+            if (si) { instalada = true; return; }
+            // Chrome/Edge sin su evento: lo dejó de ofrecer (se rechazó antes).
+            if (chromium && navigator.getInstalledRelatedApps) mostrar('menu');
+            // Otros navegadores de Android (ej. Firefox): también desde su menú.
+            else if (esAndroid) mostrar('menu');
+          });
+        }, 5000);
       });
     })();
   </script>
@@ -213,7 +236,6 @@
       <button type="button" class="secundario">Ahora no</button>
       <button type="button" class="principal">Instalar</button>
     </div>
-    <div class="apk">¿Prefieres la app? <a href="https://github.com/xDaSerr/NeroMoneyApp/releases/latest/download/NeroMoney.apk">Descargar APK para Android</a></div>
   </div>
   <!--
     You can customize the "flutter_bootstrap.js" script.

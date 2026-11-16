@@ -3,6 +3,7 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import 'animacion_ligera.dart';
 
 /// Un botón que al tocarlo se transforma en un panel (y al cerrar el panel,
 /// regresa a ser el botón), como en el video de referencia que mandó el
@@ -213,7 +214,7 @@ class _PanelTransformado extends StatelessWidget {
                         child: Opacity(
                           opacity: visible,
                           child: ImageFiltered(
-                            enabled: visible < 0.98,
+                            enabled: !animacionLigera && visible < 0.98,
                             imageFilter: ImageFilter.blur(
                               sigmaX: (1 - visible) * 10,
                               sigmaY: (1 - visible) * 10,
