@@ -41,6 +41,28 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Gastos compartidos (Pro). Solo los miembros ven el grupo y escriben
+    // sus gastos y metas. Crear, unirse y salir lo hacen las Cloud Functions
+    // (crearGrupo, unirseAGrupo, salirDeGrupo): el cliente nunca cambia la
+    // lista de miembros, que es lo que da acceso.
+    function esMiembro(grupoId) {
+      return request.auth != null &&
+        request.auth.uid in get(/databases/$(database)/documents/grupos/$(grupoId)).data.miembros;
+    }
+    match /grupos/{grupoId} {
+      allow read: if request.auth != null && request.auth.uid in resource.data.miembros;
+      allow write: if false;
+    }
+    match /grupos/{grupoId}/{coleccion}/{docId} {
+      allow read, delete: if esMiembro(grupoId);
+      allow create, update: if coleccion in ['gastos', 'metas'] &&
+        esMiembro(grupoId);
+    }
+    // Código de invitación → grupo: solo lo leen las funciones.
+    match /codigosGrupo/{codigo} {
+      allow read, write: if false;
+    }
+
     // Cualquier otra ruta queda cerrada por defecto (deny-by-default).
     match /{document=**} {
       allow read, write: if false;

@@ -27,7 +27,21 @@ class PerfilUsuario {
     this.tema = TemaApp.negro,
     this.fondo,
     this.asistenteNombrado = true,
+    this.frase = '',
+    this.cumpleanos,
   });
+
+  /// Frase corta bajo tu nombre en Perfil ("Ahorrando para mi carro").
+  final String frase;
+
+  /// Día y mes de cumpleaños (el año no hace falta y no se pide): ese día
+  /// Inicio te felicita. null = no lo puso.
+  final ({int mes, int dia})? cumpleanos;
+
+  bool esCumpleanos(DateTime hoy) =>
+      cumpleanos != null &&
+      cumpleanos!.mes == hoy.month &&
+      cumpleanos!.dia == hoy.day;
 
   final String moneda; // código ISO: "MXN", "USD", etc.
   final String nombreAsistente;
@@ -132,6 +146,8 @@ class PerfilUsuario {
       tema: TemaAppNombre.desdeTexto(data['tema'] as String?),
       fondo: FondoApp.desdeTexto(data['fondo'] as String?),
       asistenteNombrado: data['asistenteNombrado'] as bool? ?? true,
+      frase: data['frase'] as String? ?? '',
+      cumpleanos: _leerCumpleanos(data['cumpleanos']),
     );
   }
 
@@ -153,6 +169,12 @@ class PerfilUsuario {
       // null también se guarda: así quitar el fondo sí lo borra.
       'fondo': fondo?.name,
       'asistenteNombrado': asistenteNombrado,
+      'frase': frase,
+      // "MM-DD"; null también se guarda para poder quitarlo.
+      'cumpleanos': cumpleanos == null
+          ? null
+          : '${cumpleanos!.mes.toString().padLeft(2, '0')}-'
+                '${cumpleanos!.dia.toString().padLeft(2, '0')}',
       // OJO: quitar la foto (volver al ícono por defecto) NO pasa por aquí
       // — este mapa solo sabe agregar/actualizar el campo, nunca borrarlo.
       // Ver PerfilRepository.actualizarAvatarAsistente (usa
@@ -182,6 +204,8 @@ class PerfilUsuario {
     int? horaRecordatorio2,
     TemaApp? tema,
     bool? asistenteNombrado,
+    String? frase,
+    Object? cumpleanos = _sinCambioFondo,
     // Centinela: null es un valor válido ("sin fondo").
     Object? fondo = _sinCambioFondo,
   }) {
@@ -208,8 +232,22 @@ class PerfilUsuario {
           ? this.fondo
           : fondo as FondoApp?,
       asistenteNombrado: asistenteNombrado ?? this.asistenteNombrado,
+      frase: frase ?? this.frase,
+      cumpleanos: identical(cumpleanos, _sinCambioFondo)
+          ? this.cumpleanos
+          : cumpleanos as ({int mes, int dia})?,
     );
   }
+}
+
+({int mes, int dia})? _leerCumpleanos(Object? valor) {
+  if (valor is! String) return null;
+  final m = RegExp(r'^(\d{2})-(\d{2})$').firstMatch(valor);
+  if (m == null) return null;
+  final mes = int.parse(m.group(1)!);
+  final dia = int.parse(m.group(2)!);
+  if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return null;
+  return (mes: mes, dia: dia);
 }
 
 const _sinCambioFondo = Object();

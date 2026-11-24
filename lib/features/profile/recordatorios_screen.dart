@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -54,10 +55,11 @@ class _RecordatoriosScreenState extends ConsumerState<RecordatoriosScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            RecordatoriosService.disponible
-                ? 'Activa las notificaciones de NeroMoney en Ajustes del '
-                      'sistema para poder mandarte estos avisos.'
-                : 'Los recordatorios todavía no funcionan en la versión web.',
+            kIsWeb
+                ? 'Permite las notificaciones de NeroMoney en tu navegador. '
+                      'En iPhone, primero añade la app a tu pantalla de inicio.'
+                : 'Activa las notificaciones de NeroMoney en Ajustes del '
+                      'sistema para poder mandarte estos avisos.',
           ),
         ),
       );

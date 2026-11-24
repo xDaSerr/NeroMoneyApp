@@ -92,7 +92,7 @@ Future<Uint8List> generarPdf({
     hasta: hasta,
   );
   final ingresos = transacciones
-      .where((t) => !t.esTransferencia && t.tipo == TipoTransaccion.ingreso)
+      .where((t) => !t.esMovimientoInterno && t.tipo == TipoTransaccion.ingreso)
       .fold<double>(0, (a, t) => a + t.montoPrincipal);
   final acento = PdfColor.fromHex('#0E7490');
   final gris = PdfColor.fromHex('#6B7280');

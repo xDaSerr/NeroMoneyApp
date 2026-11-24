@@ -1,3 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -34,10 +37,40 @@ class RecordatoriosService {
   /// (`flutter_timezone` — el paquete `timezone` no la detecta solo). Debe
   /// llamarse antes de programar, reprogramar o cancelar cualquier aviso;
   /// es segura de llamar varias veces (solo hace el trabajo una vez).
-  /// En web, `flutter_local_notifications` no tiene implementación — ahí los
-  /// recordatorios tendrían que ser push enviados desde el servidor, que
-  /// todavía no existe. Mientras tanto, todo este servicio es un no-op.
-  static bool get disponible => !kIsWeb;
+  /// En web, `flutter_local_notifications` no tiene implementación: ahí el
+  /// aviso es un push (Firebase Cloud Messaging) que manda la Cloud
+  /// Function `recordatoriosWeb` a la hora elegida, así llega aunque la app
+  /// esté cerrada. La app solo registra este navegador y su zona horaria;
+  /// las horas y el interruptor ya viven en el perfil.
+  static bool get disponible => true;
+
+  /// Guarda el token de este navegador y su zona horaria en el perfil
+  /// (`usuarios/{uid}`). arrayUnion: varios navegadores o teléfonos del
+  /// mismo usuario reciben el aviso, y repetirlo no duplica nada.
+  static Future<bool> _registrarNavegador() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return false;
+    try {
+      // ignore: deprecated_member_use
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token == null || token.isEmpty) return false;
+      String zona;
+      try {
+        zona = (await FlutterTimezone.getLocalTimezone()).identifier;
+      } catch (_) {
+        zona = 'America/Mexico_City';
+      }
+      await FirebaseFirestore.instance.collection('usuarios').doc(uid).set({
+        'tokensWeb': FieldValue.arrayUnion([token]),
+        'zonaHoraria': zona,
+      }, SetOptions(merge: true));
+      return true;
+    } catch (_) {
+      // Navegador sin push (Safari fuera de la app instalada, modo
+      // incógnito) o permiso negado: simplemente no hay avisos.
+      return false;
+    }
+  }
 
   static Future<void> _inicializar() async {
     if (_listo) return;
@@ -58,7 +91,17 @@ class RecordatoriosService {
   /// recordatorios — nunca antes, para no pedir permisos sin que el
   /// usuario haya mostrado intención real de usarlos.
   static Future<bool> pedirPermiso() async {
-    if (!disponible) return false;
+    if (kIsWeb) {
+      try {
+        final ajustes = await FirebaseMessaging.instance.requestPermission();
+        if (ajustes.authorizationStatus != AuthorizationStatus.authorized) {
+          return false;
+        }
+      } catch (_) {
+        return false;
+      }
+      return _registrarNavegador();
+    }
     await _inicializar();
     final android = _plugin
         .resolvePlatformSpecificImplementation<
@@ -83,7 +126,18 @@ class RecordatoriosService {
     // respaldo y mandar "Hola. ¿Registraste..." sin nombre de por medio.
     required String nombreSaludo,
   }) async {
-    if (!disponible) return;
+    if (kIsWeb) {
+      // Solo si ya dio permiso: nunca abrir la ventana del navegador al
+      // arrancar la app. Renueva el token por si el navegador lo cambió.
+      try {
+        final ajustes = await FirebaseMessaging.instance
+            .getNotificationSettings();
+        if (ajustes.authorizationStatus == AuthorizationStatus.authorized) {
+          await _registrarNavegador();
+        }
+      } catch (_) {}
+      return;
+    }
     await _inicializar();
 
     final tituloMediodia = '$nombreAsistente 👋';
@@ -132,7 +186,9 @@ class RecordatoriosService {
 
   /// Apaga los dos recordatorios — se llama al desactivar el interruptor.
   static Future<void> cancelarTodos() async {
-    if (!disponible) return;
+    // En web basta con el interruptor apagado del perfil: el servidor no
+    // le manda avisos a quien los tiene desactivados.
+    if (kIsWeb) return;
     await _inicializar();
     await _plugin.cancel(id: _idMediodia);
     await _plugin.cancel(id: _idNoche);

@@ -19,6 +19,7 @@ import '../accounts/widgets/cuenta_movil.dart';
 import '../auth/providers/auth_providers.dart';
 import '../onboarding/providers/perfil_providers.dart';
 import '../presupuestos/widgets/tarjeta_planeacion_inicio.dart';
+import '../libreta/widgets/tarjeta_libreta_inicio.dart';
 import '../profile/data/saludo_usuario.dart';
 import '../transactions/data/resumen_gastos.dart';
 import '../transactions/data/transaccion.dart';
@@ -71,7 +72,9 @@ class HomeScreen extends ConsumerWidget {
               const SizedBox(height: 18),
               // --- Saludo: apodo > Google > correo (ver datosDeSaludo) ---
               Text(
-                'Hola, ${saludo.nombre} 👋',
+                perfil?.esCumpleanos(DateTime.now()) ?? false
+                    ? '¡Feliz cumpleaños, ${saludo.nombre}! 🎂'
+                    : 'Hola, ${saludo.nombre} 👋',
                 style: AppTextStyles.display.copyWith(fontSize: 30),
               ),
               Text(
@@ -221,6 +224,8 @@ class HomeScreen extends ConsumerWidget {
         _GastosDelMes(transacciones: transacciones),
         // --- Presupuestos y metas (avisa al pasar del 80%) ---
         const TarjetaPlaneacionInicio(),
+        // --- Libreta: solo si hay préstamos sin pagar ---
+        const TarjetaLibretaInicio(),
         const SizedBox(height: 22),
         _UltimosMovimientos(transacciones: transacciones, cuentas: cuentas),
       ],

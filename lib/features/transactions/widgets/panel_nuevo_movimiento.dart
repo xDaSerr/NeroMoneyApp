@@ -198,6 +198,16 @@ class _PanelNuevoMovimientoState extends ConsumerState<PanelNuevoMovimiento> {
       _guardando = true;
       _error = null;
     });
+    // Hoy: la hora real de ahora. Otro día (un gasto olvidado): mediodía
+    // de ese día y sin hora visible, porque el calendario no la pregunta.
+    final ahora = DateTime.now();
+    final esHoy =
+        _fecha.year == ahora.year &&
+        _fecha.month == ahora.month &&
+        _fecha.day == ahora.day;
+    final fecha = esHoy
+        ? ahora
+        : DateTime(_fecha.year, _fecha.month, _fecha.day, 12);
     try {
       await ref
           .read(transaccionesRepositoryProvider)
@@ -209,7 +219,8 @@ class _PanelNuevoMovimientoState extends ConsumerState<PanelNuevoMovimiento> {
               categoria: _categoria!,
               descripcion: _descripcion.text.trim(),
               cuentaId: _cuentaId!,
-              fecha: _fecha,
+              fecha: fecha,
+              sinHora: !esHoy,
             ),
           );
       widget.onCerrar();

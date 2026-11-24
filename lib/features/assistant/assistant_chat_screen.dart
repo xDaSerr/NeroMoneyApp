@@ -709,12 +709,17 @@ class _BarraDeEntrada extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       // --- Micrófono: mantener presionado, soltar envía ---
+                      // Listener (eventos crudos) y no GestureDetector: en
+                      // teléfono, el toque largo del Tooltip ganaba el gesto
+                      // a los ~0,5 s, cancelaba el tap y cortaba el micrófono.
                       Tooltip(
                         message: 'Mantén pulsado para hablar',
-                        child: GestureDetector(
-                          onTapDown: (_) => onMicPress(),
-                          onTapUp: (_) => onMicRelease(),
-                          onTapCancel: onMicCancel,
+                        triggerMode: TooltipTriggerMode.manual,
+                        child: Listener(
+                          behavior: HitTestBehavior.opaque,
+                          onPointerDown: (_) => onMicPress(),
+                          onPointerUp: (_) => onMicRelease(),
+                          onPointerCancel: (_) => onMicCancel(),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 180),
                             width: ancho ? 50 : 42,

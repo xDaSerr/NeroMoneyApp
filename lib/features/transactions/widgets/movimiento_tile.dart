@@ -74,7 +74,7 @@ class MovimientoTile extends StatelessWidget {
                   style: AppTextStyles.bodyLg,
                 ),
                 Text(
-                  '${transaccion.fecha.day}/${transaccion.fecha.month} · ${transaccion.esTransferencia && transaccion.descripcion.isNotEmpty ? recorrido : nombreCuenta}',
+                  '${transaccion.fecha.day}/${transaccion.fecha.month}${transaccion.horaVisible == null ? '' : ' ${transaccion.horaVisible}'} · ${transaccion.esTransferencia && transaccion.descripcion.isNotEmpty ? recorrido : nombreCuenta}',
                   style: AppTextStyles.labelCode,
                 ),
               ],

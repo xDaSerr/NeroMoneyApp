@@ -73,7 +73,7 @@ class Deteccion {
             .where(
               (t) =>
                   t.tipo == TipoTransaccion.gasto &&
-                  !t.esTransferencia &&
+                  !t.esMovimientoInterno &&
                   t.categoria != 'Ajuste' &&
                   t.montoPrincipal > 0 &&
                   !t.fecha.isAfter(ahora),

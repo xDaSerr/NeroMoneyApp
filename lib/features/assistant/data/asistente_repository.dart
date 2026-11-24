@@ -3,7 +3,11 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
+import '../../../core/utils/fecha_es.dart';
 import '../../accounts/data/cuenta.dart';
+import '../../planes/data/membresia.dart';
+import '../../presupuestos/data/planeacion.dart';
+import '../../presupuestos/data/planeacion_repository.dart';
 import '../../transactions/data/resumen_gastos.dart';
 import '../../transactions/data/transaccion.dart';
 import '../../transactions/data/transacciones_repository.dart';
@@ -28,13 +32,21 @@ class AsistenteRepository {
     this._firestore,
     this._functions,
     this._uid,
-    this._transaccionesRepository,
-  );
+    this._transaccionesRepository, {
+    PlaneacionRepository? planeacion,
+  }) : _planeacion = planeacion ?? PlaneacionRepository(_firestore, _uid);
 
   final FirebaseFirestore _firestore;
   final FirebaseFunctions _functions;
   final String _uid;
   final TransaccionesRepository _transaccionesRepository;
+  final PlaneacionRepository _planeacion;
+
+  /// Cuándo ocurrió el movimiento que se está registrando (null = ahora).
+  /// Lo fija el mensaje que se procesa; así los cuatro caminos que
+  /// registran (cuenta exacta, por tipo, chips, respuesta de texto) usan
+  /// la misma fecha sin pasarla por cada método.
+  ({DateTime fecha, bool sinHora})? _fechaActual;
 
   DocumentReference<Map<String, dynamic>> get _usuarioDoc =>
       _firestore.collection('usuarios').doc(_uid);
@@ -147,7 +159,7 @@ class AsistenteRepository {
         .get();
     return snap.docs
         .map(Transaccion.fromFirestore)
-        .where((t) => !t.esTransferencia)
+        .where((t) => !t.esMovimientoInterno)
         .map((t) {
           return {
             'tipo': t.tipo.name,
@@ -419,7 +431,8 @@ class AsistenteRepository {
     await _guardarMensaje(
       AutorMensaje.asistente,
       'Hola, soy $nombreAsistente 👋 Cuéntame qué gastaste o qué te ingresó y lo registro, '
-      'o pregúntame cuánto llevas gastado hoy, esta semana o este mes.',
+      'aunque haya sido otro día. También creo presupuestos y metas de '
+      'ahorro, y te digo cuánto llevas gastado.',
     );
   }
 
@@ -471,6 +484,7 @@ class AsistenteRepository {
     ultimaRespuesta = null;
     ultimoMensajeAsistente = null;
     _origenActual = origen;
+    _fechaActual = null;
     final mensaje = texto.trim();
     if (mensaje.isEmpty) return;
 
@@ -478,7 +492,7 @@ class AsistenteRepository {
     // mismo — son los turnos reales que ya se hablaron.
     // Las tres lecturas son independientes. Esperar a todas ANTES de escribir
     // conserva el historial previo, sin duplicar el mensaje que vamos a enviar.
-    final (historial, transaccionesRecientes, borradorSnap) = await medicion
+    final (historial, transaccionesRecientes, borradorSnap, metas) = await medicion
         .medir(
           'preparacion_ms',
           () => (
@@ -488,6 +502,7 @@ class AsistenteRepository {
               () => _transaccionesRecientes(cuentas),
             ),
             medicion.medir('borrador_ms', () => _borradorDoc.get()),
+            _metasActuales(),
           ).wait,
         );
 
@@ -535,6 +550,10 @@ class AsistenteRepository {
           // Le sirve al modelo para corregir una transcripción de voz
           // imperfecta hacia el nombre exacto (ej. "rapicar" → "Rappi Card").
           'nombresCuentas': cuentas.map((c) => c.nombre).toList(),
+          // "Ayer" o "el 20 de noviembre" dependen del día del usuario.
+          'hoy': _fechaIso(DateTime.now()),
+          'diaSemana': _diasSemana[DateTime.now().weekday - 1],
+          'nombresMetas': metas.map((m) => m.nombre).toList(),
         }),
       );
       final data = Map<String, dynamic>.from(resultado.data as Map);
@@ -585,7 +604,49 @@ class AsistenteRepository {
           return;
         }
 
+        if (data['tipo'] == 'presupuesto') {
+          await _gestionarPresupuesto(
+            data['accion'] as String? ?? 'fijar',
+            data['categoria'] as String? ?? '',
+            (data['limite'] as num?)?.toDouble() ?? 0,
+          );
+          return;
+        }
+
+        if (data['tipo'] == 'meta') {
+          await _gestionarMeta(
+            accion: data['accion'] as String? ?? 'crear',
+            nombre: data['nombre'] as String? ?? '',
+            objetivo: (data['objetivo'] as num?)?.toDouble() ?? 0,
+            monto: (data['monto'] as num?)?.toDouble() ?? 0,
+            fechaLimite: data['fechaLimite'] as String? ?? '',
+            metas: metas,
+          );
+          return;
+        }
+
+        if (data['tipo'] == 'consultar_planeacion') {
+          await _consultarPlaneacion(
+            data['que'] as String? ?? 'presupuestos',
+            data['nombre'] as String? ?? '',
+            metas,
+          );
+          return;
+        }
+
         final datos = Map<String, dynamic>.from(data['datos'] as Map);
+        final cuando = resolverFecha(
+          datos['fecha'] as String?,
+          datos['hora'] as String?,
+          DateTime.now(),
+        );
+        if (cuando.error != null) {
+          await _guardarMensaje(AutorMensaje.asistente, cuando.error!);
+          return;
+        }
+        _fechaActual = cuando.esAhora
+            ? null
+            : (fecha: cuando.fecha, sinHora: cuando.sinHora);
         await _resolverYRegistrar(
           tipo: TipoTransaccion.values.byName(datos['tipo'] as String),
           monto: (datos['monto'] as num).toDouble(),
@@ -638,6 +699,9 @@ class AsistenteRepository {
     BorradorPendiente borrador,
     Cuenta cuenta,
   ) async {
+    _fechaActual = borrador.fecha == null
+        ? null
+        : (fecha: borrador.fecha!, sinHora: borrador.sinHora);
     await _intentarRegistrarYConfirmar(
       tipo: borrador.tipo,
       monto: borrador.monto,
@@ -663,7 +727,8 @@ class AsistenteRepository {
     required String mensajeExito,
   }) async {
     try {
-      final fecha = DateTime.now();
+      final fecha = _fechaActual?.fecha ?? DateTime.now();
+      final sinHora = _fechaActual?.sinHora ?? false;
       await _transaccionesRepository.registrarTransaccion(
         Transaccion(
           id: '',
@@ -674,11 +739,15 @@ class AsistenteRepository {
           cuentaId: cuentaId,
           fecha: fecha,
           origen: _origenActual,
+          sinHora: sinHora,
         ),
       );
       await _guardarMensaje(
         AutorMensaje.asistente,
-        mensajeExito,
+        _fechaActual == null
+            ? mensajeExito
+            : '$mensajeExito Quedó con fecha ${_diaHablado(fecha)}'
+                  '${sinHora ? '' : ' a las ${_dosDigitos(fecha.hour)}:${_dosDigitos(fecha.minute)}'}.',
         registrado: true,
         // La tarjeta del chat (concepto, cuenta, monto) sale de aquí.
         movimiento: {
@@ -783,6 +852,8 @@ class AsistenteRepository {
         cuentaMencionada: cuentaMencionada,
         creadoEn: DateTime.now(),
         idsCuentasSugeridas: cuentas.map((c) => c.id).toList(),
+        fecha: _fechaActual?.fecha,
+        sinHora: _fechaActual?.sinHora ?? false,
       ).toFirestore(),
     );
 
@@ -913,6 +984,424 @@ class AsistenteRepository {
         ? 'un gasto'
         : 'un ingreso';
     return 'Detecté $sustantivo de \$${monto.toStringAsFixed(2)} en $categoria.';
+  }
+
+  // --- Fechas de movimientos pasados -----------------------------------
+
+  static const _diasSemana = [
+    'lunes',
+    'martes',
+    'miércoles',
+    'jueves',
+    'viernes',
+    'sábado',
+    'domingo',
+  ];
+
+  static String _dosDigitos(int n) => n.toString().padLeft(2, '0');
+  static String _fechaIso(DateTime f) =>
+      '${f.year}-${_dosDigitos(f.month)}-${_dosDigitos(f.day)}';
+
+  /// "de ayer", "del sábado 21 de noviembre", "del 3 de enero de 2025".
+  static String _diaHablado(DateTime f, [DateTime? referencia]) {
+    final hoy = referencia ?? DateTime.now();
+    final dia = DateTime(f.year, f.month, f.day);
+    final diferencia = DateTime(
+      hoy.year,
+      hoy.month,
+      hoy.day,
+    ).difference(dia).inDays;
+    if (diferencia == 0) return 'de hoy';
+    if (diferencia == 1) return 'de ayer';
+    final anio = f.year == hoy.year ? '' : ' de ${f.year}';
+    final semana = diferencia < 7 ? '${_diasSemana[f.weekday - 1]} ' : '';
+    return 'del $semana${f.day} de ${mesesEs[f.month - 1]}$anio';
+  }
+
+  /// Convierte la fecha y hora que entendió la IA en la fecha del
+  /// movimiento. Reglas:
+  /// - Sin fecha (o hoy) y sin hora: ahora mismo ([esAhora]).
+  /// - Hoy con hora: esa hora, si ya pasó.
+  /// - Otro día con hora: ese día a esa hora.
+  /// - Otro día sin hora (lo normal en un gasto olvidado): mediodía de ese
+  ///   día con [sinHora], para que ningún cambio de zona horaria lo mueva
+  ///   de día y la app muestre solo la fecha.
+  /// Nunca en el futuro, y nunca más de un año atrás (casi seguro un año
+  /// mal entendido): en esos casos devuelve [error] para que Lucy lo diga.
+  static ({DateTime fecha, bool sinHora, bool esAhora, String? error})
+  resolverFecha(String? fechaIA, String? horaIA, DateTime ahora) {
+    final hoy = DateTime(ahora.year, ahora.month, ahora.day);
+    var dia = hoy;
+    final coincideFecha = RegExp(
+      r'^(\d{4})-(\d{2})-(\d{2})$',
+    ).firstMatch((fechaIA ?? '').trim());
+    if (coincideFecha != null) {
+      final a = int.parse(coincideFecha.group(1)!);
+      final m = int.parse(coincideFecha.group(2)!);
+      final d = int.parse(coincideFecha.group(3)!);
+      final candidato = DateTime(a, m, d);
+      // DateTime(2026, 2, 31) "se pasa" a marzo: eso es una fecha inválida.
+      if (candidato.month == m && candidato.day == d) dia = candidato;
+    }
+    int? hora;
+    var minuto = 0;
+    final coincideHora = RegExp(
+      r'^(\d{1,2}):(\d{2})$',
+    ).firstMatch((horaIA ?? '').trim());
+    if (coincideHora != null) {
+      final h = int.parse(coincideHora.group(1)!);
+      final mi = int.parse(coincideHora.group(2)!);
+      if (h < 24 && mi < 60) {
+        hora = h;
+        minuto = mi;
+      }
+    }
+
+    if (dia.isAfter(hoy)) {
+      return (
+        fecha: ahora,
+        sinHora: false,
+        esAhora: false,
+        error:
+            'Solo puedo anotar lo que ya pasó. Cuando hagas ese pago, '
+            'dímelo y lo registro.',
+      );
+    }
+    if (hoy.difference(dia).inDays > 366) {
+      return (
+        fecha: ahora,
+        sinHora: false,
+        esAhora: false,
+        error:
+            'Esa fecha es de hace más de un año. Si es correcta, regístralo '
+            'desde "Nuevo movimiento" eligiendo la fecha en el calendario.',
+      );
+    }
+    if (dia == hoy) {
+      if (hora == null) {
+        return (fecha: ahora, sinHora: false, esAhora: true, error: null);
+      }
+      final conHora = DateTime(dia.year, dia.month, dia.day, hora, minuto);
+      if (conHora.isAfter(ahora)) {
+        return (
+          fecha: ahora,
+          sinHora: false,
+          esAhora: false,
+          error:
+              'Esa hora todavía no llega. Si ya lo pagaste, dime la hora '
+              'correcta, o no me digas hora y lo anoto ahora.',
+        );
+      }
+      return (fecha: conHora, sinHora: false, esAhora: false, error: null);
+    }
+    if (hora == null) {
+      return (
+        fecha: DateTime(dia.year, dia.month, dia.day, 12),
+        sinHora: true,
+        esAhora: false,
+        error: null,
+      );
+    }
+    return (
+      fecha: DateTime(dia.year, dia.month, dia.day, hora, minuto),
+      sinHora: false,
+      esAhora: false,
+      error: null,
+    );
+  }
+
+  // --- Presupuestos y metas --------------------------------------------
+
+  Future<List<MetaAhorro>> _metasActuales() async {
+    try {
+      return await _planeacion.observarMetas().first;
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// El plan lo escribe solo el servidor (/suscripciones/{uid}); Gratis
+  /// tiene 1 presupuesto y 1 meta, igual que en la pantalla.
+  Future<PlanNero> _planActual() async {
+    try {
+      final snap = await _firestore
+          .collection('suscripciones')
+          .doc(_uid)
+          .get();
+      return Membresia.fromFirestore(snap.data()).plan;
+    } catch (_) {
+      return PlanNero.gratis;
+    }
+  }
+
+  static String _dinero(double v) => '\$${v.toStringAsFixed(2)}';
+
+  Future<void> _gestionarPresupuesto(
+    String accion,
+    String categoria,
+    double limite,
+  ) async {
+    if (categoria.isEmpty) {
+      await _guardarMensaje(
+        AutorMensaje.asistente,
+        '¿Para qué categoría es el presupuesto?',
+      );
+      return;
+    }
+    final presupuestos = await _planeacion.observarPresupuestos().first;
+    final existente = presupuestos
+        .where((p) => p.categoria == categoria)
+        .firstOrNull;
+
+    if (accion == 'eliminar') {
+      if (existente == null) {
+        await _guardarMensaje(
+          AutorMensaje.asistente,
+          'No tienes presupuesto en $categoria.',
+        );
+        return;
+      }
+      await _planeacion.eliminarPresupuesto(existente.id);
+      await _guardarMensaje(
+        AutorMensaje.asistente,
+        'Listo, quité el presupuesto de $categoria.',
+      );
+      return;
+    }
+
+    if (!limite.isFinite || limite <= 0) {
+      await _guardarMensaje(
+        AutorMensaje.asistente,
+        '¿De cuánto quieres el presupuesto de $categoria al mes?',
+      );
+      return;
+    }
+    if (existente == null) {
+      final maximo = (await _planActual()).maxPresupuestos;
+      if (maximo != null && presupuestos.length >= maximo) {
+        await _guardarMensaje(
+          AutorMensaje.asistente,
+          'En el plan Gratis puedes tener $maximo presupuesto y ya lo usas en '
+          '${presupuestos.first.categoria}. Puedo cambiar ese, o quitarlo '
+          'para crear el de $categoria.',
+        );
+        return;
+      }
+    }
+    await _planeacion.guardarPresupuesto(existente?.id, categoria, limite);
+    await _guardarMensaje(
+      AutorMensaje.asistente,
+      existente == null
+          ? 'Listo, tu presupuesto de $categoria es de ${_dinero(limite)} al mes.'
+          : 'Listo, cambié el presupuesto de $categoria de '
+                '${_dinero(existente.limite)} a ${_dinero(limite)} al mes.',
+    );
+  }
+
+  /// La meta que nombró el usuario. Si solo tiene una, es esa aunque no
+  /// la nombre ("aparté 500 para mi meta").
+  MetaAhorro? _buscarMeta(String nombre, List<MetaAhorro> metas) {
+    final termino = nombre.trim().toLowerCase();
+    if (termino.isNotEmpty) {
+      for (final m in metas) {
+        if (m.nombre.trim().toLowerCase() == termino) return m;
+      }
+      for (final m in metas) {
+        final n = m.nombre.trim().toLowerCase();
+        if (n.contains(termino) || termino.contains(n)) return m;
+      }
+    }
+    return metas.length == 1 ? metas.first : null;
+  }
+
+  Future<void> _gestionarMeta({
+    required String accion,
+    required String nombre,
+    required double objetivo,
+    required double monto,
+    required String fechaLimite,
+    required List<MetaAhorro> metas,
+  }) async {
+    if (accion == 'crear') {
+      final nombreLimpio = nombre.trim();
+      if (nombreLimpio.isEmpty || !objetivo.isFinite || objetivo <= 0) {
+        await _guardarMensaje(
+          AutorMensaje.asistente,
+          'Para crear la meta dime para qué es y cuánto quieres juntar.',
+        );
+        return;
+      }
+      final maximo = (await _planActual()).maxMetas;
+      if (maximo != null && metas.length >= maximo) {
+        await _guardarMensaje(
+          AutorMensaje.asistente,
+          'En el plan Gratis puedes tener $maximo meta y ya tienes '
+          '"${metas.first.nombre}".',
+        );
+        return;
+      }
+      final ahora = DateTime.now();
+      final parseada = DateTime.tryParse(fechaLimite);
+      final limite = parseada != null && parseada.isAfter(ahora)
+          ? parseada
+          : null;
+      await _planeacion.guardarMeta(
+        MetaAhorro(
+          id: '',
+          nombre: nombreLimpio,
+          objetivo: objetivo,
+          ahorrado: 0,
+          creada: ahora,
+          fechaLimite: limite,
+        ),
+      );
+      final cuando = limite == null
+          ? ''
+          : ' para el ${limite.day} de ${mesesEs[limite.month - 1]}'
+                '${limite.year == ahora.year ? '' : ' de ${limite.year}'}';
+      await _guardarMensaje(
+        AutorMensaje.asistente,
+        'Creé tu meta "$nombreLimpio": juntar ${_dinero(objetivo)}$cuando. '
+        'Dime cuando apartes dinero y lo abono.',
+      );
+      return;
+    }
+
+    final meta = _buscarMeta(nombre, metas);
+    if (meta == null) {
+      await _guardarMensaje(
+        AutorMensaje.asistente,
+        metas.isEmpty
+            ? 'Todavía no tienes metas de ahorro. Dime para qué quieres '
+                  'ahorrar y cuánto, y la creo.'
+            : '¿A cuál meta? Tienes: ${metas.map((m) => m.nombre).join(', ')}.',
+      );
+      return;
+    }
+
+    if (accion == 'eliminar') {
+      // Borrar una meta pierde su historial de ahorro: mejor que lo
+      // confirme en la pantalla, igual que al borrar un movimiento.
+      await _guardarMensaje(
+        AutorMensaje.asistente,
+        'Para borrar "${meta.nombre}" entra a Presupuestos y metas y bórrala '
+        'ahí, donde puedes confirmarlo.',
+      );
+      return;
+    }
+
+    if (!monto.isFinite || monto <= 0) {
+      await _guardarMensaje(
+        AutorMensaje.asistente,
+        accion == 'retirar'
+            ? '¿Cuánto sacaste de "${meta.nombre}"?'
+            : '¿Cuánto apartaste para "${meta.nombre}"?',
+      );
+      return;
+    }
+    if (accion == 'retirar') {
+      final retiro = monto > meta.ahorrado ? meta.ahorrado : monto;
+      if (retiro <= 0) {
+        await _guardarMensaje(
+          AutorMensaje.asistente,
+          '"${meta.nombre}" todavía no tiene dinero ahorrado.',
+        );
+        return;
+      }
+      await _planeacion.abonar(meta.id, -retiro);
+      await _guardarMensaje(
+        AutorMensaje.asistente,
+        'Saqué ${_dinero(retiro)} de "${meta.nombre}". Llevas '
+        '${_dinero(meta.ahorrado - retiro)} de ${_dinero(meta.objetivo)}.',
+      );
+      return;
+    }
+    await _planeacion.abonar(meta.id, monto);
+    final nuevo = meta.ahorrado + monto;
+    final falta = meta.objetivo - nuevo;
+    await _guardarMensaje(
+      AutorMensaje.asistente,
+      falta <= 0.01
+          ? '¡Abonaste ${_dinero(monto)} y completaste "${meta.nombre}"! 🎉'
+          : 'Aboné ${_dinero(monto)} a "${meta.nombre}". Llevas '
+                '${_dinero(nuevo)} de ${_dinero(meta.objetivo)}; te faltan '
+                '${_dinero(falta)}.',
+    );
+  }
+
+  Future<void> _consultarPlaneacion(
+    String que,
+    String nombre,
+    List<MetaAhorro> metas,
+  ) async {
+    final ahora = DateTime.now();
+    if (que == 'metas') {
+      if (metas.isEmpty) {
+        await _guardarMensaje(
+          AutorMensaje.asistente,
+          'No tienes metas de ahorro todavía.',
+        );
+        return;
+      }
+      final buscada = nombre.trim().isEmpty ? null : _buscarMeta(nombre, metas);
+      if (nombre.trim().isNotEmpty && buscada == null) {
+        await _guardarMensaje(
+          AutorMensaje.asistente,
+          'No encontré esa meta. Tienes: ${metas.map((m) => m.nombre).join(', ')}.',
+        );
+        return;
+      }
+      final elegidas = buscada == null ? metas : [buscada];
+      final lineas = elegidas.map((m) {
+        if (m.completada) return '"${m.nombre}": ¡completada!';
+        final p = m.proyectar(ahora);
+        final porMes = p.necesarioPorMes == null
+            ? ''
+            : ' Para llegar a tiempo necesitas ${_dinero(p.necesarioPorMes!)} al mes.';
+        return '"${m.nombre}": llevas ${_dinero(m.ahorrado)} de '
+            '${_dinero(m.objetivo)} (${(m.progreso * 100).round()}%).$porMes';
+      });
+      await _guardarMensaje(AutorMensaje.asistente, lineas.join('\n'));
+      return;
+    }
+
+    final presupuestos = await _planeacion.observarPresupuestos().first;
+    if (presupuestos.isEmpty) {
+      await _guardarMensaje(
+        AutorMensaje.asistente,
+        'No tienes presupuestos. Dime, por ejemplo, "ponme un presupuesto de '
+        '2000 en comida".',
+      );
+      return;
+    }
+    final desde = DateTime(ahora.year, ahora.month);
+    final hasta = DateTime(ahora.year, ahora.month + 1);
+    final snap = await _usuarioDoc
+        .collection('transacciones')
+        .where('fecha', isGreaterThanOrEqualTo: Timestamp.fromDate(desde))
+        .where('fecha', isLessThan: Timestamp.fromDate(hasta))
+        .get();
+    var estados = EstadoPresupuesto.calcular(
+      presupuestos,
+      snap.docs.map(Transaccion.fromFirestore).toList(),
+      ahora,
+    );
+    final termino = nombre.trim().toLowerCase();
+    if (termino.isNotEmpty) {
+      final filtrados = estados
+          .where((e) => e.presupuesto.categoria.toLowerCase().contains(termino))
+          .toList();
+      if (filtrados.isNotEmpty) estados = filtrados;
+    }
+    final lineas = estados.map((e) {
+      final c = e.presupuesto.categoria;
+      return e.restante < 0
+          ? '$c: te pasaste por ${_dinero(-e.restante)} '
+                '(${_dinero(e.gastado)} de ${_dinero(e.presupuesto.limite)}).'
+          : '$c: llevas ${_dinero(e.gastado)} de '
+                '${_dinero(e.presupuesto.limite)}; te quedan ${_dinero(e.restante)}.';
+    });
+    await _guardarMensaje(AutorMensaje.asistente, lineas.join('\n'));
   }
 
   String _mensajeError(FirebaseFunctionsException e) {

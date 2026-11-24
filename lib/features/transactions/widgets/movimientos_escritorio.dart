@@ -331,7 +331,12 @@ class _MovimientosEscritorioState extends ConsumerState<MovimientosEscritorio> {
         : (esIngreso ? AppColors.inflowEmerald : AppColors.outflowCrimson);
 
     return _Fila(
-      fecha: Text(_fecha(t.fecha), style: AppTextStyles.bodyLg),
+      fecha: Text(
+        t.horaVisible == null
+            ? _fecha(t.fecha)
+            : '${_fecha(t.fecha)} · ${t.horaVisible}',
+        style: AppTextStyles.bodyLg,
+      ),
       concepto: Text(
         concepto,
         style: AppTextStyles.bodyLg.copyWith(fontWeight: FontWeight.w600),

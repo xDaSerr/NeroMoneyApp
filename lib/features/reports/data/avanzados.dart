@@ -191,7 +191,7 @@ class ResumenAnio {
     final transcurridos = (ahora.month - 1) + ahora.day / diasDelMes;
     final delAnio = transacciones.where(
       (t) =>
-          !t.esTransferencia &&
+          !t.esMovimientoInterno &&
           !t.fecha.isBefore(desde) &&
           !t.fecha.isAfter(ahora),
     );

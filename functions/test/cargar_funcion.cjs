@@ -16,6 +16,8 @@ function cargarFuncion(crearCompletion, {codigo, uso} = {}) {
       if (nombre === './monedas.js') return {};
       if (nombre === './ticket.js') return {};
       if (nombre === './respaldo.js') return {};
+      if (nombre === './recordatorios.js') return {};
+      if (nombre === './compartido.js') return {};
       if (nombre === './limite_ia.js') return {
         consumirMensajeIA: async () => {
           contador.consumidos++;

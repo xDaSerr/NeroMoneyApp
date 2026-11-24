@@ -19,7 +19,14 @@ class BorradorPendiente {
     required this.cuentaMencionada,
     required this.creadoEn,
     this.idsCuentasSugeridas = const [],
+    this.fecha,
+    this.sinHora = false,
   });
+
+  /// Cuándo ocurrió, si no fue en el momento (un gasto olvidado). null =
+  /// se registra con la hora en que el usuario elija la cuenta.
+  final DateTime? fecha;
+  final bool sinHora;
 
   final TipoTransaccion tipo;
   final double monto;
@@ -53,6 +60,8 @@ class BorradorPendiente {
       idsCuentasSugeridas:
           (data['idsCuentasSugeridas'] as List<dynamic>?)?.cast<String>() ??
           const [],
+      fecha: (data['fecha'] as Timestamp?)?.toDate(),
+      sinHora: data['sinHora'] == true,
     );
   }
 
@@ -65,6 +74,8 @@ class BorradorPendiente {
       'cuentaMencionada': cuentaMencionada,
       'creadoEn': Timestamp.fromDate(creadoEn),
       'idsCuentasSugeridas': idsCuentasSugeridas,
+      if (fecha != null) 'fecha': Timestamp.fromDate(fecha!),
+      if (sinHora) 'sinHora': true,
     };
   }
 }

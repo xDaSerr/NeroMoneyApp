@@ -11,6 +11,8 @@ enum SeccionEscritorio {
   movimientos('/movements'),
   cuentas('/accounts'),
   reportes('/reports'),
+  libreta('/libreta'),
+  compartido('/compartido'),
   perfil('/profile'),
   asistente('/assistant');
 
@@ -131,6 +133,18 @@ class MenuLateral extends StatelessWidget {
             SeccionEscritorio.reportes,
             'Reportes',
             Icons.bar_chart_rounded,
+          ),
+          _item(
+            SeccionEscritorio.libreta,
+            'Libreta',
+            Icons.menu_book_outlined,
+            Icons.menu_book_rounded,
+          ),
+          _item(
+            SeccionEscritorio.compartido,
+            'Compartido',
+            Icons.groups_outlined,
+            Icons.groups_rounded,
           ),
           // --- El chat con el asistente (también se abre con "Hablar con…") ---
           _item(

@@ -8,6 +8,8 @@ import '../../features/analisis/analisis_screen.dart';
 import '../../features/assistant/assistant_chat_screen.dart';
 import '../../features/auth/bienvenida_screen.dart';
 import '../../features/home/home_screen.dart';
+import '../../features/compartido/compartido_screen.dart';
+import '../../features/libreta/libreta_screen.dart';
 import '../../features/onboarding/data/perfil_repository.dart';
 import '../../features/onboarding/onboarding_flow_screen.dart';
 import '../../features/planes/planes_screen.dart';
@@ -160,6 +162,16 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/presupuestos',
       builder: (context, state) => const PresupuestosScreen(),
+    ),
+    // Préstamos (lo que prestas y te prestan): menú lateral y Perfil.
+    GoRoute(
+      path: '/libreta',
+      builder: (context, state) => const LibretaScreen(),
+    ),
+    // Gastos y metas compartidos (Pro): menú lateral y Perfil.
+    GoRoute(
+      path: '/compartido',
+      builder: (context, state) => const CompartidoScreen(),
     ),
     GoRoute(
       path: '/recordatorios',

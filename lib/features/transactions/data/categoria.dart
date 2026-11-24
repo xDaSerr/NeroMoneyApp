@@ -39,7 +39,12 @@ const categoriasIngreso = [
   Categoria('Otro', Icons.category_rounded),
 ];
 
+/// Categoría de los movimientos de la Libreta (prestar y cobrar). No se
+/// ofrece en los formularios: la ponen solo los préstamos.
+const categoriaPrestamo = 'Préstamo';
+
 IconData iconoParaCategoria(String nombre) {
+  if (nombre == categoriaPrestamo) return Icons.handshake_rounded;
   final todas = [...categoriasGasto, ...categoriasIngreso];
   return todas
       .firstWhere(

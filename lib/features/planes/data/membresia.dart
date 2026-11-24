@@ -1,3 +1,9 @@
+/// false = los botones de pago solo avisan que las suscripciones vienen
+/// pronto (Polar sigue en pruebas). Cambiar a true al abrir los cobros.
+const suscripcionesAbiertas = false;
+const avisoSuscripcionesPendientes =
+    'Las suscripciones aún están pendientes, ¡te diremos cuando estén listas!';
+
 /// Las tres membresías de NeroMoney. Los límites reales los aplica el
 /// servidor (functions/planes.js); aquí solo se muestran.
 enum PlanNero {

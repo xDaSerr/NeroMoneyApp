@@ -104,7 +104,7 @@ Map<String, double> totalPorCategoria(
 }) {
   final porCategoria = <String, double>{};
   for (final t in transacciones) {
-    if (t.esTransferencia || t.tipo != tipo) continue;
+    if (t.esMovimientoInterno || t.tipo != tipo) continue;
     if (t.fecha.isBefore(desde) || !t.fecha.isBefore(hasta)) continue;
     porCategoria.update(
       t.categoria,
@@ -128,7 +128,7 @@ double totalPeriodo(
 }) {
   var total = 0.0;
   for (final t in transacciones) {
-    if (t.esTransferencia || t.tipo != tipo) continue;
+    if (t.esMovimientoInterno || t.tipo != tipo) continue;
     if (t.fecha.isBefore(desde) || !t.fecha.isBefore(hasta)) continue;
     total += t.montoPrincipal;
   }

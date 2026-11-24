@@ -70,7 +70,7 @@ class FilaMovimientoMovil extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  detalle,
+                  t.horaVisible == null ? detalle : '$detalle · ${t.horaVisible}',
                   style: AppTextStyles.bodyMd,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

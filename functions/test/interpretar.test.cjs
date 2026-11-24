@@ -25,7 +25,7 @@ test('extracción sin razonamiento conserva contexto, herramientas y contrato', 
   assert.equal(enviado.thinking.type, 'disabled');
   assert.equal(enviado.messages.at(-1).content, peticion.data.mensaje);
   assert.equal(enviado.messages.at(-2).role, 'assistant');
-  assert.equal(enviado.tools.length, 5);
+  assert.equal(enviado.tools.length, 8);
   assert.match(enviado.messages[1].content, /Alimentación/);
   assert.match(enviado.messages[2].content, /Rappi Card/);
   assert.equal(funcion.registros[0].resultado, 'ok');
@@ -40,6 +40,9 @@ for (const [herramienta, argumentos, tipo] of [
   ['consultar_saldo_cuenta', {cuentaMencionada: 'Efectivo'}, 'consultar_saldo'],
   ['actualizar_saldo_cuenta', {cuentaMencionada: 'Efectivo', nuevoSaldo: 500}, 'actualizar_saldo'],
   ['pagar_tarjeta_credito', {cuentaMencionada: 'Rappi Card', tipoPago: 'parcial', monto: 100}, 'pagar_tarjeta'],
+  ['gestionar_presupuesto', {accion: 'fijar', categoria: 'Alimentación', limite: 2000}, 'presupuesto'],
+  ['gestionar_meta', {accion: 'abonar', nombre: 'Viaje', monto: 500}, 'meta'],
+  ['consultar_planeacion', {tipo: 'metas', nombre: ''}, 'consultar_planeacion'],
 ]) {
   test(`conserva ${herramienta}`, async () => {
     const funcion = cargarFuncion(async () => completion(herramienta, argumentos));
@@ -62,4 +65,14 @@ test('un fallo de DeepSeek deja una medición sin exponer el error completo', as
   await assert.rejects(funcion.ejecutar(peticion));
   assert.equal(funcion.registros[0].resultado, 'error');
   assert.equal(JSON.stringify(funcion.registros).includes('dato-privado'), false);
+});
+
+test('manda la fecha de hoy del usuario y deja pasar fecha y hora del gasto', async () => {
+  let enviado;
+  const datos = {tipo: 'gasto', monto: 300, categoria: 'Transporte', descripcion: 'gasolina',
+    cuentaMencionada: 'Efectivo', fecha: '2026-11-20', hora: ''};
+  const funcion = cargarFuncion(async (body) => { enviado = body; return completion('registrar_transaccion', datos); });
+  const resultado = await funcion.ejecutar({...peticion, data: {...peticion.data, hoy: '2026-11-23', diaSemana: 'lunes'}});
+  assert.equal(resultado.datos.fecha, '2026-11-20');
+  assert.ok(enviado.messages.some((m) => m.role === 'system' && m.content === 'fechaDeHoy: 2026-11-23 (lunes)'));
 });

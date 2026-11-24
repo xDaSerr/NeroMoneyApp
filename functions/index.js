@@ -34,6 +34,15 @@ const respaldo = require("./respaldo.js");
 exports.respaldoMensual = respaldo.respaldoMensual;
 exports.respaldoAhora = respaldo.respaldoAhora;
 
+// Recordatorios de la versión web (push cada 15 min). Ver recordatorios.js.
+exports.recordatoriosWeb = require("./recordatorios.js").recordatoriosWeb;
+
+// Gastos compartidos (Pro): crear grupo, unirse con código y salir.
+const compartido = require("./compartido.js");
+exports.crearGrupo = compartido.crearGrupo;
+exports.unirseAGrupo = compartido.unirseAGrupo;
+exports.salirDeGrupo = compartido.salirDeGrupo;
+
 // La API key vive en Google Secret Manager (se guarda una sola vez con
 // `firebase functions:secrets:set DEEPSEEK_API_KEY`), nunca en un archivo
 // de este repo. `deepseekApiKey.value()` solo puede leerse en tiempo de
@@ -97,6 +106,21 @@ const HERRAMIENTA_REGISTRAR_TRANSACCION = {
             "nombre EXACTO tal cual aparece en esa lista. Si no se parece a " +
             "ninguna, devuelve el término genérico tal cual lo dijo (ej. " +
             "'efectivo', 'mi tarjeta'). Cadena vacía si no mencionó ninguna.",
+        },
+        fecha: {
+          type: "string",
+          description:
+            "Día en que ocurrió, en formato AAAA-MM-DD, calculado a partir de " +
+            "fechaDeHoy del contexto ('ayer', 'el sábado', 'el 20 de " +
+            "noviembre', 'hace 3 días'). Cadena vacía si fue hoy o no dijo " +
+            "ningún día. Nunca una fecha futura.",
+        },
+        hora: {
+          type: "string",
+          description:
+            "Hora en que ocurrió, en formato 24 h HH:MM, SOLO si el usuario " +
+            "la dijo ('a las 3 de la tarde' → '15:00', 'en la mañana a las " +
+            "9' → '09:00'). Cadena vacía si no la dijo: nunca la inventes.",
         },
       },
       required: ["tipo", "monto", "categoria", "descripcion", "cuentaMencionada"],
@@ -274,6 +298,107 @@ const HERRAMIENTA_CONSULTAR_SALDO = {
   },
 };
 
+// Presupuestos y metas por voz o texto. Igual que con las cuentas, el
+// modelo solo entrega datos: la app valida el plan (Gratis: 1 y 1),
+// resuelve la meta por nombre y escribe en Firestore.
+const HERRAMIENTA_PRESUPUESTO = {
+  type: "function",
+  function: {
+    name: "gestionar_presupuesto",
+    description:
+      "Crea, cambia o elimina el presupuesto MENSUAL de una categoría de " +
+      "gasto (ej. 'ponme un presupuesto de 2000 en comida', 'sube mi " +
+      "presupuesto de transporte a 1500', 'quita el presupuesto de ocio').",
+    parameters: {
+      type: "object",
+      properties: {
+        accion: {
+          type: "string",
+          enum: ["fijar", "eliminar"],
+          description: "'fijar' crea o cambia el límite; 'eliminar' lo quita.",
+        },
+        categoria: {
+          type: "string",
+          enum: CATEGORIAS_GASTO.filter((c) => c !== "Ajuste"),
+          description: "La categoría de gasto ('comida' → Alimentación).",
+        },
+        limite: {
+          type: "number",
+          description: "Solo con accion 'fijar': el límite mensual, sin símbolo.",
+        },
+      },
+      required: ["accion", "categoria"],
+      additionalProperties: false,
+    },
+  },
+};
+
+const HERRAMIENTA_META = {
+  type: "function",
+  function: {
+    name: "gestionar_meta",
+    description:
+      "Metas de ahorro: crear una ('quiero ahorrar 15000 para un viaje en " +
+      "junio'), abonarle ('aparté 500 para el viaje'), retirarle ('saqué " +
+      "200 de mi meta del viaje') o eliminarla.",
+    parameters: {
+      type: "object",
+      properties: {
+        accion: {
+          type: "string",
+          enum: ["crear", "abonar", "retirar", "eliminar"],
+        },
+        nombre: {
+          type: "string",
+          description:
+            "Nombre de la meta. Si se parece a una de metasDelUsuario, " +
+            "devuelve ese nombre EXACTO; al crear, un nombre corto ('Viaje').",
+        },
+        objetivo: {
+          type: "number",
+          description: "Solo al crear: cuánto quiere juntar.",
+        },
+        monto: {
+          type: "number",
+          description: "Solo al abonar o retirar: cuánto.",
+        },
+        fechaLimite: {
+          type: "string",
+          description:
+            "Solo al crear y si dio una fecha: AAAA-MM-DD (usa fechaDeHoy; " +
+            "'para junio' = último día de junio más próximo). Si no, vacío.",
+        },
+      },
+      required: ["accion", "nombre"],
+      additionalProperties: false,
+    },
+  },
+};
+
+const HERRAMIENTA_CONSULTAR_PLANEACION = {
+  type: "function",
+  function: {
+    name: "consultar_planeacion",
+    description:
+      "Cómo van sus presupuestos del mes o sus metas de ahorro ('¿cómo voy " +
+      "con mis presupuestos?', '¿cuánto me falta para el viaje?'). La app " +
+      "calcula los números.",
+    parameters: {
+      type: "object",
+      properties: {
+        tipo: {type: "string", enum: ["presupuestos", "metas"]},
+        nombre: {
+          type: "string",
+          description:
+            "Una categoría o meta concreta si la nombró; vacío para todas.",
+        },
+      },
+      required: ["tipo"],
+      additionalProperties: false,
+    },
+  },
+};
+
 const MENSAJE_SISTEMA =
   "Eres el motor de extracción de datos de NeroMoney, una app de finanzas " +
   "personales. Tu ÚNICA tarea es leer el mensaje del usuario y, si describe " +
@@ -362,7 +487,19 @@ const MENSAJE_SISTEMA =
   "mensaje del usuario (con ayuda del contexto) sí describe un gasto o " +
   "ingreso con monto, SIEMPRE debes llamar a la función — nunca describas " +
   "en tu propio texto que 'ya quedó registrado' en su lugar, aunque la " +
-  "conversación ya tenga mensajes previos con ese tono.";
+  "conversación ya tenga mensajes previos con ese tono. " +
+  "GASTOS PASADOS: el usuario puede registrar algo que ocurrió otro día " +
+  "('ayer gasté 300 en gasolina', 'el 20 de noviembre pagué la luz'). Usa " +
+  "fechaDeHoy del contexto para convertirlo en fecha AAAA-MM-DD en el " +
+  "campo fecha de registrar_transaccion. Si solo dice un día sin mes, es " +
+  "el más reciente que ya pasó. Llena hora solo si la dijo. Si describe " +
+  "algo que todavía NO ocurre ('mañana voy a pagar'), no lo registres: " +
+  "explícale que solo anotas lo que ya pasó. " +
+  "PRESUPUESTOS Y METAS: también puedes crear o cambiar presupuestos " +
+  "mensuales por categoría, crear metas de ahorro, abonar a una meta y " +
+  "consultar cómo van, con las funciones gestionar_presupuesto, " +
+  "gestionar_meta y consultar_planeacion. Un abono a una meta ('aparté " +
+  "500 para el viaje') es gestionar_meta con accion:'abonar', NO un gasto.";
 
 /// Función invocable desde la app (Flutter la llama vía el paquete
 /// `cloud_functions`, mandando el mensaje del usuario). Requiere sesión de
@@ -436,6 +573,21 @@ exports.interpretarMensajeIA = onCall(
       "cuentasDelUsuario: " + JSON.stringify(nombresCuentas) :
       "cuentasDelUsuario: el usuario todavía no tiene ninguna cuenta registrada.";
 
+    // Hoy en la zona del usuario (la app lo manda): sin esto el modelo no
+    // sabe qué día es "ayer" ni a qué año pertenece "el 20 de noviembre".
+    const hoyCliente = typeof (request.data && request.data.hoy) === "string" &&
+      /^\d{4}-\d{2}-\d{2}$/.test(request.data.hoy) ?
+      request.data.hoy : new Date().toISOString().slice(0, 10);
+    const diaSemana = typeof (request.data && request.data.diaSemana) === "string" ?
+      request.data.diaSemana.slice(0, 12) : "";
+    const contextoFecha = "fechaDeHoy: " + hoyCliente +
+      (diaSemana ? " (" + diaSemana + ")" : "");
+    const nombresMetas = (Array.isArray(request.data && request.data.nombresMetas) ?
+      request.data.nombresMetas : [])
+        .filter((n) => typeof n === "string" && n.trim())
+        .slice(0, 30);
+    const contextoMetas = "metasDelUsuario: " + JSON.stringify(nombresMetas);
+
     const openai = new OpenAI({
       baseURL: "https://api.deepseek.com",
       apiKey: deepseekApiKey.value(),
@@ -453,6 +605,8 @@ exports.interpretarMensajeIA = onCall(
           {role: "system", content: MENSAJE_SISTEMA},
           {role: "system", content: contextoTransacciones},
           {role: "system", content: contextoCuentas},
+          {role: "system", content: contextoFecha},
+          {role: "system", content: contextoMetas},
           ...historial,
           {role: "user", content: mensaje},
         ],
@@ -462,6 +616,9 @@ exports.interpretarMensajeIA = onCall(
           HERRAMIENTA_ACTUALIZAR_SALDO,
           HERRAMIENTA_PAGAR_TARJETA,
           HERRAMIENTA_CONSULTAR_SALDO,
+          HERRAMIENTA_PRESUPUESTO,
+          HERRAMIENTA_META,
+          HERRAMIENTA_CONSULTAR_PLANEACION,
         ],
         tool_choice: "auto",
       });
@@ -529,6 +686,41 @@ exports.interpretarMensajeIA = onCall(
         tipo: "consultar_saldo",
         cuentaMencionada: typeof argumentos.cuentaMencionada === "string" ?
           argumentos.cuentaMencionada : "",
+      };
+    }
+
+    const texto = (v) => typeof v === "string" ? v : "";
+    const numero = (v) => typeof v === "number" && Number.isFinite(v) ? v : 0;
+
+    if (llamadaHerramienta.function.name === "gestionar_presupuesto") {
+      const a = JSON.parse(llamadaHerramienta.function.arguments);
+      return {
+        tipo: "presupuesto",
+        accion: a.accion === "eliminar" ? "eliminar" : "fijar",
+        categoria: texto(a.categoria),
+        limite: numero(a.limite),
+      };
+    }
+
+    if (llamadaHerramienta.function.name === "gestionar_meta") {
+      const a = JSON.parse(llamadaHerramienta.function.arguments);
+      return {
+        tipo: "meta",
+        accion: ["crear", "abonar", "retirar", "eliminar"].includes(a.accion) ?
+          a.accion : "crear",
+        nombre: texto(a.nombre),
+        objetivo: numero(a.objetivo),
+        monto: numero(a.monto),
+        fechaLimite: texto(a.fechaLimite),
+      };
+    }
+
+    if (llamadaHerramienta.function.name === "consultar_planeacion") {
+      const a = JSON.parse(llamadaHerramienta.function.arguments);
+      return {
+        tipo: "consultar_planeacion",
+        que: a.tipo === "metas" ? "metas" : "presupuestos",
+        nombre: texto(a.nombre),
       };
     }
 

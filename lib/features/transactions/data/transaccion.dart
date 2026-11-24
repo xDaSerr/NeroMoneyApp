@@ -20,7 +20,18 @@ class Transaccion {
     this.origen = OrigenTransaccion.manual,
     this.transferenciaId,
     this.cuentaContraparteId,
+    this.sinHora = false,
+    this.libretaId,
   });
+
+  /// Dinero que salió o entró por un préstamo de la Libreta (prestar,
+  /// pedir prestado o un pago de ellos). Mueve el saldo de la cuenta, pero
+  /// no es consumo ni ingreso real.
+  final String? libretaId;
+
+  /// Transferencias y préstamos: cambian saldos, pero no cuentan como gasto
+  /// ni ingreso en resúmenes, reportes, presupuestos ni análisis.
+  bool get esMovimientoInterno => esTransferencia || libretaId != null;
 
   final String id;
   final double monto;
@@ -34,6 +45,20 @@ class Transaccion {
   final String? transferenciaId;
   final String? cuentaContraparteId;
   bool get esTransferencia => transferenciaId != null;
+
+  /// Se registró después y no se sabe a qué hora fue (un gasto olvidado):
+  /// se guarda al mediodía de ese día y se muestra solo la fecha.
+  final bool sinHora;
+
+  /// Hora para mostrar ("14:30"), o null si no se conoce. Los movimientos
+  /// viejos con fecha elegida en el calendario quedaron a las 00:00 exactas:
+  /// tampoco tienen hora real.
+  String? get horaVisible {
+    if (sinHora) return null;
+    if (fecha.hour == 0 && fecha.minute == 0 && fecha.second == 0) return null;
+    return '${fecha.hour.toString().padLeft(2, '0')}:'
+        '${fecha.minute.toString().padLeft(2, '0')}';
+  }
 
   /// El monto en la moneda principal del perfil (multimoneda, Pro). Todo lo
   /// que SUMA movimientos (gastos del mes, reportes, presupuestos) usa este
@@ -57,6 +82,8 @@ class Transaccion {
       ),
       transferenciaId: data['transferenciaId'] as String?,
       cuentaContraparteId: data['cuentaContraparteId'] as String?,
+      sinHora: data['sinHora'] == true,
+      libretaId: data['libretaId'] as String?,
     );
   }
 
@@ -72,6 +99,8 @@ class Transaccion {
       if (transferenciaId != null) 'transferenciaId': transferenciaId,
       if (cuentaContraparteId != null)
         'cuentaContraparteId': cuentaContraparteId,
+      if (sinHora) 'sinHora': true,
+      if (libretaId != null) 'libretaId': libretaId,
     };
   }
 

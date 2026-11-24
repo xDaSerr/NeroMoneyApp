@@ -23,7 +23,7 @@ class ResumenGastos {
   }) {
     final enRango = transacciones.where(
       (t) =>
-          !t.esTransferencia &&
+          !t.esMovimientoInterno &&
           !t.fecha.isBefore(desde) &&
           t.fecha.isBefore(hasta),
     );

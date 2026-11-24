@@ -49,7 +49,7 @@ const NO_SON_INGRESO = new Set([
 function agregarMes(transacciones, mes) {
   const {desde, hasta} = rangoMes(mes);
   const delMes = transacciones.filter((t) =>
-    !t.transferenciaId && t.categoria !== "Ajuste" &&
+    !t.transferenciaId && !t.libretaId && t.categoria !== "Ajuste" &&
     t.fecha >= desde && t.fecha < hasta && typeof t.monto === "number");
 
   const netoPorCategoria = {};

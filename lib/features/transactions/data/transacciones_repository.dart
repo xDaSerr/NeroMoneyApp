@@ -66,7 +66,13 @@ class TransaccionesRepository {
         .map((snap) => snap.docs.map(Transaccion.fromFirestore).toList());
   }
 
-  Future<void> registrarTransaccion(Transaccion transaccion) {
+  /// [tambien] escribe algo más en la MISMA transacción de Firestore (la
+  /// Libreta guarda el préstamo junto con su movimiento): o se guardan los
+  /// dos, o ninguno.
+  Future<void> registrarTransaccion(
+    Transaccion transaccion, {
+    void Function(Transaction tx)? tambien,
+  }) {
     if (transaccion.esTransferencia) {
       throw ArgumentError(
         'Usa registrarTransferencia para actualizar ambas cuentas.',
@@ -97,6 +103,7 @@ class TransaccionesRepository {
 
       tx.set(transaccionRef, transaccion.toFirestore());
       tx.update(cuentaRef, {'saldoActual': nuevoSaldo});
+      tambien?.call(tx);
     });
   }
 

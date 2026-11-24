@@ -19,11 +19,14 @@ Dile a Lucy *"gasté 200 en un café con la tarjeta"* y ella lo registra, actual
 
 ## Qué hace
 
-- **Lucy, la asistente.** Registra gastos, ingresos, transferencias y pagos de tarjeta escribiéndole o hablándole. Si le falta un dato (la cuenta, la fecha) te lo pregunta sin trabar el chat. El nombre y la voz son configurables.
+- **Lucy, la asistente.** Registra gastos, ingresos, transferencias y pagos de tarjeta escribiéndole o hablándole, también los de otros días (*"el 20 de noviembre pagué la luz"*). Crea presupuestos y metas, abona a tus metas y te dice cómo vas. Si le falta un dato (la cuenta) te lo pregunta sin trabar el chat. El nombre y la voz son configurables.
 - **Cuentas y tarjetas.** Efectivo, débito, crédito y vales, con los últimos 4 dígitos para distinguirlas, límite de crédito y lo que debes en cada una.
 - **Movimientos.** Historial en tiempo real, búsqueda y filtros. Cada movimiento ajusta el saldo de su cuenta en la misma operación, así nunca se desajustan.
 - **Reportes.** Por día, semana, mes, año o un rango libre, con calendario propio, flujo de efectivo y gastos por categoría.
 - **Presupuestos y metas de ahorro**, con una barra de avance que cambia de color cuando te acercas al límite o lo pasas.
+- **Libreta.** Lo que prestas y lo que te prestan: la persona y su celular, de qué cuenta salió el dinero, cuándo quedó de pagar y los pagos en partes. Avisa cuando un préstamo ya pasó su fecha y abre WhatsApp con el mensaje listo.
+- **Compartido (Pro).** Una pareja o familia lleva sus gastos en común: quién pagó, entre quiénes se divide, quién le debe a quién y metas de ahorro juntos. Se invita con un código.
+- **Recordatorios** para registrar tus gastos, también en la versión web (notificaciones push).
 - **Análisis inteligente.** Detecta suscripciones, cargos fijos y gastos hormiga, y genera un resumen del mes.
 - **Foto del ticket.** Le tomas foto al ticket y la IA llena el movimiento.
 - **Multimoneda**, con tipos de cambio diarios y todo convertido a tu moneda principal.
@@ -59,6 +62,7 @@ Dile a Lucy *"gasté 200 en un café con la tarjeta"* y ella lo registra, actual
 | Resumen mensual, suscripciones y gastos hormiga | | ✓ | ✓ |
 | Reportes avanzados y exportar a Excel/CSV | | ✓ | ✓ |
 | Foto del ticket, multimoneda, PDF, respaldo mensual, resumen del año | | | ✓ |
+| Gastos y metas compartidos en pareja o familia | | | ✓ |
 
 Los pagos se procesan con [Polar](https://polar.sh), que funciona como *merchant of record* y se encarga de los impuestos de cada país.
 
@@ -75,6 +79,8 @@ Cloud Functions (Node 22)
    ├─ leerTicketIA           → lectura de tickets con visión
    ├─ tiposDeCambio          → tipos de cambio diarios, con caché
    ├─ respaldoMensual / respaldoAhora
+   ├─ recordatoriosWeb       → push cada 15 min según la zona horaria de cada quien
+   ├─ crearGrupo · unirseAGrupo · salirDeGrupo   → gastos compartidos
    └─ crearCheckoutPolar · abrirPortalPolar · webhookPolar
 ```
 

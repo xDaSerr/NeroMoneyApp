@@ -41,6 +41,7 @@ const _beneficios = <PlanNero, List<(String, bool)>>{
     ('Respaldo automático cada mes', true),
     ('Resumen y proyección del año', true),
     ('Exportar a PDF', true),
+    ('Gastos y metas compartidos en pareja o familia', true),
   ],
 };
 
@@ -87,6 +88,12 @@ class _PlanesScreenState extends ConsumerState<PlanesScreen> {
   }
 
   Future<void> _elegir(PlanNero plan) async {
+    // Cobros cerrados mientras Polar pasa de pruebas a producción: nadie
+    // llega a la página de pago, todos usan el plan Gratis.
+    if (!suscripcionesAbiertas) {
+      _avisar(avisoSuscripcionesPendientes);
+      return;
+    }
     setState(() => _procesando = plan);
     try {
       final url = await ref

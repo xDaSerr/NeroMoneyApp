@@ -26,6 +26,7 @@ import '../../transactions/providers/transacciones_providers.dart';
 import '../../transactions/widgets/movimiento_tile.dart';
 import '../../transactions/widgets/panel_nuevo_movimiento.dart';
 import '../../presupuestos/widgets/tarjeta_planeacion_inicio.dart';
+import '../../libreta/widgets/tarjeta_libreta_inicio.dart';
 import '../providers/privacidad_inicio_provider.dart';
 
 /// Inicio en ventanas anchas (ver HomeScreen): los mismos datos que el de
@@ -82,7 +83,9 @@ class InicioEscritorio extends ConsumerWidget {
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                'Hola, ${saludo.nombre} 👋',
+                                perfil?.esCumpleanos(DateTime.now()) ?? false
+                                    ? '¡Feliz cumpleaños, ${saludo.nombre}! 🎂'
+                                    : 'Hola, ${saludo.nombre} 👋',
                                 style: AppTextStyles.display.copyWith(
                                   fontSize: 44,
                                 ),
@@ -155,6 +158,11 @@ class InicioEscritorio extends ConsumerWidget {
                             const TarjetaPlaneacionInicio(
                               padding: EdgeInsets.all(24),
                               radio: 24,
+                            ),
+                            const TarjetaLibretaInicio(
+                              padding: EdgeInsets.all(24),
+                              radio: 24,
+                              margenArriba: 18,
                             ),
                             const SizedBox(height: 22),
                             _UltimosMovimientos(

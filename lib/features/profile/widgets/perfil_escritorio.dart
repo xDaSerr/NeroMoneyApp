@@ -9,6 +9,7 @@ import '../../../core/theme/controlador_tema.dart';
 import '../../../core/theme/tema_app.dart';
 import '../../../core/widgets/anillo_asistente.dart';
 import '../../../core/widgets/piezas_escritorio.dart';
+import 'foto_usuario.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../onboarding/data/perfil_usuario.dart';
 import '../../onboarding/providers/perfil_providers.dart';
@@ -74,14 +75,11 @@ class PerfilEscritorio extends ConsumerWidget {
                             color: AppColors.secundario.withValues(alpha: 0.12),
                             child: Column(
                               children: [
-                                CircleAvatar(
-                                  radius: 56,
-                                  backgroundColor: AppColors.secundario
-                                      .withValues(alpha: 0.35),
-                                  child: Text(
-                                    saludo.inicial,
-                                    style: AppTextStyles.display,
-                                  ),
+                                FotoUsuario(
+                                  base64: perfil.fotoUsuarioBase64,
+                                  inicial: saludo.inicial,
+                                  radio: 56,
+                                  estiloInicial: AppTextStyles.display,
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
@@ -93,6 +91,18 @@ class PerfilEscritorio extends ConsumerWidget {
                                     perfil.nombreCompleto,
                                     style: AppTextStyles.bodyLg.copyWith(
                                       color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                if (perfil.frase.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: Text(
+                                      perfil.frase,
+                                      textAlign: TextAlign.center,
+                                      style: AppTextStyles.bodyLg.copyWith(
+                                        color: AppColors.acento,
+                                        fontStyle: FontStyle.italic,
+                                      ),
                                     ),
                                   ),
                                 Text(

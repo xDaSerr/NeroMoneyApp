@@ -17,6 +17,7 @@ import '../../planes/providers/planes_providers.dart';
 import '../../reminders/data/recordatorios_service.dart';
 import '../data/saludo_usuario.dart';
 import 'perfil_escritorio.dart' show PerfilEscritorio;
+import 'foto_usuario.dart';
 import 'selector_moneda_dialog.dart';
 import 'selector_tema_dialog.dart';
 
@@ -61,16 +62,12 @@ class PerfilMovil extends ConsumerWidget {
                 color: AppColors.secundario.withValues(alpha: 0.12),
                 child: Row(
                   children: [
-                    CircleAvatar(
-                      radius: 34,
-                      backgroundColor: AppColors.secundario.withValues(
-                        alpha: 0.45,
-                      ),
-                      child: Text(
-                        saludo.inicial,
-                        style: AppTextStyles.headlineLg.copyWith(
-                          color: Colors.white,
-                        ),
+                    FotoUsuario(
+                      base64: perfil.fotoUsuarioBase64,
+                      inicial: saludo.inicial,
+                      radio: 34,
+                      estiloInicial: AppTextStyles.headlineLg.copyWith(
+                        color: Colors.white,
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -89,6 +86,16 @@ class PerfilMovil extends ConsumerWidget {
                               perfil.nombreCompleto,
                               style: AppTextStyles.bodyMd,
                               maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          if (perfil.frase.isNotEmpty)
+                            Text(
+                              perfil.frase,
+                              style: AppTextStyles.bodyMd.copyWith(
+                                color: AppColors.acento,
+                                fontStyle: FontStyle.italic,
+                              ),
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
                           Text(
@@ -215,6 +222,18 @@ class PerfilMovil extends ConsumerWidget {
                       icono: Icons.pie_chart_outline_rounded,
                       titulo: 'Reportes',
                       onTap: () => context.push('/reports'),
+                    ),
+                    _Preferencia(
+                      icono: Icons.menu_book_rounded,
+                      titulo: 'Libreta',
+                      subtitulo: 'Lo que prestas y te prestan',
+                      onTap: () => context.push('/libreta'),
+                    ),
+                    _Preferencia(
+                      icono: Icons.groups_rounded,
+                      titulo: 'Compartido',
+                      subtitulo: 'Gastos y metas en pareja o familia',
+                      onTap: () => context.push('/compartido'),
                     ),
                   ],
                 ),
